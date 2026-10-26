@@ -46,6 +46,11 @@ TAGS_EXCLUS = {"scp", "_licensebox", "_cc", "_cc4", "_listpages", "co-authored",
                "_tabview", "_footnotes", "contest", "doomsday2018", "_ext"} | set(CLASSES) | {"uncontained"}
 # Seuils de rareté par rang de popularité : légendaire 1 %, épique 4 %, rare 10 %, peu commune 25 %
 SEUILS_RARETE = [0.01, 0.05, 0.15, 0.40]
+# Les types de fiches de référence sont petits (51 à 200 cartes) : 1 % y ferait un ou deux légendaires
+SEUILS_REFERENCE = [0.04, 0.12, 0.27, 0.55]
+# Icônes de la Fondation, légendaires d'office : leur notoriété vient surtout d'en dehors du wiki
+# (jeux SCP: Containment Breach et Secret Laboratory), que les mentions dans le wiki ne mesurent pas
+ICONES = {"fim:epsilon-11", "gdi:the-chaos-insurgency"}
 # Les contes et documents trop mal notés ne deviennent pas des cartes
 SEUIL_NOTE_CONTE = 10
 
@@ -365,6 +370,92 @@ def charger_contenus(dossier, motif):
     return contenus
 
 
+# ---------------------------------------------------------------------------
+# Notoriété des fiches de référence (équipes FIM, personnel, Groupes d'intérêt)
+# ---------------------------------------------------------------------------
+GRECQUES = "Alpha|Beta|Gamma|Delta|Epsilon|Zeta|Eta|Theta|Iota|Kappa|Lambda|Mu|Nu|Xi|Omicron|Pi|Rho|Sigma|Tau|Upsilon|Phi|Chi|Psi|Omega"
+RE_MTF = re.compile(rf"\b({GRECQUES})[- ](\d+)(?!\d)")
+RE_O5 = re.compile(r"\bO5-(\d+)(?!\d)")
+RE_TITRE = re.compile(r"\b(?:Dr\.?|Doctor|Agent|Director|Researcher|Professor)\s+([A-Z][A-Za-z'’-]+)")
+RE_MOTS = re.compile(r"[A-Z][A-Za-z'’&-]+")
+# Noms trop courants pour être comptés seuls dans un texte
+MOTS_COURANTS = {"Factory", "Nobody"}
+# Autres façons dont le wiki désigne certains Groupes d'intérêt
+ALIAS = {
+    "gdi:marshall-carter-and-dark-ltd": ["MC&D", "Marshall, Carter"],
+    "gdi:church-of-the-broken-god": ["Broken God", "Maxwellism", "Mekhane"],
+    "gdi:sarkic-cults": ["Sarkic", "Sarkicism"],
+    "gdi:doctor-wondertainment": ["Wondertainment"],
+    "gdi:the-chaos-insurgency": ["Insurgency"],
+    "gdi:the-serpent-s-hand": ["Serpent's Hand", "Serpent’s Hand"],
+    "gdi:global-occult-coalition-goc": ["GOC"],
+    "gdi:the-children-of-the-scarlet-king": ["Scarlet King"],
+}
+
+
+def cles_mention(c):
+    """Ce qui, dans le texte d'une page, signale une mention de la fiche : (genre, valeur)."""
+    cles = []
+    if c["k"] == "f":
+        m = re.match(rf"MTF ({GRECQUES})[- ](\d+)", c["num"])
+        if m:
+            cles.append(("mtf", (m.group(1), m.group(2))))
+        if len(c["nm"].split()) >= 2:
+            cles.append(("phrase", c["nm"]))
+    elif c["k"] == "p":
+        if re.fullmatch(r"O5-\d+", c["nm"]):
+            return [("o5", c["nm"][3:])]
+        nom = re.sub(r"\s+AKA.*$", "", re.sub(r"\s*\(.*?\)|[\"“”]", "", c["nm"])).strip()
+        mots = nom.split()
+        if mots and len(mots[-1]) > 3:
+            cles.append(("titre", mots[-1]))
+        if len(mots) >= 2:
+            cles.append(("phrase", nom))
+    elif c["k"] == "g":
+        nom = re.sub(r"\s*\(.*?\)", "", c["nm"]).strip()
+        if nom.startswith('"'):
+            # « "Nobody" » : le mot seul est trop courant, on exige les guillemets
+            cles += [("phrase", nom), ("phrase", "“" + nom.strip('"') + "”")]
+        else:
+            nom = re.sub(r"^The ", "", nom)
+            if nom not in MOTS_COURANTS:
+                cles.append(("phrase", nom))
+        for alias in ALIAS.get(c["id"], []):
+            cles.append(("phrase", alias) if " " in alias else ("mot", alias))
+        sigle = re.search(r"\(([A-Z&]{2,})\)", c["nm"])
+        if sigle:
+            cles.append(("mot", sigle.group(1)))
+    return cles
+
+
+def mentions_wiki(reference, sources):
+    """Pour chaque fiche de référence, les pages du wiki dont le texte la mentionne. Une seule passe par page."""
+    index_cles, phrases = {}, []
+    for c in reference:
+        for genre, valeur in cles_mention(c):
+            if genre == "phrase":
+                phrases.append((max(re.findall(r"[A-Za-z'’&-]+", valeur), key=len), valeur, c["id"]))
+            else:
+                index_cles.setdefault((genre, valeur), []).append(c["id"])
+    mentions = {}
+    for index, contenus_source in sources:
+        for cle, page in contenus_source.items():
+            if cle not in index:
+                continue
+            lien = index[cle]["link"]
+            texte = re.sub(r"<[^>]+>", " ", page.get("raw_content") or "")
+            mots = set(RE_MOTS.findall(texte))
+            trouves = ({("mtf", m) for m in RE_MTF.findall(texte)} | {("o5", m) for m in RE_O5.findall(texte)}
+                       | {("titre", m) for m in RE_TITRE.findall(texte)} | {("mot", m) for m in mots})
+            for t in trouves:
+                for cid in index_cles.get(t, ()):
+                    mentions.setdefault(cid, set()).add(lien)
+            for amorce, phrase, cid in phrases:
+                if amorce in mots and phrase in texte:
+                    mentions.setdefault(cid, set()).add(lien)
+    return mentions
+
+
 def rarete_et_stats(cartes):
     """Classe chaque type de carte par popularité, puis calcule Menace et Confinement."""
     par_type = {}
@@ -373,8 +464,9 @@ def rarete_et_stats(cartes):
     for liste in par_type.values():
         liste.sort(key=lambda c: -c["_pop"])
         total = len(liste)
+        seuils = SEUILS_RARETE if liste[0]["k"] in ("s", "c", "d") else SEUILS_REFERENCE
         for rang, c in enumerate(liste):
-            c["ra"] = 4 - next((i for i, s in enumerate(SEUILS_RARETE) if rang / total < s), 4)
+            c["ra"] = 4 if c["id"] in ICONES else 4 - next((i for i, s in enumerate(seuils) if rang / total < s), 4)
             c["p"] = rang + 1
             mult = 1 + 0.08 * c["ra"]
             mots = 8 + 11 * math.log1p(c["_mots"] / 60)
@@ -494,17 +586,27 @@ def main():
                 "_pop": 0.75 * math.log1p(max(note, 0)) / 7.7 + 0.25 * math.log1p(entrants.get(lien, 0)) / 6,
             })
 
-    # Fiches de référence : équipes FIM, personnel et Conseil O5, Groupes d'intérêt, canons
-    for c in fim(dossier) + personnel(dossier) + conseil_o5(dossier) + gdi + canons(dossier):
+    # Fiches de référence : équipes FIM, personnel et Conseil O5, Groupes d'intérêt, canons.
+    # Leur notoriété : les pages qui les citent dans leur texte, portent leur tag ou font partie de leur hub.
+    reference = fim(dossier) + personnel(dossier) + conseil_o5(dossier) + gdi + canons(dossier)
+    mentions = mentions_wiki(reference, ((items, contenus), (contes, contenus_contes), (docs_gdi, contenus_gdi)))
+    for c in reference:
         pages = c.pop("_pages")
-        liees = {p for p in pages if p in notes}
-        for p in pages:
-            # Un lien vers un hub (canon, série de contes) compte toutes les pages du hub
-            liees |= par_hub.get(p, set())
+        # Signal fort : pages écrites par des auteurs variés qui citent la fiche ou portent son tag.
+        # Pour un canon, son hub est le canon lui-même : toutes les pages du hub comptent. Pour les
+        # autres fiches, un lien vers un grand hub (concours d'art, série de contes) n'en dit rien.
+        fortes = set(mentions.get(c["id"], set()))
+        if c["k"] == "n":
+            for p in pages:
+                fortes |= par_hub.get(p, set())
         for t in c.pop("_tags"):
-            liees |= par_tag.get(t, set())
-        c["lp"] = len(liees)
-        c["_pop"] = math.log1p(sum(max(notes[p], 0) for p in liees))
+            fortes |= par_tag.get(t, set())
+        # Signal faible : la liste de liens de sa propre section, choisie par un seul rédacteur
+        de_la_section = {p for p in pages if p in notes} - fortes
+        c["lp"] = len(fortes | de_la_section)
+        # Chaque page compte selon sa note, sans qu'une seule page très notée écrase les autres
+        c["_pop"] = (sum(math.log1p(max(notes[p], 0)) for p in fortes)
+                     + 0.25 * sum(math.log1p(max(notes[p], 0)) for p in de_la_section))
         if c["k"] == "f":
             c["_scp"] = sorted(c["_scp"], key=lambda p: -notes.get(p, 0))
             c["lie"] = [p.upper() for p in c["_scp"][:6]]
