@@ -94,6 +94,8 @@ h2 {
   border: 1px solid var(--bord);
   border-radius: 6px;
   padding: 0.55rem 0.95rem;
+  /* Couleur explicite : un bouton posé sur une section « papier » n'hérite pas de l'encre sombre */
+  color: var(--texte);
   font-family: var(--mono);
   font-size: 0.85rem;
   transition: border-color 0.15s, background 0.15s;
@@ -3128,11 +3130,19 @@ select:focus {
   cursor: pointer;
 }
 
-/* Fiche d'une carte : cours et vente */
-.marche-carte {
+/* Fiche d'une carte : cours et vente. Pas de fond « papier » comme les autres sections du dossier :
+   la courbe et les boutons sont faits pour le fond sombre */
+.detail-dossier .marche-carte {
   margin-top: 1.5rem;
-  padding-top: 1rem;
+  padding: 1rem 0 0;
   border-top: 1px solid var(--bord);
+  border-radius: 0;
+  background: none;
+  color: var(--texte);
+}
+
+.detail-dossier .marche-carte p {
+  margin: 0.5rem 0 0;
 }
 
 .marche-carte .btn-lien {
