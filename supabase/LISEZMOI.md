@@ -56,6 +56,17 @@ Le bouton « Continuer avec Discord » apparaît alors tout seul sur la page de 
 
 Attention : `supabase config push` envoie tout `config.toml`. Avant de l'utiliser, décommentez la section `[auth.external.discord]` et renseignez-la, sinon Discord serait désactivé.
 
+### Fonction Edge des duels
+
+Les duels contre l'IA sont arbitrés par la fonction `duel`, écrite dans `serveur/` et qui réutilise les règles de `src/engine`. Après toute modification des règles, des questions ou de l'IA :
+
+```bash
+npm run test-duel        # regroupe la fonction et la teste contre les migrations (Postgres embarqué)
+npx supabase functions deploy duel --use-api --no-verify-jwt --project-ref mwsoqzrpgghwtiazuios
+```
+
+`--use-api` fait construire la fonction par Supabase, sans Docker. Elle lit le catalogue des cartes sur le site du jeu : déployez le site avant la fonction quand `cards.json` change.
+
 ## 4. Brancher le jeu
 
 Copiez `.env.example` en `.env.local` et remplissez l'URL et la clé, puis :

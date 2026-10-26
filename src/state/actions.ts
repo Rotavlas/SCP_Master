@@ -6,7 +6,7 @@ import type { Base } from '../data/catalogue'
 import type { CarteTiree, TypeBooster } from '../engine/boosters'
 import type { Adversaire } from '../engine/duel'
 import type { IdVariante } from '../engine/variantes'
-import { appeler, appliquerProfil, type ProfilServeur } from './enLigne'
+import { appeler, appelerDuel, appliquerProfil, envoyerPreferences, type ProfilServeur } from './enLigne'
 import { ajouterCartes, modifier, notifier, recyclerDoublons } from './sauvegarde'
 
 export async function tirerBooster(base: Base, type: TypeBooster, depuisStock: boolean): Promise<CarteTiree[] | null> {
@@ -44,24 +44,61 @@ export async function recyclerTout(): Promise<number> {
   return r.gain
 }
 
-/** Ouvre un duel contre l'IA sur le serveur ; renvoie son identifiant, ou null si refusé. */
-export async function debuterDuel(adversaire: Adversaire): Promise<string | null> {
-  return appeler<string>('debuter_duel', { p_niveau: adversaire.niveau })
-}
+// ---------- Duels contre l'IA : arbitrés par le serveur (supabase/functions/duel) ----------
 
 export type Issue = 'victoire' | 'defaite' | 'nul'
 
-/** Le serveur calcule lui-même la récompense (et la refuse au-delà du plafond quotidien). */
-export async function terminerDuel(idDuel: string, issue: Issue, bonnes: number, questions: number): Promise<{ credits: number; xp: number } | null> {
-  const r = await appeler<{ credits: number; xp: number; profil: ProfilServeur }>('terminer_duel', {
-    p_duel: idDuel,
-    p_issue: issue,
-    p_bonnes: bonnes,
-    p_questions: questions,
-  })
-  if (!r) return null
-  modifier((x) => appliquerProfil(x, r.profil))
-  return { credits: r.credits, xp: r.xp }
+export interface DuelOuvert {
+  id: string
+  /** Équipe enregistrée sur le serveur, dans l'ordre */
+  main: string[]
+  cartesIA: number
+  pv: number
+  pvIA: number
+}
+
+export interface QuestionDuel {
+  manche: number
+  surMaCarte: boolean
+  question: { intitule: string; document?: string; options: string[] }
+  duree: number
+  /** Moment où l'IA répond, en secondes ; son choix n'est révélé qu'après la réponse */
+  tempsIA: number
+}
+
+export interface ResultatManche {
+  bonne: number
+  choix: number | null
+  temps: number
+  reponseIA: { choix: number; temps: number }
+  carteIA: string
+  degatsInfliges: number
+  degatsRecus: number
+  pv: number
+  pvIA: number
+  bonnes: number
+  manche: number
+  fin: { issue: Issue; credits: number; xp: number; profil: ProfilServeur } | null
+}
+
+/** Ouvre un duel avec l'équipe enregistrée (envoyée d'abord si elle vient de changer). */
+export async function debuterDuel(adversaire: Adversaire): Promise<DuelOuvert | null> {
+  await envoyerPreferences()
+  return appelerDuel<DuelOuvert>('debuter', { niveau: adversaire.niveau })
+}
+
+export async function jouerCarte(idDuel: string, carte: string): Promise<QuestionDuel | null> {
+  return appelerDuel<QuestionDuel>('jouer', { id: idDuel, carte })
+}
+
+/** Le serveur chronomètre, corrige, fait répondre l'IA et verse la récompense en fin de duel. */
+export async function repondreDuel(idDuel: string, choix: number | null): Promise<ResultatManche | null> {
+  const r = await appelerDuel<ResultatManche>('repondre', { id: idDuel, choix })
+  if (r?.fin) {
+    const profil = r.fin.profil
+    modifier((x) => appliquerProfil(x, profil))
+  }
+  return r
 }
 
 /** Pseudo public, unique. */

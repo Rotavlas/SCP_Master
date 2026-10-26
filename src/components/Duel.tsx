@@ -1,38 +1,35 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Base } from '../data/catalogue'
-import { ADVERSAIRES, DUREE_QUESTION, INTEGRITE_MAX, MANCHES, deckAdversaire, degats, reponseAdversaire, type Adversaire } from '../engine/duel'
-import { genererQuestion, type Question } from '../engine/quiz'
-import { debuterDuel, terminerDuel } from '../state/actions'
+import { ADVERSAIRES, INTEGRITE_MAX, MANCHES, type Adversaire } from '../engine/duel'
+import { debuterDuel, jouerCarte, repondreDuel, type Issue, type QuestionDuel, type ResultatManche } from '../state/actions'
 import { TAILLE_DECK, accreditation, modifier, useSauvegarde, varianteAffichee } from '../state/sauvegarde'
 import type { Carte as TCarte, Ecran } from '../types'
 import { Carte } from './Carte'
 import { meilleureEquipe } from './Collection'
 
-interface Reponse {
-  choix: number | null
-  temps: number
-}
-
+/**
+ * Le serveur arbitre le duel (supabase/functions/duel) : il tire le deck de l'IA et les questions,
+ * garde la bonne réponse jusqu'à ce qu'on ait répondu, chronomètre et calcule dégâts et récompense.
+ * Cet écran ne fait qu'afficher ce qu'il renvoie.
+ */
 interface Partie {
   /** Identifiant du duel côté serveur */
   idDuel: string
   adversaire: Adversaire
   main: TCarte[]
-  mainIA: TCarte[]
+  /** Cartes encore cachées dans la main de l'adversaire */
+  cartesIA: number
   manche: number
   pv: number
   pvIA: number
   phase: 'choix' | 'question' | 'resultat' | 'fin'
   carte?: TCarte
-  carteIA?: TCarte
-  question?: Question
+  question?: QuestionDuel
+  /** Réception de la question, pour le chronomètre affiché */
   debut?: number
-  reponse?: Reponse
-  reponseIA?: Reponse
-  degatsInfliges?: number
-  degatsRecus?: number
+  resultat?: ResultatManche
   bonnes: number
-  recompense?: { credits: number; xp: number; issue: 'victoire' | 'defaite' | 'nul' }
+  recompense?: { credits: number; xp: number; issue: Issue }
 }
 
 const LETTRES = ['A', 'B', 'C', 'D']
@@ -41,6 +38,8 @@ export function Duel({ base, aller }: { base: Base; aller: (e: Ecran) => void })
   const s = useSauvegarde()
   const [partie, setPartie] = useState<Partie | null>(null)
   const [ecoule, setEcoule] = useState(0)
+  // Un échange avec le serveur est en cours : pas de second clic
+  const [attente, setAttente] = useState(false)
   const partieRef = useRef(partie)
   partieRef.current = partie
   const occupe = useRef(false)
@@ -48,86 +47,82 @@ export function Duel({ base, aller }: { base: Base; aller: (e: Ecran) => void })
   const equipe = s.deck.map((id) => base.parId.get(id)).filter((c): c is TCarte => !!c && !!s.collection[c.id])
   const niveau = accreditation(s.xp).niveau
 
-  // Chronomètre de la question en cours
+  /** Un seul appel au serveur à la fois */
+  async function exclusif<T>(f: () => Promise<T>): Promise<T | undefined> {
+    if (occupe.current) return undefined
+    occupe.current = true
+    setAttente(true)
+    try {
+      return await f()
+    } finally {
+      occupe.current = false
+      setAttente(false)
+    }
+  }
+
+  // Chronomètre de la question en cours ; le serveur mesure lui-même le temps de réponse
   useEffect(() => {
     if (partie?.phase !== 'question') return
     const t = setInterval(() => {
       const p = partieRef.current
-      if (!p?.debut) return
+      if (!p?.debut || !p.question) return
       const e = (Date.now() - p.debut) / 1000
       setEcoule(e)
-      if (e >= DUREE_QUESTION) repondre(null)
+      if (e >= p.question.duree) void repondre(null)
     }, 100)
     return () => clearInterval(t)
   }, [partie?.phase, partie?.manche])
 
   async function commencer(adversaire: Adversaire) {
-    if (occupe.current) return
-    occupe.current = true
-    const idDuel = await debuterDuel(adversaire)
-    occupe.current = false
-    if (!idDuel) return
+    const d = await exclusif(() => debuterDuel(adversaire))
+    if (!d) return
     setPartie({
-      idDuel,
+      idDuel: d.id,
       adversaire,
-      main: equipe,
-      mainIA: deckAdversaire(base, adversaire),
+      main: d.main.map((id) => base.parId.get(id)).filter((c): c is TCarte => !!c),
+      cartesIA: d.cartesIA,
       manche: 1,
-      pv: INTEGRITE_MAX,
-      pvIA: INTEGRITE_MAX,
+      pv: d.pv,
+      pvIA: d.pvIA,
       phase: 'choix',
       bonnes: 0,
     })
   }
 
-  function jouer(carte: TCarte) {
-    if (!partie) return
-    const carteIA = partie.mainIA[Math.floor(Math.random() * partie.mainIA.length)]
-    const surMaCarte = Math.random() < 0.5
-    // La carte adverse reste face cachée pendant la question
-    const question = surMaCarte ? genererQuestion(base, carte, carteIA, false) : genererQuestion(base, carteIA, carte, true)
+  async function jouer(carte: TCarte) {
+    const p = partieRef.current
+    if (!p || p.phase !== 'choix') return
+    const q = await exclusif(() => jouerCarte(p.idDuel, carte.id))
+    if (!q) return
     setEcoule(0)
-    setPartie({ ...partie, phase: 'question', carte, carteIA, question, debut: Date.now(), reponse: undefined, reponseIA: reponseAdversaire(partie.adversaire, question) })
+    setPartie({ ...p, phase: 'question', manche: q.manche, carte, question: q, debut: Date.now(), resultat: undefined })
   }
 
-  function repondre(choix: number | null) {
+  async function repondre(choix: number | null) {
     const p = partieRef.current
-    if (!p || p.phase !== 'question' || !p.question || !p.carte || !p.carteIA || !p.reponseIA) return
-    const temps = Math.min(DUREE_QUESTION, (Date.now() - (p.debut ?? Date.now())) / 1000)
-    const ok = choix === p.question.bonne
-    const okIA = p.reponseIA.choix === p.question.bonne
-    const tousDeux = ok && okIA
-    const infliges = ok ? degats(p.carte, p.carteIA, temps, tousDeux && temps < p.reponseIA.temps) : 0
-    const recus = okIA ? degats(p.carteIA, p.carte, p.reponseIA.temps, tousDeux && p.reponseIA.temps < temps) : 0
+    if (!p || p.phase !== 'question' || !p.carte) return
+    const r = await exclusif(() => repondreDuel(p.idDuel, choix))
+    if (!r) return
     const suivant: Partie = {
       ...p,
       phase: 'resultat',
-      reponse: { choix, temps },
-      pv: p.pv - recus,
-      pvIA: p.pvIA - infliges,
-      degatsInfliges: infliges,
-      degatsRecus: recus,
-      bonnes: p.bonnes + (ok ? 1 : 0),
+      resultat: r,
+      pv: r.pv,
+      pvIA: r.pvIA,
+      bonnes: r.bonnes,
+      manche: r.manche,
       main: p.main.filter((c) => c.id !== p.carte!.id),
-      mainIA: p.mainIA.filter((c) => c.id !== p.carteIA!.id),
+      cartesIA: p.cartesIA - 1,
     }
     partieRef.current = suivant
     setPartie(suivant)
   }
 
-  async function continuer() {
-    if (!partie || occupe.current) return
-    const terminee = partie.manche >= MANCHES || partie.pv <= 0 || partie.pvIA <= 0
-    if (!terminee) {
-      setPartie({ ...partie, manche: partie.manche + 1, phase: 'choix', carte: undefined, carteIA: undefined, question: undefined })
-      return
-    }
-    const issue = partie.pv > partie.pvIA ? 'victoire' : partie.pv < partie.pvIA ? 'defaite' : 'nul'
-    occupe.current = true
-    // Le serveur calcule lui-même la récompense (et la refuse au-delà du plafond quotidien)
-    const gains = await terminerDuel(partie.idDuel, issue, partie.bonnes, partie.manche)
-    occupe.current = false
-    setPartie({ ...partie, phase: 'fin', recompense: { credits: gains?.credits ?? 0, xp: gains?.xp ?? 0, issue } })
+  function continuer() {
+    if (!partie?.resultat) return
+    const fin = partie.resultat.fin
+    if (fin) setPartie({ ...partie, phase: 'fin', recompense: { credits: fin.credits, xp: fin.xp, issue: fin.issue } })
+    else setPartie({ ...partie, manche: partie.manche + 1, phase: 'choix', carte: undefined, question: undefined, resultat: undefined })
   }
 
   if (!partie) {
@@ -173,7 +168,7 @@ export function Duel({ base, aller }: { base: Base; aller: (e: Ecran) => void })
           {ADVERSAIRES.map((a) => {
             const verrouille = a.accreditation > niveau
             return (
-              <button key={a.niveau} className={`adversaire ${verrouille ? 'verrouille' : ''}`} disabled={verrouille || equipe.length < TAILLE_DECK} onClick={() => commencer(a)}>
+              <button key={a.niveau} className={`adversaire ${verrouille ? 'verrouille' : ''}`} disabled={verrouille || equipe.length < TAILLE_DECK || attente} onClick={() => void commencer(a)}>
                 <span className="adversaire-niveau">Menace {'▮'.repeat(a.niveau)}{'▯'.repeat(5 - a.niveau)}</span>
                 <strong>{a.nom}</strong>
                 <span className="discret">{a.titre}</span>
@@ -189,8 +184,10 @@ export function Duel({ base, aller }: { base: Base; aller: (e: Ecran) => void })
 
   const p = partie
   const q = p.question
-  const restant = Math.max(0, DUREE_QUESTION - ecoule)
-  const iaARepondu = p.phase === 'question' && p.reponseIA && ecoule >= p.reponseIA.temps
+  const r = p.resultat
+  const carteIA = r ? base.parId.get(r.carteIA) : undefined
+  const restant = q ? Math.max(0, q.duree - ecoule) : 0
+  const iaARepondu = p.phase === 'question' && q && ecoule >= q.tempsIA
 
   return (
     <section className="duel">
@@ -208,78 +205,77 @@ export function Duel({ base, aller }: { base: Base; aller: (e: Ecran) => void })
           <p className="discret">Surnoms et classes sont caviardés : à vous de vous souvenir de vos dossiers.</p>
           <div className="rangee-cartes">
             {p.main.map((c) => (
-              <Carte key={c.id} carte={c} base={base} taille="p" variante={varianteAffichee(s, c.id)} caviardee onClick={() => jouer(c)} />
+              <Carte key={c.id} carte={c} base={base} taille="p" variante={varianteAffichee(s, c.id)} caviardee onClick={attente ? undefined : () => void jouer(c)} />
             ))}
           </div>
-          <p className="discret">L'adversaire a encore {p.mainIA.length} cartes cachées.</p>
+          <p className="discret">{attente ? 'Transmission au Site-19…' : `L'adversaire a encore ${p.cartesIA} cartes cachées.`}</p>
         </div>
       )}
 
-      {(p.phase === 'question' || p.phase === 'resultat') && q && p.carte && p.carteIA && (
+      {(p.phase === 'question' || p.phase === 'resultat') && q && p.carte && (
         <div className="duel-table">
-          <div className={`duel-camp ${p.phase === 'resultat' && p.degatsRecus ? 'touche' : ''}`}>
+          <div className={`duel-camp ${r?.degatsRecus ? 'touche' : ''}`}>
             <Carte carte={p.carte} base={base} taille="p" variante={varianteAffichee(s, p.carte.id)} inclinable={false} caviardee={p.phase === 'question'} />
-            {p.phase === 'resultat' && p.degatsRecus ? <span className="degats">−{p.degatsRecus}</span> : null}
+            {r?.degatsRecus ? <span className="degats">−{r.degatsRecus}</span> : null}
           </div>
 
           <div className="duel-question">
-            <p className="dossier-entete">
-              Question sur {q.sujet.id === p.carte.id ? 'votre carte' : 'la carte adverse'}
-            </p>
-            <h2>{q.intitule}</h2>
-            {q.document && (
+            <p className="dossier-entete">Question sur {q.surMaCarte ? 'votre carte' : 'la carte adverse'}</p>
+            <h2>{q.question.intitule}</h2>
+            {q.question.document && (
               <blockquote className="document" lang="en">
-                {q.document}
+                {q.question.document}
               </blockquote>
             )}
             <div className="options">
-              {q.options.map((o, i) => {
+              {q.question.options.map((o, i) => {
                 let classe = ''
-                if (p.phase === 'resultat') {
-                  if (i === q.bonne) classe = 'bonne'
-                  else if (i === p.reponse?.choix) classe = 'mauvaise'
+                if (r) {
+                  if (i === r.bonne) classe = 'bonne'
+                  else if (i === r.choix) classe = 'mauvaise'
                 }
                 return (
-                  <button key={i} className={`option ${classe}`} disabled={p.phase !== 'question'} onClick={() => repondre(i)}>
+                  <button key={i} className={`option ${classe}`} disabled={p.phase !== 'question' || attente} onClick={() => void repondre(i)}>
                     <span className="lettre">{LETTRES[i]}</span>
                     <span>{o}</span>
-                    {p.phase === 'resultat' && p.reponseIA?.choix === i && <span className="choix-ia">{p.adversaire.nom}</span>}
+                    {r && r.reponseIA.choix === i && <span className="choix-ia">{p.adversaire.nom}</span>}
                   </button>
                 )
               })}
             </div>
-            {p.phase === 'question' ? (
+            {!r ? (
               <div className="chrono">
                 <div className="jauge">
-                  <div style={{ width: `${(restant / DUREE_QUESTION) * 100}%` }} className={restant < 5 ? 'urgent' : ''} />
+                  <div style={{ width: `${(restant / q.duree) * 100}%` }} className={restant < 5 ? 'urgent' : ''} />
                 </div>
                 <span>
-                  {Math.ceil(restant)} s{iaARepondu && ` · ${p.adversaire.nom} a répondu`}
+                  {attente ? 'Vérification…' : `${Math.ceil(restant)} s`}
+                  {iaARepondu && ` · ${p.adversaire.nom} a répondu`}
                 </span>
               </div>
             ) : (
               <div className="bilan">
                 <p>
-                  {p.reponse?.choix === q.bonne ? `Bonne réponse en ${p.reponse.temps.toFixed(1)} s : ${p.degatsInfliges} dégâts.` : p.reponse?.choix === null ? 'Temps écoulé.' : 'Mauvaise réponse.'}{' '}
-                  {p.adversaire.nom} {p.reponseIA?.choix === q.bonne ? `a répondu juste en ${p.reponseIA.temps.toFixed(1)} s : ${p.degatsRecus} dégâts subis.` : 's\'est trompé.'}
+                  {r.choix === r.bonne ? `Bonne réponse en ${r.temps.toFixed(1)} s : ${r.degatsInfliges} dégâts.` : r.choix === null ? 'Temps écoulé.' : 'Mauvaise réponse.'}{' '}
+                  {p.adversaire.nom} {r.reponseIA.choix === r.bonne ? `a répondu juste en ${r.reponseIA.temps.toFixed(1)} s : ${r.degatsRecus} dégâts subis.` : "s'est trompé."}
                 </p>
                 <button className="btn btn-principal" onClick={continuer} autoFocus>
-                  {p.manche >= MANCHES || p.pv <= 0 || p.pvIA <= 0 ? 'Voir le rapport' : 'Manche suivante'}
+                  {r.fin ? 'Voir le rapport' : 'Manche suivante'}
                 </button>
               </div>
             )}
           </div>
 
-          <div className={`duel-camp ${p.phase === 'resultat' && p.degatsInfliges ? 'touche' : ''}`}>
-            {p.phase === 'question' ? (
+          <div className={`duel-camp ${r?.degatsInfliges ? 'touche' : ''}`}>
+            {!carteIA ? (
               <div className="carte-cachee">
                 <span>Carte adverse</span>
                 <strong>████</strong>
               </div>
             ) : (
-              <Carte carte={p.carteIA} base={base} taille="p" inclinable={false} />
+              <Carte carte={carteIA} base={base} taille="p" inclinable={false} />
             )}
-            {p.phase === 'resultat' && p.degatsInfliges ? <span className="degats">−{p.degatsInfliges}</span> : null}
+            {r?.degatsInfliges ? <span className="degats">−{r.degatsInfliges}</span> : null}
           </div>
         </div>
       )}
@@ -294,7 +290,7 @@ export function Duel({ base, aller }: { base: Base; aller: (e: Ecran) => void })
             +{p.recompense.credits} ₵ · +{p.recompense.xp} XP
           </p>
           <div className="actions centre">
-            <button className="btn btn-principal" onClick={() => commencer(p.adversaire)}>
+            <button className="btn btn-principal" disabled={attente} onClick={() => void commencer(p.adversaire)}>
               Revanche
             </button>
             <button className="btn" onClick={() => setPartie(null)}>

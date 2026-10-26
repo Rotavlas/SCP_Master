@@ -1061,6 +1061,11 @@ select:focus {
   z-index: 20;
   transform-style: preserve-3d;
   transition: transform 0.7s cubic-bezier(0.2, 0.9, 0.3, 1.15);
+}
+
+/* Arrivée depuis la pile, une seule fois : sans ce filtre, la fin du suspense relançait l'arrivée
+   pendant le retournement et la carte sautait avant de se retourner */
+.pile-carte:not(.retournee):not(.suspense):not(.sortie) {
   animation: arrivee-carte 0.35s ease-out;
 }
 
@@ -1263,7 +1268,7 @@ select:focus {
   border: 2px solid var(--fx);
   color: var(--fx);
   background: rgba(11, 13, 14, 0.9);
-  animation: banniere 0.5s cubic-bezier(0.2, 1.5, 0.4, 1) 0.4s both;
+  animation: banniere 0.5s cubic-bezier(0.2, 1.5, 0.4, 1) 0.4s backwards;
 }
 
 @keyframes banniere {
@@ -1288,7 +1293,7 @@ select:focus {
   transform-origin: 50% 100%;
   transform: translateX(calc(-50% + var(--i) * 150px)) rotate(calc(var(--i) * 6deg)) translateY(calc(var(--i) * var(--i) * 7px));
   transition: transform 0.25s, z-index 0s;
-  animation: deploiement 0.6s cubic-bezier(0.2, 1.2, 0.4, 1) both;
+  animation: deploiement 0.6s cubic-bezier(0.2, 1.2, 0.4, 1) backwards;
   animation-delay: calc((var(--i) + 2) * 0.06s);
   z-index: 1;
 }
@@ -2569,7 +2574,7 @@ select:focus {
 }
 
 .tuiles .tuile {
-  animation: entree-ecran 0.4s ease-out both;
+  animation: entree-ecran 0.4s ease-out backwards;
 }
 
 .tuiles .tuile:nth-child(2) {
@@ -2584,8 +2589,9 @@ select:focus {
   animation-delay: 0.15s;
 }
 
+/* backwards et non both : une fois entrée, la carte retrouve son inclinaison au survol */
 .grille .carte {
-  animation: entree-ecran 0.35s ease-out both;
+  animation: entree-ecran 0.35s ease-out backwards;
 }
 
 .modale-fond {

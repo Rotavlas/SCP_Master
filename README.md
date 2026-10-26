@@ -24,7 +24,7 @@ Jeu de cartes à collectionner inspiré de WikiMasters, construit sur le wiki SC
 Le jeu se joue sur **https://scp-masters.vercel.app**, avec un compte : connexion par lien e-mail (ou code), sans mot de passe. Il n'y a plus de partie hors ligne : la collection, les crédits et la progression vivent sur le serveur Supabase, qui tire lui-même les boosters et calcule les récompenses.
 
 - Chaque carte obtenue est un exemplaire unique avec son numéro de série.
-- Les duels contre l'IA se jouent dans le navigateur ; le serveur impose une durée minimale, un seul duel ouvert à la fois, 30 duels récompensés par jour et calcule la récompense.
+- Les duels contre l'IA sont arbitrés par le serveur (fonction Edge `supabase/functions/duel`) : il tire le deck de l'IA et les questions, ne révèle la bonne réponse qu'après la réponse du joueur, chronomètre, fait répondre l'IA et calcule dégâts, issue et récompense (30 duels récompensés par jour).
 - Aucune carte ne vient du navigateur : l'import de l'ancienne partie hors ligne a été retiré, car son contenu était modifiable à volonté.
 - Le navigateur n'écrit dans aucune table et n'appelle que les fonctions du jeu, qui ne construisent jamais de SQL à partir du texte reçu. Le site envoie des en-têtes de sécurité stricts (CSP, interdiction d'affichage dans un cadre).
 - Chaque joueur peut supprimer son compte depuis l'intendance.

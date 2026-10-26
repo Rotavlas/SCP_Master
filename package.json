@@ -10,7 +10,9 @@
     "cartes": "python -I outils/construire_cartes.py",
     "fr": "python -I outils/aspirer_fr.py",
     "catalogue-sql": "node outils/catalogue_sql.mjs",
-    "test-sql": "node outils/tester_sql.mjs"
+    "test-sql": "node outils/tester_sql.mjs",
+    "duel": "node outils/construire_duel.mjs",
+    "test-duel": "node outils/construire_duel.mjs && node outils/tester_duel.mjs"
   },
   "dependencies": {
     "@fontsource/ibm-plex-mono": "^5.3.0",

@@ -12,6 +12,7 @@ const db = new PGlite()
 await db.exec(`
   create role anon nologin;
   create role authenticated nologin;
+  create role service_role nologin bypassrls;
   create schema auth;
   create table auth.users (id uuid primary key, email text);
   create function auth.uid() returns uuid language sql stable as
@@ -209,51 +210,7 @@ await test('les fonctions ajoutées plus tard ne sont pas exposées par défaut'
   await admin('drop function public.fonction_oubliee()')
 })
 
-console.log('Duels contre l\'IA')
-await test("adversaire réservé à une accréditation plus haute refusé", async () => {
-  await echoue(en(B, 'select public.debuter_duel(5)'), /Accréditation insuffisante/)
-})
-await test('un duel terminé trop vite ne rapporte rien', async () => {
-  const id = await valeur(B, 'select public.debuter_duel(1)')
-  const r = await valeur(B, "select public.terminer_duel($1, 'victoire', 5, 5)", [id])
-  assert.equal(r.credits, 0)
-  assert.equal(r.profil.stats.duels, 1)
-})
-await test('une victoire normale rapporte le gain calculé par le serveur', async () => {
-  const id = await valeur(B, 'select public.debuter_duel(1)')
-  await admin(`update prive.duels_ia set debut = now() - interval '2 minutes' where id = $1`, [id])
-  const r = await valeur(B, "select public.terminer_duel($1, 'victoire', 3, 5)", [id])
-  assert.equal(r.credits, 40 + 3 * 5)
-  assert.equal(r.xp, 40)
-  assert.equal(r.profil.meilleur_adversaire, 1)
-})
-await test('un duel ne se termine qu\'une fois, et seulement par son joueur', async () => {
-  const id = await valeur(B, 'select public.debuter_duel(1)')
-  await echoue(en(A, "select public.terminer_duel($1, 'victoire', 5, 5)", [id]), /introuvable/)
-  await valeur(B, "select public.terminer_duel($1, 'defaite', 1, 5)", [id])
-  await echoue(en(B, "select public.terminer_duel($1, 'victoire', 5, 5)", [id]), /déjà terminé/)
-})
-await test('résultat incohérent refusé', async () => {
-  const id = await valeur(B, 'select public.debuter_duel(1)')
-  await echoue(en(B, "select public.terminer_duel($1, 'victoire', 6, 5)", [id]), /invalide/)
-})
-await test('un seul duel ouvert à la fois : le précédent est perdu sans gain', async () => {
-  const premier = await valeur(B, 'select public.debuter_duel(1)')
-  const second = await valeur(B, 'select public.debuter_duel(1)')
-  await admin(`update prive.duels_ia set debut = now() - interval '2 minutes' where id in ($1, $2)`, [premier, second])
-  await echoue(en(B, "select public.terminer_duel($1, 'victoire', 5, 5)", [premier]), /déjà terminé/)
-  assert.equal((await valeur(B, "select public.terminer_duel($1, 'victoire', 5, 5)", [second])).credits, 65)
-})
-await test('résultat vide refusé', async () => {
-  const id = await valeur(B, 'select public.debuter_duel(1)')
-  await echoue(en(B, 'select public.terminer_duel($1, null, null, null)', [id]), /invalide/)
-})
-await test('au-delà de 30 duels récompensés par jour, plus de gains', async () => {
-  await admin(`insert into prive.duels_ia (joueur, niveau, debut, fin, credits) select '${B}', 1, now() - interval '1 hour', now() - interval '1 hour', 40 from generate_series(1, 30)`)
-  const id = await valeur(B, 'select public.debuter_duel(1)')
-  await admin(`update prive.duels_ia set debut = now() - interval '2 minutes' where id = $1`, [id])
-  assert.equal((await valeur(B, "select public.terminer_duel($1, 'victoire', 5, 5)", [id])).credits, 0)
-})
+// Les duels, désormais arbitrés par la fonction Edge, sont testés par outils/tester_duel.mjs
 
 console.log('Préférences')
 await test("l'équipe ne peut contenir que des cartes possédées", async () => {

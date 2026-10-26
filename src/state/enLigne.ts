@@ -145,6 +145,20 @@ export async function appeler<T>(fonction: string, params?: Record<string, unkno
   return data as T
 }
 
+/** Appelle la fonction Edge « duel » (duels arbitrés par le serveur) ; en cas d'erreur, prévient le joueur et renvoie null. */
+export async function appelerDuel<T>(action: 'debuter' | 'jouer' | 'repondre', params: Record<string, unknown>): Promise<T | null> {
+  if (!supabase) return null
+  const { data, error } = await supabase.functions.invoke('duel', { body: { action, ...params } })
+  if (error) {
+    // Le message du serveur (accréditation, équipe…) est dans le corps de la réponse
+    const reponse = (error as { context?: Response }).context
+    const message = reponse ? ((await reponse.json().catch(() => null)) as { message?: string } | null)?.message : undefined
+    notifier(messageErreur(message ?? error.message))
+    return null
+  }
+  return data as T
+}
+
 export async function rechargerEtat(): Promise<boolean> {
   const etat = await appeler<EtatServeur>('mon_etat')
   if (!etat) return false
@@ -232,10 +246,16 @@ export async function connexionFournisseur(fournisseur: Fournisseur) {
   if (error) notifier(messageErreur(error.message))
 }
 
-export async function deconnexion() {
+/** Envoie tout de suite les préférences en attente (avant un duel, le serveur doit connaître l'équipe). */
+export async function envoyerPreferences() {
   clearTimeout(minuterie)
-  if (Object.keys(enAttente).length) await appeler('maj_preferences', { p: enAttente })
+  const envoi = enAttente
   enAttente = {}
+  if (Object.keys(envoi).length) await appeler('maj_preferences', { p: envoi })
+}
+
+export async function deconnexion() {
+  await envoyerPreferences()
   await supabase?.auth.signOut()
 }
 

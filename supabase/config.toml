@@ -389,6 +389,12 @@ authorization_url_path = "/oauth/consent"
 # Allow dynamic client registration
 allow_dynamic_registration = false
 
+# Duels contre l'IA arbitrés par le serveur. Le fichier est généré par `npm run duel`.
+# Le jeton du joueur est vérifié par la fonction elle-même (/auth/v1/user), d'où verify_jwt = false.
+[functions.duel]
+verify_jwt = false
+entrypoint = "./functions/duel/index.js"
+
 [edge_runtime]
 enabled = true
 # Supported request policies: `oneshot`, `per_worker`.
