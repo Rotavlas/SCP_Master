@@ -13,8 +13,9 @@ import {
 import { recycler } from '../state/actions'
 import type { Carte as TCarte } from '../types'
 import { Carte } from './Carte'
+import { MarcheCarte } from './MarcheCarte'
 
-export function CarteDetail({ carte, base, onFermer }: { carte: TCarte; base: Base; onFermer: () => void }) {
+export function CarteDetail({ carte, base, onFermer, voirMarche }: { carte: TCarte; base: Base; onFermer: () => void; voirMarche: (carte: TCarte) => void }) {
   const s = useSauvegarde()
   const quantite = s.collection[carte.id] ?? 0
   const favori = s.favoris.includes(carte.id)
@@ -51,7 +52,7 @@ export function CarteDetail({ carte, base, onFermer }: { carte: TCarte; base: Ba
       </>,
     ],
     ['Menace / Confinement', `${carte.atk} / ${carte.def}`],
-    ['Exemplaires', String(quantite)],
+    ['Exemplaires', s.reserves[carte.id] ? `${quantite} (dont ${s.reserves[carte.id]} en vente ou en échange)` : String(quantite)],
   ]
   if (carte.k === 's') fiche.push(['Série', `${carte.s ? `Série ${carte.s}` : 'SCP-001'} · ${carte.y}`])
   else if (carte.y) fiche.push(['Publication', String(carte.y)])
@@ -161,6 +162,7 @@ export function CarteDetail({ carte, base, onFermer }: { carte: TCarte; base: Ba
               </div>
             </>
           )}
+          <MarcheCarte key={carte.id} carte={carte} variante={variante} voirMarche={() => voirMarche(carte)} />
           <p className="attribution">
             <a href={lienWiki(carte)} target="_blank" rel="noreferrer">
               Lire sur le wiki SCP ↗

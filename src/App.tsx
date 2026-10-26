@@ -7,6 +7,7 @@ import { BoutonCompte, Portail } from './components/Compte'
 import { Collection } from './components/Collection'
 import { Duel } from './components/Duel'
 import { Logo } from './components/Logo'
+import { Marche } from './components/Marche'
 import { Repertoire } from './components/Repertoire'
 import { chargerBase, chargerTraductions, type Base } from './data/catalogue'
 import { useCompte } from './state/enLigne'
@@ -19,6 +20,7 @@ const ONGLETS: { id: Ecran; nom: string }[] = [
   { id: 'collection', nom: 'Archives' },
   { id: 'repertoire', nom: 'Répertoire' },
   { id: 'duel', nom: 'Confrontation' },
+  { id: 'marche', nom: 'Marché' },
   { id: 'boutique', nom: 'Intendance' },
 ]
 
@@ -29,6 +31,8 @@ export default function App() {
   const [ecran, setEcran] = useState<Ecran>('accueil')
   const [tirage, setTirage] = useState<Tirage | null>(null)
   const [carteOuverte, setCarteOuverte] = useState<string | null>(null)
+  // Carte à retrouver en ouvrant le marché depuis sa fiche
+  const [rechercheMarche, setRechercheMarche] = useState('')
   const s = useSauvegarde()
   const compte = useCompte()
 
@@ -101,9 +105,17 @@ export default function App() {
           </button>
           <nav className="onglets">
             {ONGLETS.map((o) => (
-              <button key={o.id} className={ecran === o.id ? 'actif' : ''} onClick={() => aller(o.id)}>
+              <button
+                key={o.id}
+                className={ecran === o.id ? 'actif' : ''}
+                onClick={() => {
+                  setRechercheMarche('')
+                  aller(o.id)
+                }}
+              >
                 {o.nom}
                 {o.id === 'booster' && s.boosters > 0 && <span className="compteur">{s.boosters}</span>}
+                {o.id === 'marche' && s.offresRecues > 0 && <span className="compteur compteur-alerte" title="Offres d'échange reçues">{s.offresRecues}</span>}
               </button>
             ))}
           </nav>
@@ -134,6 +146,7 @@ export default function App() {
         {ecran === 'collection' && <Collection base={base} ouvrirCarte={setCarteOuverte} />}
         {ecran === 'repertoire' && <Repertoire base={base} ouvrirCarte={setCarteOuverte} />}
         {ecran === 'duel' && <Duel base={base} aller={aller} />}
+        {ecran === 'marche' && <Marche key={rechercheMarche} base={base} ouvrirCarte={setCarteOuverte} recherche={rechercheMarche} />}
         {ecran === 'boutique' && (
           <Boutique
             base={base}
@@ -147,7 +160,18 @@ export default function App() {
 
       <Pied genere={base.genere} />
 
-      {carte && <CarteDetail carte={carte} base={base} onFermer={fermer} />}
+      {carte && (
+        <CarteDetail
+          carte={carte}
+          base={base}
+          onFermer={fermer}
+          voirMarche={(c) => {
+            setRechercheMarche(c.id)
+            setCarteOuverte(null)
+            aller('marche')
+          }}
+        />
+      )}
 
       <Notifications />
     </div>

@@ -89,7 +89,9 @@ export interface ProfilServeur {
 
 interface EtatServeur {
   profil: ProfilServeur
-  collection: { c: string; v: IdVariante; n: number; s: number }[]
+  offresRecues: number
+  /** n exemplaires, dont s souvenirs et b réservés (vente ou échange) */
+  collection: { c: string; v: IdVariante; n: number; s: number; b: number }[]
 }
 
 /** Champs de valeur : seul le serveur les modifie, le client recopie sa réponse. */
@@ -116,8 +118,10 @@ function depuisServeur(e: EtatServeur): Sauvegarde {
     affichage: e.profil.affichage,
     langue: e.profil.langue,
   }
-  for (const { c, v, n, s: souvenirs } of e.collection) {
+  s.offresRecues = e.offresRecues ?? 0
+  for (const { c, v, n, s: souvenirs, b } of e.collection) {
     s.collection[c] = (s.collection[c] ?? 0) + n
+    if (b) s.reserves[c] = (s.reserves[c] ?? 0) + b
     if (v === 'std') s.souvenirs[c] = (s.souvenirs[c] ?? 0) + souvenirs
     else s.variantes[c] = { ...s.variantes[c], [v]: n }
   }

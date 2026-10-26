@@ -2758,6 +2758,519 @@ select:focus {
   margin-top: 1.2rem;
 }
 
+/* ---------- Marché : enchères en direct, ventes, échanges ---------- */
+.marche h2 {
+  margin: 2rem 0 0.8rem;
+  font-size: 1.1rem;
+}
+
+.marche-entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.2rem;
+}
+
+.marche-entete h1 {
+  margin: 0.2rem 0 0;
+}
+
+.onglets-marche {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.onglets-marche button {
+  background: var(--panneau);
+  border: 1px solid var(--bord);
+  color: var(--discret);
+  border-radius: 8px;
+  padding: 0.5rem 0.9rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.onglets-marche button.actif {
+  color: var(--texte);
+  border-color: var(--ambre);
+}
+
+/* Le rouge des compteurs reste pour les alertes ; un nombre d'éléments est neutre */
+.onglets-marche .compteur {
+  background: var(--bord);
+}
+
+.onglets-marche .compteur.compteur-alerte,
+.compteur-alerte {
+  background: var(--rouge);
+}
+
+.case {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: var(--discret);
+  font-size: 0.9rem;
+}
+
+.case input {
+  width: auto;
+}
+
+.direct {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.point-direct {
+  width: 8px;
+  height: 8px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--vert);
+  animation: pulse-direct 2s ease-in-out infinite;
+}
+
+@keyframes pulse-direct {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.liste-encheres {
+  display: grid;
+  gap: 0.8rem;
+}
+
+.enchere {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.8rem;
+  background: var(--panneau);
+  border: 1px solid var(--bord);
+  border-radius: 10px;
+}
+
+.enchere.en-tete {
+  border-color: var(--vert);
+}
+
+.enchere.a-moi {
+  border-style: dashed;
+}
+
+.enchere .carte-p {
+  --w: 110px;
+}
+
+.enchere-infos h3 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.enchere-infos h3 span {
+  display: block;
+  font-weight: 400;
+  font-size: 0.9rem;
+  color: var(--discret);
+}
+
+.enchere-infos p {
+  margin: 0.3rem 0 0;
+}
+
+.enchere-prix strong {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 1.3rem;
+}
+
+/* Une nouvelle mise fait briller le prix un instant */
+.prix-maj {
+  animation: prix-maj 1.2s ease-out;
+}
+
+@keyframes prix-maj {
+  from {
+    color: var(--ambre);
+    transform: scale(1.15);
+  }
+}
+
+.badge-tete {
+  margin-left: 0.6rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--vert);
+  border-radius: 99px;
+  color: var(--vert);
+  font-size: 0.75rem;
+}
+
+.enchere-fin {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--discret);
+}
+
+.urgent {
+  color: var(--rouge);
+}
+
+.enchere-actions {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: end;
+  min-width: 210px;
+}
+
+.enchere-actions p {
+  margin: 0;
+  text-align: right;
+}
+
+.miser {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.miser input {
+  width: 7.5rem;
+}
+
+.historique {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.historique th,
+.historique td {
+  text-align: left;
+  padding: 0.45rem 0.5rem;
+  border-bottom: 1px solid var(--bord);
+}
+
+.historique th {
+  color: var(--discret);
+  font-weight: 600;
+}
+
+/* Échanges */
+.offre {
+  padding: 0.9rem 1rem;
+  margin-bottom: 0.8rem;
+  background: var(--panneau);
+  border: 1px solid var(--bord);
+  border-radius: 10px;
+}
+
+.offre:not(.ouverte) {
+  opacity: 0.75;
+}
+
+.offre header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.4rem 0.8rem;
+}
+
+.offre blockquote {
+  margin: 0.6rem 0 0;
+  padding-left: 0.8rem;
+  border-left: 3px solid var(--bord);
+  color: var(--discret);
+  font-style: italic;
+}
+
+.statut-offre {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--discret);
+}
+
+.statut-offre.ouverte {
+  color: var(--ambre);
+}
+
+.statut-offre.acceptee {
+  color: var(--vert);
+}
+
+.offre-cotes {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 1rem;
+  align-items: start;
+  margin-top: 0.6rem;
+}
+
+.offre-cotes h4 {
+  margin: 0 0 0.4rem;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--discret);
+}
+
+.offre-fleche {
+  align-self: center;
+  font-size: 1.4rem;
+  color: var(--discret);
+}
+
+.lignes-offre {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.lignes-offre .btn-lien {
+  margin: 0;
+  padding: 0;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.credits-offre {
+  font-family: var(--mono);
+  color: var(--ambre);
+}
+
+.nouvelle-offre {
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  background: var(--panneau);
+  border: 1px solid var(--ambre);
+  border-radius: 10px;
+}
+
+.nouvelle-offre h2 {
+  margin: 0;
+}
+
+.nouvelle-offre label,
+.formulaire-vente label,
+.selection label {
+  display: grid;
+  gap: 0.3rem;
+  font-size: 0.85rem;
+  color: var(--discret);
+}
+
+.suggestions {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.selection {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
+}
+
+.selection h4 {
+  margin: 0;
+}
+
+.disponibles {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: 260px;
+  overflow-y: auto;
+  border: 1px solid var(--bord);
+  border-radius: 8px;
+}
+
+.disponibles button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.4rem 0.6rem;
+  background: none;
+  border: 0;
+  border-bottom: 1px solid var(--bord);
+  color: var(--texte);
+  font: inherit;
+  font-size: 0.88rem;
+  cursor: pointer;
+}
+
+.disponibles button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.disponibles button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.choisies .btn-lien {
+  margin-left: 0.3rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* Fiche d'une carte : cours et vente */
+.marche-carte {
+  margin-top: 1.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--bord);
+}
+
+.marche-carte .btn-lien {
+  margin: 0;
+  padding: 0;
+  cursor: pointer;
+}
+
+.cours-chiffres dd {
+  font-family: var(--mono);
+}
+
+.cours-graphique {
+  margin: 0.8rem 0;
+}
+
+.cours-graphique figcaption {
+  margin-bottom: 0.3rem;
+}
+
+.cours-zone {
+  position: relative;
+}
+
+.cours-zone svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  touch-action: pan-y;
+}
+
+.cours-repere line {
+  stroke: var(--bord);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+
+.cours-repere text,
+.cours-axe {
+  fill: var(--discret);
+  font-family: var(--mono);
+  font-size: 9px;
+}
+
+.cours-reticule {
+  stroke: var(--discret);
+  stroke-width: 1;
+}
+
+.cours-bulle {
+  position: absolute;
+  transform: translate(-50%, calc(-100% - 10px));
+  display: grid;
+  padding: 0.3rem 0.5rem;
+  background: var(--fond);
+  border: 1px solid var(--bord);
+  border-radius: 6px;
+  font-size: 0.78rem;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.cours-bulle strong {
+  font-family: var(--mono);
+  color: var(--texte);
+}
+
+.cours-bulle span {
+  color: var(--discret);
+}
+
+.cours-table summary {
+  cursor: pointer;
+  color: var(--discret);
+  font-size: 0.85rem;
+}
+
+.cours-table table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.85rem;
+  margin-top: 0.4rem;
+}
+
+.cours-table td,
+.cours-table th {
+  text-align: left;
+  padding: 0.25rem 0.4rem;
+  border-bottom: 1px solid var(--bord);
+}
+
+.formulaire-vente {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 0.8rem;
+  margin-top: 0.8rem;
+}
+
+.formulaire-vente p,
+.formulaire-vente .actions {
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+@media (max-width: 760px) {
+  .enchere {
+    grid-template-columns: auto 1fr;
+  }
+
+  .enchere-actions {
+    grid-column: 1 / -1;
+    justify-items: stretch;
+    min-width: 0;
+  }
+
+  .enchere-actions p {
+    text-align: left;
+  }
+
+  .miser input {
+    flex: 1;
+  }
+
+  .offre-cotes {
+    grid-template-columns: 1fr;
+  }
+
+  .offre-fleche {
+    justify-self: center;
+    transform: rotate(90deg);
+  }
+
+  .historique {
+    display: block;
+    overflow-x: auto;
+  }
+}
+
 /* ---------- Petits écrans ---------- */
 @media (max-width: 760px) {
   .barre {

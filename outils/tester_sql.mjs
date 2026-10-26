@@ -247,6 +247,233 @@ await test('préférences trop volumineuses ou mal formées refusées', async ()
   await echoue(en(A, 'select public.maj_preferences($1)', [JSON.stringify({ equipe: 'scp-173' })]), /Équipe invalide/)
 })
 
+console.log('Hôtel des ventes')
+const C = '00000000-0000-0000-0000-00000000000c'
+const D = '00000000-0000-0000-0000-00000000000d'
+await db.exec(`insert into auth.users (id) values ('${C}'), ('${D}')`)
+await admin(`update public.profils set pseudo = 'Docteur Bravo', credits = 10000 where id = '${B}'`)
+await admin(`update public.profils set pseudo = 'Chercheur Charlie', credits = 10000 where id = '${C}'`)
+await admin(`update public.profils set credits = 10000 where id = '${A}'`)
+const credits = async (j) => Number((await admin('select credits from public.profils where id = $1', [j])).rows[0].credits)
+/** Donne n exemplaires d'une carte, avec des numéros de série uniques. */
+let serie = 5000
+async function donner(joueur, carte, n = 1, variante = 'std', origine = 'booster') {
+  for (let i = 0; i < n; i++) {
+    await admin(`insert into public.exemplaires (proprietaire, carte_id, variante, numero_serie, origine, echangeable) values ($1, $2, $3, $4, $5, $6)`, [
+      joueur, carte, variante, origine === 'souvenir' ? null : serie++, origine, origine !== 'souvenir',
+    ])
+  }
+}
+const possede = async (j, carte, variante = 'std') =>
+  (await admin('select count(*)::int as n from public.exemplaires where proprietaire = $1 and carte_id = $2 and variante = $3', [j, carte, variante])).rows[0].n
+const echoir = (id) => admin("update public.encheres set fin = now() - interval '1 second' where id = $1", [id])
+
+await test('le marché demande un pseudo', async () => {
+  await donner(D, 'scp-049')
+  await echoue(en(D, "select public.mettre_aux_encheres('scp-049', 'std', 100, 60, null)"), /pseudo/)
+})
+await test('mise en vente : durée, prix et possession vérifiés', async () => {
+  await donner(A, 'scp-173', 2)
+  await echoue(en(A, "select public.mettre_aux_encheres('scp-173', 'std', 100, 42, null)"), /Durée invalide/)
+  await echoue(en(A, "select public.mettre_aux_encheres('scp-173', 'std', 0, 60, null)"), /Prix de départ invalide/)
+  await echoue(en(A, "select public.mettre_aux_encheres('scp-173', 'std', 100, 60, 100)"), /achat immédiat/)
+  await echoue(en(A, "select public.mettre_aux_encheres('scp-173', 'o5', 100, 60, null)"), /Aucun exemplaire libre/)
+  await donner(A, 'scp-999', 1, 'std', 'souvenir')
+  await echoue(en(A, "select public.mettre_aux_encheres('scp-999', 'std', 100, 60, null)"), /Aucun exemplaire libre/)
+})
+let vente
+await test("l'exemplaire mis en vente est réservé, au plus grand numéro de série", async () => {
+  vente = (await valeur(A, "select public.mettre_aux_encheres('scp-173', 'std', 100, 60, null)")).id
+  const e = (await admin('select x.bloque_par, x.numero_serie, (select max(numero_serie) from public.exemplaires where proprietaire = $2 and carte_id = $3) as maxi from public.encheres e join public.exemplaires x on x.id = e.exemplaire where e.id = $1', [vente, A, 'scp-173'])).rows[0]
+  assert.equal(e.bloque_par, vente)
+  assert.equal(e.numero_serie, e.maxi)
+})
+await test("impossible d'écrire dans les tables du marché", async () => {
+  await echoue(en(A, `update public.encheres set mise = 1, encherisseur = '${A}'`), /permission denied/)
+  await echoue(en(A, `insert into public.ventes (carte_id, variante, prix) values ('scp-173', 'std', 999999)`), /permission denied/)
+  await echoue(en(null, 'select count(*) from public.encheres'), /permission denied/)
+})
+await test('mises : pas sur sa propre vente, pas sans crédits, pas sous le minimum', async () => {
+  await echoue(en(A, 'select public.encherir($1, 200)', [vente]), /propre vente/)
+  await echoue(en(B, 'select public.encherir($1, 99)', [vente]), /Mise minimale : 100/)
+  await admin(`update public.profils set credits = 50 where id = '${C}'`)
+  await echoue(en(C, 'select public.encherir($1, 100)', [vente]), /Crédits insuffisants/)
+  await admin(`update public.profils set credits = 10000 where id = '${C}'`)
+})
+await test('une mise est prélevée, et rendue quand on est surenchéri (+5 % minimum)', async () => {
+  await valeur(B, 'select public.encherir($1, 100)', [vente])
+  assert.equal(await credits(B), 9900)
+  await echoue(en(B, 'select public.encherir($1, 200)', [vente]), /déjà le meilleur/)
+  await echoue(en(C, 'select public.encherir($1, 104)', [vente]), /Mise minimale : 105/)
+  await valeur(C, 'select public.encherir($1, 105)', [vente])
+  assert.equal(await credits(B), 10000, 'B remboursé')
+  assert.equal(await credits(C), 9895)
+})
+await test('une mise de dernière seconde prolonge la vente de 2 minutes', async () => {
+  await admin("update public.encheres set fin = now() + interval '20 seconds' where id = $1", [vente])
+  await valeur(B, 'select public.encherir($1, 120)', [vente])
+  const reste = (await admin('select extract(epoch from fin - now())::int as s from public.encheres where id = $1', [vente])).rows[0].s
+  assert.ok(reste >= 110, `${reste} s restantes`)
+})
+await test("une vente qui a reçu une mise ne peut plus être retirée", async () => {
+  await echoue(en(A, 'select public.annuler_enchere($1)', [vente]), /déjà reçu une mise/)
+})
+await test('à échéance : la carte part au meilleur enchérisseur, le vendeur touche la mise moins 5 %', async () => {
+  const avant = await credits(A)
+  await echoir(vente)
+  const m = await valeur(A, 'select public.marche()')
+  assert.ok(!m.ouvertes.some((e) => e.id === vente))
+  assert.equal(await credits(A), avant + 120 - 6)
+  const ex = (await admin('select x.proprietaire, x.origine, x.bloque_par from public.encheres e join public.exemplaires x on x.id = e.exemplaire where e.id = $1', [vente])).rows[0]
+  assert.deepEqual(ex, { proprietaire: B, origine: 'enchere', bloque_par: null })
+  assert.equal(await credits(B), 10000 - 120)
+  assert.equal(m.historique[0].statut, 'vendue')
+})
+await test("le cours de la carte reflète la vente", async () => {
+  const c = await valeur(B, "select public.cours_carte('scp-173')")
+  assert.equal(c.variantes.std.dernier, 120)
+  assert.equal(c.variantes.std.volume30, 1)
+  assert.equal(c.variantes.std.points.length, 1)
+  assert.equal(c.variantes.std.libres, 1)
+})
+await test('achat immédiat : la vente se conclut au prix fixé, même si on mise plus', async () => {
+  const id = (await valeur(A, "select public.mettre_aux_encheres('scp-173', 'std', 100, 1440, 500)")).id
+  const avant = await credits(C)
+  const r = await valeur(C, 'select public.encherir($1, 900)', [id])
+  assert.equal(r.immediat, true)
+  assert.equal(await credits(C), avant - 500)
+  assert.equal((await admin('select statut from public.encheres where id = $1', [id])).rows[0].statut, 'vendue')
+  assert.equal(await possede(C, 'scp-173'), 1)
+})
+await test("sans mise, la carte revient à son vendeur ; on peut retirer une vente sans mise", async () => {
+  await donner(A, 'scp-096', 2)
+  const id = (await valeur(A, "select public.mettre_aux_encheres('scp-096', 'std', 100, 15, null)")).id
+  await echoir(id)
+  await valeur(A, 'select public.marche()')
+  assert.equal((await admin('select statut from public.encheres where id = $1', [id])).rows[0].statut, 'invendue')
+  const id2 = (await valeur(A, "select public.mettre_aux_encheres('scp-096', 'std', 100, 15, null)")).id
+  await valeur(A, 'select public.annuler_enchere($1)', [id2])
+  const bloques = (await admin(`select count(*)::int as n from public.exemplaires where proprietaire = '${A}' and bloque_par is not null`)).rows[0].n
+  assert.equal(bloques, 0)
+})
+await test('une carte en vente ne se recycle ni ne se brûle', async () => {
+  await admin(`delete from public.exemplaires where proprietaire = '${A}' and carte_id = 'scp-682'`)
+  await donner(A, 'scp-682', 1)
+  await valeur(A, "select public.mettre_aux_encheres('scp-682', 'std', 100, 60, null)")
+  assert.equal((await valeur(A, "select public.recycler_doublons('scp-682')")).gain, 0)
+  await echoue(en(A, "select public.bruler('scp-682', 'std')"), /Aucun exemplaire libre/)
+})
+
+console.log('Brûler')
+await test('brûler rend la valeur de la carte, multipliée par sa variante', async () => {
+  await donner(B, 'scp-055', 1, 'holo')
+  const ra = (await admin("select ra from public.cartes where id = 'scp-055'")).rows[0].ra
+  const avant = await credits(B)
+  const r = await valeur(B, "select public.bruler('scp-055', 'holo')")
+  assert.equal(r.gain, [5, 12, 35, 90, 300][ra] * 3)
+  assert.equal(await credits(B), avant + r.gain)
+  assert.equal(await possede(B, 'scp-055', 'holo'), 0)
+})
+await test("brûler son dernier exemplaire le retire de l'équipe ; les souvenirs ne se brûlent pas", async () => {
+  await donner(B, 'scp-106', 1)
+  await admin(`update public.profils set equipe = '{scp-106}' where id = '${B}'`)
+  await valeur(B, "select public.bruler('scp-106', 'std')")
+  assert.deepEqual((await admin(`select equipe from public.profils where id = '${B}'`)).rows[0].equipe, [])
+  await donner(B, 'scp-999', 1, 'std', 'souvenir')
+  await echoue(en(B, "select public.bruler('scp-999', 'std')"), /Aucun exemplaire libre/)
+})
+
+console.log('Échanges')
+await test('chercher un joueur par le début de son pseudo', async () => {
+  assert.deepEqual(await valeur(A, "select public.chercher_joueurs('doc')"), ['Docteur Bravo'])
+  assert.deepEqual(await valeur(A, "select public.chercher_joueurs('%')"), [], 'les jokers sont neutralisés')
+})
+await test("on ne voit que les cartes libres d'un autre joueur", async () => {
+  await donner(B, 'scp-3000', 1)
+  const c = await valeur(A, "select public.collection_echangeable('Docteur Bravo')")
+  assert.ok(c.some((x) => x.c === 'scp-3000'))
+  assert.ok(!c.some((x) => x.c === 'scp-999'), 'pas les souvenirs')
+})
+await test('offres invalides refusées', async () => {
+  await donner(A, 'scp-2000', 2)
+  await echoue(en(A, "select public.proposer_echange('Agent Lambert', '[{\"c\":\"scp-2000\"}]', '[]', 0, 10, null)"), /soi-même/)
+  await echoue(en(A, "select public.proposer_echange('Docteur Bravo', '[{\"c\":\"scp-2000\"}]', '[]', 0, 0, null)"), /contrepartie|au moins une carte/)
+  await echoue(en(A, "select public.proposer_echange('Docteur Bravo', '[{\"c\":\"scp-2000\",\"v\":\"o5\"}]', '[{\"c\":\"scp-3000\"}]', 0, 0, null)"), /pas d'exemplaire libre/)
+  await echoue(en(A, "select public.proposer_echange('Docteur Bravo', '[{\"c\":\"scp-2000\"}]', '[{\"c\":\"scp-002\"}]', 0, 0, null)"), /n'a pas ces cartes/)
+  await echoue(en(A, "select public.proposer_echange('Docteur Bravo', '[]', '[{\"c\":\"scp-3000\"}]', 99999999, 0, null)"), /Montant invalide/)
+})
+let offre
+await test("proposer réserve ses cartes et ses crédits", async () => {
+  const avant = await credits(A)
+  offre = (await valeur(A, "select public.proposer_echange('Docteur Bravo', '[{\"c\":\"scp-2000\"}]', '[{\"c\":\"scp-3000\"}]', 50, 0, 'Marché conclu ?')")).id
+  assert.equal(await credits(A), avant - 50)
+  const bloques = (await admin('select count(*)::int as n from public.exemplaires where bloque_par = $1', [offre])).rows[0].n
+  assert.equal(bloques, 1)
+  const recues = (await valeur(B, 'select public.mes_echanges()')).filter((o) => o.recue)
+  assert.equal(recues[0].avec, 'Agent Lambert')
+  assert.equal(recues[0].message, 'Marché conclu ?')
+})
+await test("un tiers ne peut ni voir ni accepter l'offre", async () => {
+  await echoue(en(C, 'select public.repondre_echange($1, true)', [offre]), /introuvable/)
+  assert.equal((await en(C, 'select count(*)::int as n from public.offres')).rows[0].n, 0)
+})
+await test("accepter échange tout d'un coup : cartes et crédits", async () => {
+  const [a0, b0] = [await credits(A), await credits(B)]
+  await valeur(B, 'select public.repondre_echange($1, true)', [offre])
+  assert.equal(await possede(B, 'scp-2000'), 1)
+  assert.equal(await possede(A, 'scp-3000'), 1)
+  assert.equal(await possede(B, 'scp-3000'), 0)
+  assert.equal(await credits(A), a0)
+  assert.equal(await credits(B), b0 + 50)
+  const o = (await valeur(A, 'select public.mes_echanges()')).find((x) => x.id === offre)
+  assert.equal(o.statut, 'acceptee')
+  assert.ok(o.demande[0].s, 'le numéro de série reçu est connu')
+})
+await test("accepter une offre qu'on ne peut plus honorer n'échange rien", async () => {
+  await donner(B, 'scp-5000', 1)
+  const id = (await valeur(A, "select public.proposer_echange('Docteur Bravo', '[{\"c\":\"scp-2000\"}]', '[{\"c\":\"scp-5000\"}]', 0, 0, null)")).id
+  // B met entre-temps sa carte en vente : elle n'est plus libre
+  await valeur(B, "select public.mettre_aux_encheres('scp-5000', 'std', 100, 60, null)")
+  await echoue(en(B, 'select public.repondre_echange($1, true)', [id]), /plus d'exemplaire libre/)
+  assert.equal(await possede(A, 'scp-2000'), 1, "A garde sa carte")
+  assert.equal((await admin('select statut from public.offres where id = $1', [id])).rows[0].statut, 'ouverte')
+  await valeur(A, 'select public.annuler_echange($1)', [id])
+  assert.equal((await admin(`select count(*)::int as n from public.exemplaires where proprietaire = '${A}' and bloque_par is not null`)).rows[0].n, 1, 'seule scp-682 reste en vente')
+})
+await test('refuser ou laisser expirer rend cartes et crédits', async () => {
+  await donner(B, 'scp-6000', 2)
+  const avant = await credits(A)
+  const r = (await valeur(A, "select public.proposer_echange('Docteur Bravo', '[]', '[{\"c\":\"scp-6000\"}]', 30, 0, null)")).id
+  await valeur(B, 'select public.repondre_echange($1, false)', [r])
+  assert.equal(await credits(A), avant)
+  const x = (await valeur(A, "select public.proposer_echange('Docteur Bravo', '[{\"c\":\"scp-2000\"}]', '[{\"c\":\"scp-6000\"}]', 30, 0, null)")).id
+  await admin("update public.offres set expire_le = now() - interval '1 second' where id = $1", [x])
+  await valeur(A, 'select public.mes_echanges()')
+  assert.equal((await admin('select statut from public.offres where id = $1', [x])).rows[0].statut, 'expiree')
+  assert.equal(await credits(A), avant)
+  assert.equal((await admin('select count(*)::int as n from public.exemplaires where bloque_par = $1', [x])).rows[0].n, 0)
+})
+await test("mon_etat signale les exemplaires réservés et les offres reçues", async () => {
+  const id = (await valeur(A, "select public.proposer_echange('Docteur Bravo', '[{\"c\":\"scp-2000\"}]', '[{\"c\":\"scp-6000\"}]', 0, 0, null)")).id
+  const e = await valeur(A, 'select public.mon_etat()')
+  assert.equal(e.collection.find((x) => x.c === 'scp-2000').b, 1)
+  assert.equal((await valeur(B, 'select public.mon_etat()')).offresRecues, 1)
+  await valeur(A, 'select public.annuler_echange($1)', [id])
+})
+await test('supprimer son compte rend les mises reçues et libère les offres faites par les autres', async () => {
+  await donner(C, 'scp-7000', 1)
+  const id = (await valeur(C, "select public.mettre_aux_encheres('scp-7000', 'std', 100, 60, null)")).id
+  const avant = await credits(A)
+  await valeur(A, 'select public.encherir($1, 300)', [id])
+  const o = (await valeur(A, "select public.proposer_echange('Chercheur Charlie', '[{\"c\":\"scp-2000\"}]', '[]', 0, 0, null)").catch(() => null))
+  assert.equal(o, null, 'offre sans contrepartie refusée')
+  await donner(C, 'scp-7001', 1)
+  const offreC = (await valeur(A, "select public.proposer_echange('Chercheur Charlie', '[{\"c\":\"scp-2000\"}]', '[{\"c\":\"scp-7001\"}]', 25, 0, null)")).id
+  await en(C, 'select public.supprimer_mon_compte()')
+  assert.equal(await credits(A), avant, 'mise et crédits de l\'offre rendus')
+  assert.equal((await admin('select count(*)::int as n from public.exemplaires where bloque_par = $1', [offreC])).rows[0].n, 0)
+})
+
 console.log('Effacement du compte')
 await test('supprimer son compte efface profil et cartes', async () => {
   await en(B, 'select public.supprimer_mon_compte()')

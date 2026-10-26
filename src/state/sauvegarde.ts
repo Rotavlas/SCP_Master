@@ -32,6 +32,10 @@ export interface Sauvegarde {
   stats: { duels: number; victoires: number; boostersOuverts: number; bonnesReponses: number; questions: number }
   /** niveau d'adversaire le plus haut battu */
   meilleurAdversaire: number
+  /** id de carte -> exemplaires réservés par une vente aux enchères ou une offre d'échange */
+  reserves: Record<string, number>
+  /** offres d'échange reçues en attente de réponse */
+  offresRecues: number
 }
 
 
@@ -54,6 +58,8 @@ function neuve(): Sauvegarde {
     dernierBooster: Date.now(),
     stats: { duels: 0, victoires: 0, boostersOuverts: 0, bonnesReponses: 0, questions: 0 },
     meilleurAdversaire: 0,
+    reserves: {},
+    offresRecues: 0,
   }
 }
 

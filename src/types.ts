@@ -69,6 +69,6 @@ export interface Catalogue {
 
 export type Traductions = Record<string, Partial<Pick<Carte, 'nm' | 'x' | 'q'>>>
 
-export type Ecran = 'accueil' | 'booster' | 'collection' | 'repertoire' | 'duel' | 'boutique'
+export type Ecran = 'accueil' | 'booster' | 'collection' | 'repertoire' | 'duel' | 'marche' | 'boutique'
 
 export type Langue = 'vo' | 'vf'
