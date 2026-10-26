@@ -13,6 +13,9 @@
     "test-sql": "node outils/tester_sql.mjs"
   },
   "dependencies": {
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/inter": "^5.3.0",
+    "@fontsource/special-elite": "^5.3.0",
     "@supabase/supabase-js": "^2.118.0",
     "react": "^19.2.6",
     "react-dom": "^19.2.6"

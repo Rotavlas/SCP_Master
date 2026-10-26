@@ -176,7 +176,7 @@ function Pied({ genere }: { genere: string }) {
       <a href="https://scp-data.tedivm.com" target="_blank" rel="noreferrer">
         scp-data
       </a>{' '}
-      (export du {genere}). Jeu de fan non officiel.
+      (export du {genere}), redistribué sous la même licence. Jeu de fan non officiel. <a href="/confidentialite.html">Données personnelles</a>
     </footer>
   )
 }

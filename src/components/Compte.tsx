@@ -49,6 +49,7 @@ export function Portail({ nombreCartes }: { nombreCartes: number }) {
   const [envoye, setEnvoye] = useState(false)
   const [code, setCode] = useState('')
   const [occupe, setOccupe] = useState(false)
+  const [parEmail, setParEmail] = useState(false)
   const fournisseurs = useFournisseurs()
 
   return (
@@ -64,7 +65,24 @@ export function Portail({ nombreCartes }: { nombreCartes: number }) {
 
       <div className="portail-connexion">
         <p className="dossier-entete">Identification requise</p>
-        {envoye ? (
+
+        {/* Discord en connexion principale : l'e-mail intégré de Supabase n'envoie que quelques messages par heure */}
+        {fournisseurs.length > 0 && (
+          <div className="fournisseurs">
+            {fournisseurs.map((f) => (
+              <button key={f} className={`btn btn-fournisseur fournisseur-${f}`} onClick={() => void connexionFournisseur(f)}>
+                {f === 'discord' && <LogoDiscord taille={22} />}
+                Continuer avec {NOMS_FOURNISSEURS[f]}
+              </button>
+            ))}
+          </div>
+        )}
+
+        {fournisseurs.length > 0 && !parEmail ? (
+          <button className="btn-lien" onClick={() => setParEmail(true)}>
+            Pas de compte Discord ? Recevoir un lien par e-mail
+          </button>
+        ) : envoye ? (
           <>
             <p className="alerte">
               Lien de connexion envoyé à <strong>{email}</strong>. Ouvrez-le depuis ce navigateur pour entrer.
@@ -100,7 +118,7 @@ export function Portail({ nombreCartes }: { nombreCartes: number }) {
               setOccupe(false)
             }}
           >
-            <label htmlFor="email">Adresse e-mail</label>
+            <label htmlFor="email">{fournisseurs.length > 0 ? 'Ou par e-mail' : 'Adresse e-mail'}</label>
             <div>
               <input id="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} placeholder="agent@fondation.scp" autoFocus />
               <button className="btn btn-principal" disabled={occupe || !email.includes('@')}>
@@ -110,21 +128,9 @@ export function Portail({ nombreCartes }: { nombreCartes: number }) {
           </form>
         )}
 
-        {fournisseurs.length > 0 && (
-          <div className="fournisseurs">
-            <span className="discret">ou</span>
-            {fournisseurs.map((f) => (
-              <button key={f} className={`btn btn-fournisseur fournisseur-${f}`} onClick={() => void connexionFournisseur(f)}>
-                {f === 'discord' && <LogoDiscord />}
-                Continuer avec {NOMS_FOURNISSEURS[f]}
-              </button>
-            ))}
-          </div>
-        )}
-
         <p className="discret petit">
-          Pas de mot de passe : un lien de connexion arrive par e-mail{fournisseurs.includes('discord') ? ', ou connectez-vous avec Discord' : ''}. Votre collection est enregistrée sur le serveur et vous
-          suit sur tous vos appareils.
+          Pas de mot de passe{fournisseurs.includes('discord') ? ' : connectez-vous avec Discord, ou recevez un lien par e-mail' : ' : un lien de connexion arrive par e-mail'}. Votre collection est
+          enregistrée sur le serveur et vous suit sur tous vos appareils. <a href="/confidentialite.html">Données personnelles</a>
         </p>
       </div>
     </section>

@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#0b0d0e" />
+    <title>Données personnelles · SCP Masters</title>
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <style>
+      :root {
+        --fond: #0b0d0e;
+        --panneau: #141819;
+        --bord: #2a3134;
+        --texte: #e4e2db;
+        --discret: #8c9692;
+        --ambre: #f0b43c;
+      }
+      body {
+        margin: 0;
+        background: var(--fond);
+        color: var(--texte);
+        font: 16px/1.6 Inter, system-ui, sans-serif;
+      }
+      main {
+        max-width: 760px;
+        margin: 0 auto;
+        padding: 2rem 16px 4rem;
+      }
+      .entete {
+        font-family: 'IBM Plex Mono', ui-monospace, Consolas, monospace;
+        color: var(--discret);
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        font-size: 0.8rem;
+      }
+      h1 {
+        margin: 0.3rem 0 1.5rem;
+        font-size: 1.8rem;
+      }
+      h2 {
+        margin-top: 2.2rem;
+        font-size: 1.15rem;
+        border-bottom: 1px solid var(--bord);
+        padding-bottom: 0.3rem;
+      }
+      a {
+        color: var(--ambre);
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 0.92rem;
+      }
+      th,
+      td {
+        text-align: left;
+        vertical-align: top;
+        padding: 0.5rem;
+        border-bottom: 1px solid var(--bord);
+      }
+      th {
+        color: var(--discret);
+        font-weight: 600;
+      }
+      .tableau {
+        overflow-x: auto;
+      }
+      .discret {
+        color: var(--discret);
+        font-size: 0.9rem;
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <p class="entete">SCP Masters · Fondation SCP</p>
+      <h1>Données personnelles</h1>
+      <p>
+        SCP Masters est un jeu de fan non commercial, créé par <strong>rotavlas</strong>. Il ne contient ni publicité ni outil de mesure d'audience, et ne revend aucune
+        donnée. Cette page explique ce qui est enregistré quand vous jouez, pourquoi, et comment le supprimer.
+      </p>
+
+      <h2>Ce qui est enregistré</h2>
+      <div class="tableau">
+        <table>
+          <tr>
+            <th>Donnée</th>
+            <th>Pourquoi</th>
+          </tr>
+          <tr>
+            <td>Connexion avec Discord : votre identifiant Discord, votre nom d'utilisateur, l'adresse de votre avatar et l'adresse e-mail de votre compte Discord</td>
+            <td>Vous reconnaître à chaque connexion. Le jeu ne lit ni vos serveurs, ni vos messages, ni vos amis.</td>
+          </tr>
+          <tr>
+            <td>Connexion par e-mail : votre adresse e-mail</td>
+            <td>Vous envoyer le lien et le code de connexion.</td>
+          </tr>
+          <tr>
+            <td>Votre pseudo d'agent</td>
+            <td>L'affichage dans le jeu.</td>
+          </tr>
+          <tr>
+            <td>Votre partie : collection, crédits, expérience, préférences, historique des boosters ouverts, des mouvements de crédits et des duels</td>
+            <td>Sauvegarder votre progression et empêcher la triche.</td>
+          </tr>
+          <tr>
+            <td>Journaux techniques de connexion (adresse IP, date, navigateur), tenus par l'hébergeur</td>
+            <td>La sécurité des comptes et la limitation des abus.</td>
+          </tr>
+        </table>
+      </div>
+      <p>
+        La base juridique est l'exécution du service que vous demandez en créant un compte (article 6.1.b du RGPD). Le jeu n'utilise aucun cookie publicitaire ni de suivi : le
+        navigateur garde seulement votre jeton de session, indispensable pour rester connecté.
+      </p>
+
+      <h2>Qui traite ces données</h2>
+      <ul>
+        <li><strong>Supabase</strong> : base de données et comptes, hébergés dans l'Union européenne (Irlande).</li>
+        <li><strong>Vercel</strong> : hébergement du site.</li>
+        <li><strong>Discord</strong>, si vous l'utilisez pour vous connecter, selon sa propre politique de confidentialité.</li>
+        <li>
+          <strong>wsrv.nl</strong> réduit les images des cartes, et <strong>le wiki SCP</strong> (wikidot.com) les fournit : votre navigateur les contacte pour afficher les images,
+          comme pour n'importe quelle image d'un site web.
+        </li>
+      </ul>
+
+      <h2>Combien de temps</h2>
+      <p>
+        Tant que votre compte existe. La suppression du compte efface aussitôt votre profil, votre collection et tout votre historique. Seuls les journaux techniques de l'hébergeur
+        sont conservés quelques jours avant d'être effacés automatiquement.
+      </p>
+
+      <h2>Vos droits</h2>
+      <p>
+        Vous pouvez supprimer vous-même votre compte à tout moment, dans le jeu : <strong>Intendance → Supprimer mon compte</strong>. Pour accéder à vos données, les corriger ou en
+        obtenir une copie, contactez <strong>rotavlas</strong>, le créateur du jeu. Si vous estimez que vos droits ne sont pas respectés, vous pouvez saisir la
+        <a href="https://www.cnil.fr/fr/plaintes" target="_blank" rel="noreferrer">CNIL</a>.
+      </p>
+
+      <h2>Contenu des cartes</h2>
+      <p>
+        Les textes et images des cartes proviennent du <a href="https://scp-wiki.wikidot.com" target="_blank" rel="noreferrer">wiki SCP</a> et de sa
+        <a href="https://fondationscp.wikidot.com" target="_blank" rel="noreferrer">branche française</a>, sous licence
+        <a href="https://creativecommons.org/licenses/by-sa/3.0/deed.fr" target="_blank" rel="noreferrer">CC BY-SA 3.0</a>. Chaque carte cite son auteur et renvoie vers sa page
+        d'origine. SCP Masters redistribue ce contenu sous la même licence.
+      </p>
+
+      <p class="discret">Dernière mise à jour : 26 octobre 2026. <a href="/">Retour au jeu</a></p>
+    </main>
+  </body>
+</html>
