@@ -1,0 +1,28 @@
+{
+  "name": "scp-masters",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "cartes": "python -I outils/construire_cartes.py",
+    "fr": "python -I outils/aspirer_fr.py",
+    "catalogue-sql": "node outils/catalogue_sql.mjs",
+    "test-sql": "node outils/tester_sql.mjs"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.118.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.12",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.1",
+    "typescript": "~5.9.3",
+    "vite": "^8.0.0"
+  }
+}

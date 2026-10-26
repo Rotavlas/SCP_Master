@@ -1,0 +1,9 @@
+node_modules
+dist
+supabase
+outils
+docs
+.env
+.env.*
+!.env.example
+*.tsbuildinfo
