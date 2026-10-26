@@ -85,6 +85,17 @@ export class Base {
     return carte.img.startsWith('http') ? carte.img : this.prefixeImage + carte.img
   }
 
+  /**
+   * L'image réduite à la taille d'une carte par wsrv.nl : environ dix fois plus légère que l'originale
+   * du wiki, et mise en cache pour tous les joueurs. Carte.tsx revient à l'originale si elle échoue.
+   */
+  vignette(carte: Carte): string | null {
+    const source = this.image(carte)
+    if (!source || /\.svg(\?|$)/i.test(source)) return source
+    // n=-1 garde toutes les images d'un GIF animé
+    return `https://wsrv.nl/?url=${encodeURIComponent(source)}&w=600&we&output=webp&q=78${/\.gif(\?|$)/i.test(source) ? '&n=-1' : ''}`
+  }
+
   /** Une carte au hasard d'une rareté donnée, parmi certains types. */
   auHasard(rarete: Rarete, types?: TypeFiche[]): Carte {
     if (!types) {

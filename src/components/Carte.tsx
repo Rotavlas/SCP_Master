@@ -64,10 +64,12 @@ function expurger(texte: string): string {
 
 export function Carte({ carte, base, taille = 'm', variante = 'std', quantite, nouvelle, favori, souhait, scellee, caviardee, inclinable = true, onClick }: Props) {
   const ref = useRef<HTMLDivElement>(null)
-  const [imageKo, setImageKo] = useState(false)
+  // Vignette réduite d'abord, puis l'image d'origine si elle échoue, puis l'emblème
+  const [echecs, setEchecs] = useState({ id: carte.id, n: 0 })
+  const secours = echecs.id === carte.id ? echecs.n : 0
   const rarete = RARETES[carte.ra]
   const etiquette = pastille(carte)
-  const image = base.image(carte)
+  const image = secours === 0 ? base.vignette(carte) : secours === 1 ? base.image(carte) : null
 
   function suivre(e: PointerEvent<HTMLDivElement>) {
     const el = ref.current
@@ -126,8 +128,8 @@ export function Carte({ carte, base, taille = 'm', variante = 'std', quantite, n
           <span className="carte-classe">{caviardee ? '█████' : etiquette.texte}</span>
         </header>
         <div className="carte-visuel">
-          {image && !imageKo ? (
-            <img src={image} alt="" loading="lazy" referrerPolicy="no-referrer" onError={() => setImageKo(true)} />
+          {image ? (
+            <img src={image} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setEchecs({ id: carte.id, n: secours + 1 })} />
           ) : (
             <div className="carte-visuel-vide">
               <Embleme carte={carte} taille={taille === 'p' ? 40 : 64} />

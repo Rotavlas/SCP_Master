@@ -98,6 +98,17 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
   const glisse = useRef<{ x: number; largeur: number } | null>(null)
   const courante = tirage.cartes[index]
 
+  // Les images se chargent pendant qu'on brise le scellé : elles sont prêtes au moment de retourner
+  useEffect(() => {
+    for (const { carte } of tirage.cartes) {
+      const url = base.vignette(carte)
+      if (!url) continue
+      const img = new Image()
+      img.referrerPolicy = 'no-referrer'
+      img.src = url
+    }
+  }, [base, tirage])
+
   const dechirer = useCallback(() => {
     setDechirure(1)
     setEtape('dechire')
@@ -211,7 +222,8 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
           {Array.from({ length: Math.min(restantes, 4) }, (_, i) => (
             <div key={i} className="pile-dos" style={{ ['--i' as string]: i + 1 }} aria-hidden="true" />
           ))}
-          <div className={`pile-carte ${revelee ? 'retournee' : ''} ${suspense ? 'suspense' : ''} ${sortie ? 'sortie' : ''} ${!revelee ? `lueur-${carte.ra}` : ''}`}>
+          {/* Une carte neuve à chaque fiche : sans clé, la précédente revenait de sa sortie en se retournant à l'envers */}
+          <div key={index} className={`pile-carte ${revelee ? 'retournee' : ''} ${suspense ? 'suspense' : ''} ${sortie ? 'sortie' : ''} ${!revelee ? `lueur-${carte.ra}` : ''}`}>
             <div className="pile-face pile-face-dos">
               <Logo taille={72} />
               <span>SCP-████</span>
