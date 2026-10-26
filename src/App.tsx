@@ -1,3 +1,4 @@
+import { Analytics } from '@vercel/analytics/react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Accueil } from './components/Accueil'
 import { Booster, type Tirage } from './components/Booster'
@@ -86,6 +87,7 @@ export default function App() {
           <Portail nombreCartes={base.cartes.length} />
         </main>
         <Pied genere={base.genere} />
+        <Analytics route="/connexion" path="/connexion" />
         <Notifications />
       </div>
     )
@@ -174,6 +176,8 @@ export default function App() {
       )}
 
       <Notifications />
+      {/* Statistiques de visite sans cookie : le jeu ne change pas d'adresse, chaque écran compte comme une page */}
+      <Analytics route={`/${ecran}`} path={`/${ecran}`} />
     </div>
   )
 }
