@@ -157,11 +157,11 @@ La sauvegarde locale ne peut pas être vérifiée : l'importer telle quelle, c'e
 1. **Pas d'import** : tout le monde repart de zéro en ligne. C'est simple et juste.
 2. **Import en « souvenir »** : la collection locale est copiée, marquée non échangeable et exclue des classements. Les joueurs gardent leurs cartes, mais elles n'ont pas de valeur sur le marché.
 
-Je recommande l'option 2, plus sympathique, sans risque pour l'économie.
+L'option 2 a d'abord été retenue, puis retirée le 26/10/2026 : même marquées « souvenir », les cartes importées venaient d'un fichier que n'importe qui pouvait modifier (50 légendaires O5 en deux lignes de console). Les souvenirs déjà importés restent sur les comptes concernés, non échangeables et non recyclables.
 
 ## 8. Ordre de réalisation proposé
 
-1. ✅ **Comptes et collection serveur** : connexion, profil, collection en exemplaires, boosters tirés par le serveur, import « souvenir ». Le jeu solo actuel continue de fonctionner, mais sauvegardé en ligne.
+1. ✅ **Comptes et collection serveur** : connexion, profil, collection en exemplaires, boosters tirés par le serveur (l'import « souvenir » a été retiré depuis). Le jeu solo actuel continue de fonctionner, mais sauvegardé en ligne.
 2. **Échanges directs et souhaits partagés** : offres entre joueurs, suggestions doublons ↔ souhaits, profils publics avec vitrine.
 3. **Hôtel des ventes** : enchères, achat immédiat, frais, historique des prix.
 4. **Clans** : création, coffre, objectifs, classement.

@@ -34,8 +34,6 @@ export interface Sauvegarde {
   meilleurAdversaire: number
 }
 
-/** Clé de l'ancienne version hors ligne : lue une seule fois, pour proposer l'import en souvenir. */
-const CLE_PARTIE_LOCALE = 'scp-masters-v1'
 
 function neuve(): Sauvegarde {
   return {
@@ -56,18 +54,6 @@ function neuve(): Sauvegarde {
     dernierBooster: Date.now(),
     stats: { duels: 0, victoires: 0, boostersOuverts: 0, bonnesReponses: 0, questions: 0 },
     meilleurAdversaire: 0,
-  }
-}
-
-/** Partie de l'ancienne version hors ligne restée dans ce navigateur, s'il y en a une. */
-export function lirePartieLocale(): Pick<Sauvegarde, 'collection' | 'variantes'> | null {
-  try {
-    const brut = localStorage.getItem(CLE_PARTIE_LOCALE)
-    if (!brut) return null
-    const partie = JSON.parse(brut) as Partial<Sauvegarde>
-    return { collection: partie.collection ?? {}, variantes: partie.variantes ?? {} }
-  } catch {
-    return null
   }
 }
 

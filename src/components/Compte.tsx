@@ -4,12 +4,9 @@ import {
   connexionEmail,
   connexionFournisseur,
   deconnexion,
-  importerSouvenir,
-  partieLocaleAImporter,
   useCompte,
   verifierCode,
 } from '../state/enLigne'
-import { notifier } from '../state/sauvegarde'
 import { Logo } from './Logo'
 
 const NOMS_FOURNISSEURS = { discord: 'Discord', google: 'Google', github: 'GitHub' } as const
@@ -126,42 +123,5 @@ export function Portail({ nombreCartes }: { nombreCartes: number }) {
         </p>
       </div>
     </section>
-  )
-}
-
-/** Propose une fois de copier la partie locale dans le compte, en souvenir. */
-export function BandeauImport() {
-  const compte = useCompte()
-  const [masque, setMasque] = useState(false)
-  const [occupe, setOccupe] = useState(false)
-  const locales = partieLocaleAImporter()
-  if (compte.statut !== 'connecte' || compte.souvenirImporte || !locales || masque) return null
-  return (
-    <div className="bandeau-import">
-      <div>
-        <strong>Importer votre ancienne partie ?</strong>
-        <p className="discret">
-          Les {locales.toLocaleString('fr-FR')} fiches de la version hors ligne, restées dans ce navigateur, rejoignent votre compte en « souvenir » : vous les gardez, mais elles ne pourront être
-          ni échangées ni recyclées, car le serveur ne peut pas vérifier comment elles ont été obtenues. Une seule fois par compte.
-        </p>
-      </div>
-      <div className="actions">
-        <button
-          className="btn btn-principal"
-          disabled={occupe}
-          onClick={async () => {
-            setOccupe(true)
-            const n = await importerSouvenir()
-            setOccupe(false)
-            if (n !== null) notifier(`${n.toLocaleString('fr-FR')} exemplaires importés en souvenir`, 'succes')
-          }}
-        >
-          Importer
-        </button>
-        <button className="btn btn-discret" onClick={() => setMasque(true)}>
-          Plus tard
-        </button>
-      </div>
-    </div>
   )
 }

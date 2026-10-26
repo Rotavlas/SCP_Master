@@ -4,7 +4,6 @@ import { definirAgent } from '../state/actions'
 import { ACCREDITATIONS, accreditation, useSauvegarde, varianteAffichee } from '../state/sauvegarde'
 import type { Ecran } from '../types'
 import { Carte } from './Carte'
-import { BandeauImport } from './Compte'
 import { CompteARebours } from './CompteARebours'
 import { Logo } from './Logo'
 
@@ -77,7 +76,6 @@ export function Accueil({ base, aller, ouvrirCarte }: Props) {
 
   return (
     <section className="accueil">
-      <BandeauImport />
       <div className="bienvenue">
         <p className="dossier-entete">Session ouverte · {new Date().toLocaleDateString('fr-FR')}</p>
         <h1>Bonjour, {s.agent}.</h1>

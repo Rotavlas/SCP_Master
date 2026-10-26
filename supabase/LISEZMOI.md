@@ -59,4 +59,4 @@ Sur Vercel, ajoutez les mêmes variables dans **Settings → Environment Variabl
 
 ## 5. Vérifier
 
-`npm run test-sql` rejoue les migrations dans un Postgres embarqué et vérifie les règles du serveur : tirages, crédits, droits d'accès, recyclage, import, duels. Aucun compte Supabase n'est nécessaire pour lancer ces tests.
+`npm run test-sql` rejoue les migrations dans un Postgres embarqué et vérifie les règles du serveur : tirages, crédits, droits d'accès, recyclage, absence de cartes offertes, duels, préférences. Aucun compte Supabase n'est nécessaire pour lancer ces tests.

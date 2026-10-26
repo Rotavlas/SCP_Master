@@ -2723,32 +2723,6 @@ select:focus {
   margin-top: 1.2rem;
 }
 
-.bandeau-import {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.8rem 1.5rem;
-  padding: 1rem 1.2rem;
-  margin-bottom: 1.5rem;
-  border: 1px solid var(--ambre);
-  border-radius: 10px;
-  background: rgba(240, 180, 60, 0.07);
-  animation: entree-ecran 0.4s ease-out;
-}
-
-.bandeau-import > div:first-child {
-  flex: 1 1 320px;
-}
-
-.bandeau-import p {
-  margin: 0.3rem 0 0;
-}
-
-.bandeau-import .actions {
-  margin: 0;
-}
-
 /* ---------- Petits écrans ---------- */
 @media (max-width: 760px) {
   .barre {

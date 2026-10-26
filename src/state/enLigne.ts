@@ -2,7 +2,7 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { useSyncExternalStore } from 'react'
 import type { IdVariante } from '../engine/variantes'
 import type { Langue } from '../types'
-import { lirePartieLocale, notifier, remplacer, sauvegardeVide, surModification, vider, type Sauvegarde } from './sauvegarde'
+import { notifier, remplacer, sauvegardeVide, surModification, vider, type Sauvegarde } from './sauvegarde'
 
 /**
  * Connexion à Supabase : le jeu se joue uniquement en ligne. Sans VITE_SUPABASE_URL
@@ -24,7 +24,6 @@ export type StatutCompte = 'indisponible' | 'deconnecte' | 'chargement' | 'conne
 export interface Compte {
   statut: StatutCompte
   email?: string
-  souvenirImporte?: boolean
 }
 
 let compte: Compte = { statut: supabase ? 'chargement' : 'indisponible' }
@@ -127,7 +126,7 @@ export async function rechargerEtat(): Promise<boolean> {
   const etat = await appeler<EtatServeur>('mon_etat')
   if (!etat) return false
   remplacer(depuisServeur(etat))
-  majCompte({ ...compte, statut: 'connecte', souvenirImporte: etat.profil.souvenir_importe })
+  majCompte({ ...compte, statut: 'connecte' })
   return true
 }
 
@@ -217,23 +216,6 @@ export async function deconnexion() {
   await supabase?.auth.signOut()
 }
 
-/** Copie l'ancienne partie hors ligne du navigateur dans le compte, en « souvenir » (une seule fois). */
-export async function importerSouvenir(): Promise<number | null> {
-  const locale = lirePartieLocale()
-  if (!locale) return null
-  const r = await appeler<{ importees: number }>('importer_souvenir', {
-    p: { collection: locale.collection, variantes: locale.variantes },
-  })
-  if (!r) return null
-  await rechargerEtat()
-  return r.importees
-}
-
 export async function supprimerCompte() {
   if (await appeler<boolean>('supprimer_mon_compte')) await supabase?.auth.signOut()
-}
-
-/** Nombre de fiches de l'ancienne partie hors ligne à importer. */
-export function partieLocaleAImporter(): number {
-  return Object.keys(lirePartieLocale()?.collection ?? {}).length
 }

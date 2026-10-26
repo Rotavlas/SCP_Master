@@ -186,22 +186,27 @@ await test('avec une variante rare, tous les standard sont recyclables', async (
   assert.deepEqual(restants.map((x) => x.variante), ['holo'])
 })
 
-console.log('Import de la partie locale')
-await test('import en souvenir : non échangeable, sans numéro de série', async () => {
-  await admin(`delete from public.exemplaires where proprietaire = '${B}' and carte_id = 'scp-682'`)
-  const r = await valeur(B, 'select public.importer_souvenir($1)', [JSON.stringify({ collection: { 'scp-682': 4, inexistante: 3 }, variantes: { 'scp-682': { o5: 1, faux: 2 } } })])
-  assert.equal(r.importees, 4)
-  const lignes = (await en(B, "select variante, echangeable, numero_serie from public.exemplaires where carte_id = 'scp-682' order by variante")).rows
-  assert.equal(lignes.length, 4)
-  assert.ok(lignes.every((l) => l.echangeable === false && l.numero_serie === null))
-  assert.equal(lignes.filter((l) => l.variante === 'o5').length, 1)
+console.log('Cartes offertes')
+await test("l'import de partie locale n'existe plus", async () => {
+  await echoue(en(B, 'select public.importer_souvenir($1)', ['{"collection": {"scp-173": 50}}']), /does not exist/)
 })
-await test('les souvenirs ne rapportent rien au recyclage', async () => {
+await test('les souvenirs déjà importés ne rapportent rien au recyclage', async () => {
+  await admin(`insert into public.exemplaires (proprietaire, carte_id, origine, echangeable) select '${B}', 'scp-682', 'souvenir', false from generate_series(1, 4)`)
   const r = await valeur(B, "select public.recycler_doublons('scp-682')")
   assert.equal(r.gain, 0)
 })
-await test('import possible une seule fois', async () => {
-  await echoue(en(B, 'select public.importer_souvenir($1)', ['{"collection": {"scp-173": 1}}']), /déjà importée/)
+await test('un visiteur ne peut appeler aucune fonction, même interne', async () => {
+  for (const f of ['public.ouvrir_booster($1, true)', 'public.maj_preferences($1)']) {
+    await echoue(en(null, `select ${f}`, [f.includes('booster') ? 'standard' : '{}']), /permission denied/)
+  }
+  await echoue(en(A, "select prive.recycler($1, 'scp-173')", [A]), /permission denied/)
+  await echoue(en(A, 'select prive.prochain_numero($1, $2)', ['scp-173', 'std']), /permission denied/)
+})
+await test('les fonctions ajoutées plus tard ne sont pas exposées par défaut', async () => {
+  await admin('create function public.fonction_oubliee() returns int language sql as $$ select 1 $$')
+  await echoue(en(A, 'select public.fonction_oubliee()'), /permission denied/)
+  await echoue(en(null, 'select public.fonction_oubliee()'), /permission denied/)
+  await admin('drop function public.fonction_oubliee()')
 })
 
 console.log('Duels contre l\'IA')
@@ -232,6 +237,17 @@ await test('résultat incohérent refusé', async () => {
   const id = await valeur(B, 'select public.debuter_duel(1)')
   await echoue(en(B, "select public.terminer_duel($1, 'victoire', 6, 5)", [id]), /invalide/)
 })
+await test('un seul duel ouvert à la fois : le précédent est perdu sans gain', async () => {
+  const premier = await valeur(B, 'select public.debuter_duel(1)')
+  const second = await valeur(B, 'select public.debuter_duel(1)')
+  await admin(`update prive.duels_ia set debut = now() - interval '2 minutes' where id in ($1, $2)`, [premier, second])
+  await echoue(en(B, "select public.terminer_duel($1, 'victoire', 5, 5)", [premier]), /déjà terminé/)
+  assert.equal((await valeur(B, "select public.terminer_duel($1, 'victoire', 5, 5)", [second])).credits, 65)
+})
+await test('résultat vide refusé', async () => {
+  const id = await valeur(B, 'select public.debuter_duel(1)')
+  await echoue(en(B, 'select public.terminer_duel($1, null, null, null)', [id]), /invalide/)
+})
 await test('au-delà de 30 duels récompensés par jour, plus de gains', async () => {
   await admin(`insert into prive.duels_ia (joueur, niveau, debut, fin, credits) select '${B}', 1, now() - interval '1 hour', now() - interval '1 hour', 40 from generate_series(1, 30)`)
   const id = await valeur(B, 'select public.debuter_duel(1)')
@@ -253,6 +269,25 @@ await test('les préférences ne touchent pas aux crédits', async () => {
   const avant = (await valeur(A, 'select public.mon_etat()')).profil.credits
   await en(A, `select public.maj_preferences('{"credits": 999999, "boosters": 10}')`)
   assert.equal((await valeur(A, 'select public.mon_etat()')).profil.credits, avant)
+})
+await test('favoris, souhaits et affichage ne gardent que des cartes du catalogue', async () => {
+  await en(A, 'select public.maj_preferences($1)', [
+    JSON.stringify({
+      favoris: ['scp-173', 'scp-173', "x'); drop table public.profils; --", 'scp-096'],
+      souhaits: { pas: 'une liste' },
+      affichage: { 'scp-173': 'holo', 'scp-096': 'dorée', inexistante: 'o5' },
+    }),
+  ])
+  const p = (await valeur(A, 'select public.mon_etat()')).profil
+  assert.deepEqual(p.favoris, ['scp-173', 'scp-096'])
+  assert.deepEqual(p.souhaits, [])
+  assert.deepEqual(p.affichage, { 'scp-173': 'holo' })
+  assert.equal((await admin('select count(*)::int as n from public.profils')).rows[0].n, 2, 'la table profils existe toujours')
+})
+await test('préférences trop volumineuses ou mal formées refusées', async () => {
+  await echoue(en(A, 'select public.maj_preferences($1)', [JSON.stringify({ affichage: { x: 'a'.repeat(300000) } })]), /trop volumineuses/)
+  await echoue(en(A, 'select public.maj_preferences($1)', ['[1, 2]']), /invalides/)
+  await echoue(en(A, 'select public.maj_preferences($1)', [JSON.stringify({ equipe: 'scp-173' })]), /Équipe invalide/)
 })
 
 console.log('Effacement du compte')
