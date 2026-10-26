@@ -234,6 +234,17 @@ h2 {
   font-size: 0.78rem;
 }
 
+.pied .credits {
+  margin: 0 0 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  letter-spacing: 0.04em;
+}
+
+.pied .credits strong {
+  color: var(--texte);
+}
+
 .chargement {
   min-height: 100vh;
   display: grid;
@@ -2707,11 +2718,21 @@ select:focus {
 }
 
 .btn-fournisseur {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   padding: 0.65rem;
 }
 
 .fournisseur-discord {
   border-color: #5865f2;
+  background: #5865f2;
+  color: #fff;
+}
+
+.fournisseur-discord:hover {
+  background: #4752c4;
 }
 
 .fournisseur-google {

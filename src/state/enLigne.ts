@@ -13,11 +13,34 @@ const cle = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string | undefined
 
 export const supabase: SupabaseClient | null = url && cle ? createClient(url, cle) : null
 
-/** Fournisseurs OAuth activés dans le tableau de bord Supabase, ex. « discord,google ». */
-export const FOURNISSEURS = ((import.meta.env.VITE_SUPABASE_FOURNISSEURS as string | undefined) ?? '')
-  .split(',')
-  .map((f) => f.trim())
-  .filter((f): f is 'discord' | 'google' | 'github' => ['discord', 'google', 'github'].includes(f))
+const PRIS_EN_CHARGE = ['discord', 'google', 'github'] as const
+export type Fournisseur = (typeof PRIS_EN_CHARGE)[number]
+
+/**
+ * Fournisseurs de connexion (Discord…) activés dans le tableau de bord Supabase, lus auprès du
+ * serveur : un fournisseur activé apparaît sur la page de connexion sans redéployer le site.
+ */
+let fournisseurs: Fournisseur[] = []
+const abonnesFournisseurs = new Set<() => void>()
+if (url && cle) {
+  fetch(`${url}/auth/v1/settings`, { headers: { apikey: cle } })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((reglages: { external?: Record<string, boolean> } | null) => {
+      fournisseurs = PRIS_EN_CHARGE.filter((f) => reglages?.external?.[f] === true)
+      abonnesFournisseurs.forEach((a) => a())
+    })
+    .catch(() => {})
+}
+
+export function useFournisseurs(): Fournisseur[] {
+  return useSyncExternalStore(
+    (a) => {
+      abonnesFournisseurs.add(a)
+      return () => abonnesFournisseurs.delete(a)
+    },
+    () => fournisseurs,
+  )
+}
 
 export type StatutCompte = 'indisponible' | 'deconnecte' | 'chargement' | 'connecte'
 
@@ -203,7 +226,7 @@ export async function verifierCode(email: string, code: string): Promise<boolean
   return true
 }
 
-export async function connexionFournisseur(fournisseur: (typeof FOURNISSEURS)[number]) {
+export async function connexionFournisseur(fournisseur: Fournisseur) {
   if (!supabase) return
   const { error } = await supabase.auth.signInWithOAuth({ provider: fournisseur, options: { redirectTo: window.location.origin } })
   if (error) notifier(messageErreur(error.message))

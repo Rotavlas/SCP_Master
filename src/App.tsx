@@ -81,6 +81,7 @@ export default function App() {
         <main className="contenu">
           <Portail nombreCartes={base.cartes.length} />
         </main>
+        <Pied genere={base.genere} />
         <Notifications />
       </div>
     )
@@ -144,30 +145,39 @@ export default function App() {
         )}
       </main>
 
-      <footer className="pied">
-        Contenu issu du{' '}
-        <a href="https://scp-wiki.wikidot.com" target="_blank" rel="noreferrer">
-          wiki SCP
-        </a>{' '}
-        et de la{' '}
-        <a href="https://fondationscp.wikidot.com" target="_blank" rel="noreferrer">
-          branche française
-        </a>{' '}
-        sous licence{' '}
-        <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank" rel="noreferrer">
-          CC BY-SA 3.0
-        </a>
-        , via{' '}
-        <a href="https://scp-data.tedivm.com" target="_blank" rel="noreferrer">
-          scp-data
-        </a>{' '}
-        (export du {base.genere}). Jeu de fan non officiel.
-      </footer>
+      <Pied genere={base.genere} />
 
       {carte && <CarteDetail carte={carte} base={base} onFermer={fermer} />}
 
       <Notifications />
     </div>
+  )
+}
+
+function Pied({ genere }: { genere: string }) {
+  return (
+    <footer className="pied">
+      <p className="credits">
+        Jeu créé par <strong>rotavlas</strong>
+      </p>
+      Contenu issu du{' '}
+      <a href="https://scp-wiki.wikidot.com" target="_blank" rel="noreferrer">
+        wiki SCP
+      </a>{' '}
+      et de la{' '}
+      <a href="https://fondationscp.wikidot.com" target="_blank" rel="noreferrer">
+        branche française
+      </a>{' '}
+      sous licence{' '}
+      <a href="https://creativecommons.org/licenses/by-sa/3.0/" target="_blank" rel="noreferrer">
+        CC BY-SA 3.0
+      </a>
+      , via{' '}
+      <a href="https://scp-data.tedivm.com" target="_blank" rel="noreferrer">
+        scp-data
+      </a>{' '}
+      (export du {genere}). Jeu de fan non officiel.
+    </footer>
   )
 }
 

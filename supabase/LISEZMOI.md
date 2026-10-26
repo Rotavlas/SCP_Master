@@ -45,7 +45,16 @@ Les adresses autorisées sont dans `config.toml` (`site_url`, `additional_redire
 
 La connexion par lien e-mail fonctionne tout de suite. Le service d'e-mail intégré de Supabase est limité à quelques envois par heure : pour un vrai lancement, branchez un SMTP (**Authentication → SMTP Settings**).
 
-Pour Discord ou Google, activez le fournisseur dans **Authentication → Providers**, puis ajoutez-le dans `VITE_SUPABASE_FOURNISSEURS`.
+### Connexion avec Discord
+
+1. Sur https://discord.com/developers/applications, créez une application (**New Application**, nom : SCP Masters).
+2. Dans **OAuth2 → Redirects**, ajoutez `https://mwsoqzrpgghwtiazuios.supabase.co/auth/v1/callback`, puis enregistrez.
+3. Toujours dans **OAuth2**, copiez le **Client ID** et générez le **Client Secret** (**Reset Secret**).
+4. Dans Supabase, **Authentication → Sign In / Providers → Discord** : activez, collez l'identifiant et le secret, enregistrez.
+
+Le bouton « Continuer avec Discord » apparaît alors tout seul sur la page de connexion : le site lit les fournisseurs actifs auprès de Supabase, sans redéploiement. Même chose pour Google ou GitHub.
+
+Attention : `supabase config push` envoie tout `config.toml`. Avant de l'utiliser, décommentez la section `[auth.external.discord]` et renseignez-la, sinon Discord serait désactivé.
 
 ## 4. Brancher le jeu
 
