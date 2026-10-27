@@ -50,6 +50,8 @@ export interface EtatSecret {
   langue: Langue
   /** Équipes au début du duel, dans l'ordre */
   mains: ParCote<string[]>
+  /** Côté dont la carte fait l'objet de la question de la 1re manche ; ensuite, chacun son tour */
+  premier?: Cote
   carte: Partial<ParCote<string>>
   question?: { bonne: number }
   debut?: number
@@ -98,16 +100,29 @@ export function etatInitial(prep: Preparation, maintenant: number): { etat: Etat
       choisi: { a: false, b: false },
       repondu: { a: false, b: false },
     },
-    secret: { langue: prep.langue, mains: { a: prep.equipeA, b: prep.equipeB }, carte: {}, reponses: {} },
+    secret: {
+      langue: prep.langue,
+      mains: { a: prep.equipeA, b: prep.equipeB },
+      premier: Math.random() < 0.5 ? 'a' : 'b',
+      carte: {},
+      reponses: {},
+    },
   }
 }
 
 const restantes = (etat: EtatPublic, secret: EtatSecret, cote: Cote) => secret.mains[cote].filter((id) => !etat.jouees[cote].includes(id))
 
+/** Côté dont la carte fait l'objet de la question : chacun son tour (3 manches contre 2 sur un duel complet). */
+export function sujetDeLaManche(secret: EtatSecret, manche: number): Cote {
+  // Duels commencés avant l'alternance : pas de premier enregistré
+  const premier = secret.premier ?? 'a'
+  return manche % 2 === 1 ? premier : autre(premier)
+}
+
 /** Les deux cartes sont choisies : même question pour les deux joueurs, sur l'une des deux cartes. */
 function lancerQuestion(etat: EtatPublic, secret: EtatSecret, b: Base, maintenant: number) {
   const carte = { a: b.parId.get(secret.carte.a!)!, b: b.parId.get(secret.carte.b!)! }
-  const surCarteDe: Cote = Math.random() < 0.5 ? 'a' : 'b'
+  const surCarteDe = sujetDeLaManche(secret, etat.manche)
   // Les deux cartes restent cachées pendant la question : pas de question d'identification, sauf sur
   // une fiche sans désignation (son nom est caviardé)
   const q = genererQuestion(b, carte[surCarteDe], carte[autre(surCarteDe)], false)

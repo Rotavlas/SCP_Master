@@ -415,6 +415,22 @@ await test('défi refusé : annulé', async () => {
   assert.equal((await appel('jeton-B', { action: 'jcj_repondre_defi', id, accepter: false })).corps.refuse, true)
   assert.equal((await ligneJcj(id)).statut, 'annule')
 })
+await test('les questions portent tour à tour sur la carte de chaque joueur', async () => {
+  await appel('jeton-A', { action: 'jcj_file' })
+  const id = (await appel('jeton-B', { action: 'jcj_file' })).corps.duel.id
+  const sujets = []
+  for (let m = 0; m < 5; m++) {
+    const a = (await appel('jeton-A', { action: 'jcj_etat', id })).corps
+    const b = (await appel('jeton-B', { action: 'jcj_etat', id })).corps
+    await appel('jeton-A', { action: 'jcj_jouer', id, carte: a.main[0] })
+    const q = (await appel('jeton-B', { action: 'jcj_jouer', id, carte: b.main[0] })).corps
+    sujets.push(q.etat.question.surCarteDe)
+    // Personne ne répond : pas de dégâts, le duel va jusqu'à la 5e manche
+    horloge += 30_000
+  }
+  assert.deepEqual(sujets, sujets[0] === 'a' ? ['a', 'b', 'a', 'b', 'a'] : ['b', 'a', 'b', 'a', 'b'])
+  await appel('jeton-A', { action: 'jcj_etat', id })
+})
 await test('quitter la file', async () => {
   await appel('jeton-A', { action: 'jcj_file' })
   assert.equal((await appel('jeton-A', { action: 'jcj_quitter' })).corps.ok, true)

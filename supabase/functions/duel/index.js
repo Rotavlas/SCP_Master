@@ -618,19 +618,25 @@ function etatInitial(prep, maintenant) {
 				a: prep.equipeA,
 				b: prep.equipeB
 			},
+			premier: Math.random() < .5 ? "a" : "b",
 			carte: {},
 			reponses: {}
 		}
 	};
 }
 const restantes = (etat, secret, cote) => secret.mains[cote].filter((id) => !etat.jouees[cote].includes(id));
+/** Côté dont la carte fait l'objet de la question : chacun son tour (3 manches contre 2 sur un duel complet). */
+function sujetDeLaManche(secret, manche) {
+	const premier = secret.premier ?? "a";
+	return manche % 2 === 1 ? premier : autre(premier);
+}
 /** Les deux cartes sont choisies : même question pour les deux joueurs, sur l'une des deux cartes. */
 function lancerQuestion(etat, secret, b, maintenant) {
 	const carte = {
 		a: b.parId.get(secret.carte.a),
 		b: b.parId.get(secret.carte.b)
 	};
-	const surCarteDe = Math.random() < .5 ? "a" : "b";
+	const surCarteDe = sujetDeLaManche(secret, etat.manche);
 	const q = genererQuestion(b, carte[surCarteDe], carte[autre(surCarteDe)], false);
 	etat.phase = "question";
 	etat.question = {
