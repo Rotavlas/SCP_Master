@@ -26,12 +26,12 @@ export function Boutique({ base, ouvrir }: { base: Base; ouvrir: (t: Tirage) => 
             <ul className="probas">
               {RARETES.map((r, i) => {
                 if (i === 5) {
-                  // Tirée à part : une chance par carte, soit environ un dossier sur N
+                  // Tirée à part : une chance par carte, comme les autres raretés (en moyenne un dossier sur N)
                   const surN = Math.round(1 / (1 - (1 - b.mythique) ** 5))
                   return (
-                    <li key={r.nom}>
+                    <li key={r.nom} title={`En moyenne un dossier sur ${surN.toLocaleString('fr-FR')}, sans garantie`}>
                       <span className="puce" style={{ background: r.couleur }} />
-                      {r.nom} <strong>1 dossier sur {surN.toLocaleString('fr-FR')}</strong>
+                      {r.nom} <strong>{(b.mythique * 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} %</strong>
                     </li>
                   )
                 }
