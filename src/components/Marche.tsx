@@ -24,6 +24,7 @@ import {
 import { useSauvegarde } from '../state/sauvegarde'
 import type { Carte as TCarte } from '../types'
 import { Carte } from './Carte'
+import { BoutonConfirme } from './Confirmer'
 
 type Onglet = 'encheres' | 'ventes' | 'echanges'
 const credits = (n: number) => `${n.toLocaleString('fr-FR')} ₵`
@@ -271,9 +272,14 @@ function LigneEnchere({
             </form>
             {m > s.credits && <p className="discret urgent">Solde insuffisant</p>}
             {e.achatImmediat !== null && (
-              <button className="btn" disabled={occupe || e.achatImmediat > s.credits} onClick={() => confirm(`Acheter tout de suite pour ${credits(e.achatImmediat!)} ?`) && void miser(e.achatImmediat!)}>
+              <BoutonConfirme
+                disabled={occupe || e.achatImmediat > s.credits}
+                question={`Acheter tout de suite pour ${credits(e.achatImmediat)} ?`}
+                confirmer="Acheter"
+                onConfirme={() => void miser(e.achatImmediat!)}
+              >
                 Achat immédiat {credits(e.achatImmediat)}
-              </button>
+              </BoutonConfirme>
             )}
           </>
         )}
@@ -494,9 +500,15 @@ function CarteOffre({ o, base, ouvrirCarte, apres }: { o: Offre; base: Base; ouv
         <div className="actions">
           {o.recue ? (
             <>
-              <button className="btn btn-principal" disabled={occupe} onClick={() => confirm(`Accepter l'échange avec ${o.avec} ?`) && void agir(() => repondreEchange(o.id, true))}>
+              <BoutonConfirme
+                className="btn btn-principal"
+                disabled={occupe}
+                question={`Accepter l'échange avec ${o.avec} ?`}
+                confirmer="Oui, échanger"
+                onConfirme={() => void agir(() => repondreEchange(o.id, true))}
+              >
                 Accepter
-              </button>
+              </BoutonConfirme>
               <button className="btn" disabled={occupe} onClick={() => void agir(() => repondreEchange(o.id, false))}>
                 Refuser
               </button>

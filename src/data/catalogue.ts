@@ -6,6 +6,7 @@ export const RARETES: { nom: string; couleur: string }[] = [
   { nom: 'Rare', couleur: '#4a9dff' },
   { nom: 'Épique', couleur: '#b26bff' },
   { nom: 'Légendaire', couleur: '#f4b740' },
+  { nom: 'Mythique', couleur: '#ff3b5c' },
 ]
 
 export const CLASSES: Record<Classe, { nom: string; couleur: string }> = {
@@ -25,13 +26,14 @@ export const TYPES: Record<TypeFiche, { nom: string; pluriel: string; court: str
   s: { nom: 'SCP', pluriel: 'SCP', court: 'SCP', couleur: '#c0392b', article: 'quel SCP' },
   f: { nom: 'Équipe FIM', pluriel: 'Équipes FIM', court: 'FIM', couleur: '#2e7d6b', article: 'quelle équipe FIM' },
   p: { nom: 'Personnel', pluriel: 'Personnel', court: 'Personnel', couleur: '#4b5d7a', article: 'qui' },
+  e: { nom: 'Département', pluriel: 'Départements', court: 'Dépt', couleur: '#5b6b3a', article: 'quel département' },
   g: { nom: "Groupe d'intérêt", pluriel: "Groupes d'intérêt", court: 'GdI', couleur: '#7a4f9a', article: "quel Groupe d'intérêt" },
   n: { nom: 'Canon', pluriel: 'Canons', court: 'Canon', couleur: '#a0522d', article: 'quel canon' },
   d: { nom: 'Document de GdI', pluriel: 'Documents de GdI', court: 'Doc. GdI', couleur: '#4f6f9a', article: 'quel document' },
   c: { nom: 'Conte', pluriel: 'Contes', court: 'Conte', couleur: '#8a6d3b', article: 'quel conte' },
 }
 
-export const ORDRE_TYPES: TypeFiche[] = ['s', 'f', 'p', 'g', 'n', 'd', 'c']
+export const ORDRE_TYPES: TypeFiche[] = ['s', 'f', 'p', 'e', 'g', 'n', 'd', 'c']
 
 export function nomClasse(carte: Carte): string {
   return carte.ce ?? (carte.c ? CLASSES[carte.c].nom : '')
@@ -58,7 +60,7 @@ export function designation(carte: Carte): string {
 export class Base {
   readonly cartes: Carte[]
   readonly parId = new Map<string, Carte>()
-  readonly parRarete: Carte[][] = [[], [], [], [], []]
+  readonly parRarete: Carte[][] = RARETES.map(() => [])
   /** Cartes par type puis par rareté */
   readonly parType = new Map<TypeFiche, Carte[][]>()
   readonly prefixeImage: string
@@ -72,7 +74,7 @@ export class Base {
       : catalogue.cartes
     this.prefixeImage = catalogue.prefixeImage
     this.genere = catalogue.genere
-    for (const k of ORDRE_TYPES) this.parType.set(k, [[], [], [], [], []])
+    for (const k of ORDRE_TYPES) this.parType.set(k, RARETES.map(() => []))
     for (const c of this.cartes) {
       this.parId.set(c.id, c)
       this.parRarete[c.ra].push(c)
@@ -117,14 +119,18 @@ export class Base {
   }
 }
 
+/** Empreinte du catalogue, fixée par vite.config.ts (absente hors du site, dans la fonction Edge) */
+declare const __VERSION_CARTES__: string
+const version = () => (typeof __VERSION_CARTES__ === 'string' ? `?v=${__VERSION_CARTES__}` : '')
+
 export async function chargerBase(): Promise<Base> {
-  const reponse = await fetch(`${import.meta.env.BASE_URL}data/cards.json`)
+  const reponse = await fetch(`${import.meta.env.BASE_URL}data/cards.json${version()}`)
   if (!reponse.ok) throw new Error(`Base de données inaccessible (${reponse.status})`)
   return new Base((await reponse.json()) as Catalogue)
 }
 
 export async function chargerTraductions(): Promise<Traductions> {
-  const reponse = await fetch(`${import.meta.env.BASE_URL}data/cards.fr.json`)
+  const reponse = await fetch(`${import.meta.env.BASE_URL}data/cards.fr.json${version()}`)
   if (!reponse.ok) throw new Error(`Traductions inaccessibles (${reponse.status})`)
   return (await reponse.json()) as Traductions
 }

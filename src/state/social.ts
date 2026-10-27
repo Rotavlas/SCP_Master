@@ -69,6 +69,9 @@ export interface ProfilPublic {
   moi: boolean
   collection: number
   legendaires: number
+  /** Badges obtenus, et les 3 au plus que l'agent affiche */
+  badges: string[]
+  badgesAffiches: string[]
   vitrine: { carte: string; variante: IdVariante }[]
   clan: { nom: string; tag: string; role: RoleClan } | null
   relation: Relation
@@ -79,6 +82,7 @@ export const classement = (tableau: Tableau) => appeler<Classement>('classement'
 export const classementClans = () => appeler<LigneClan[]>('classement_clans')
 export const profilPublic = (pseudo: string) => appeler<ProfilPublic>('profil_public', { p_pseudo: pseudo })
 export const majVitrine = (cartes: string[]) => appeler<string[]>('maj_vitrine', { p_cartes: cartes })
+export const choisirBadges = (badges: string[]) => appeler<string[]>('choisir_badges', { p_badges: badges })
 
 // ---------- Amis ----------
 

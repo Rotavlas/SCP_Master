@@ -35,4 +35,6 @@ foreach ($c in $contes) {
 foreach ($p in @('task-forces', 'personnel-and-character-dossier', 'o5-command-dossier', 'groups-of-interest', 'canon-hub')) {
   Invoke-WebRequest -UseBasicParsing -Uri "https://scp-wiki.wikidot.com/$p" -OutFile (Join-Path $Dossier "pages\$p.html")
 }
+# Liste des tags (départements, entités) et propositions SCP-001, absentes de l'export scp-data
+node (Join-Path $PSScriptRoot 'telecharger_pages.mjs') $Dossier
 Write-Host "Données SCP téléchargées dans $Dossier"

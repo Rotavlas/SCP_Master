@@ -2,8 +2,10 @@ import { useCallback, useEffect, useState } from 'react'
 import type { Base } from '../data/catalogue'
 import { defier } from '../state/jcj'
 import { accreditation, useSauvegarde } from '../state/sauvegarde'
+import { BADGES, MAX_BADGES_AFFICHES } from '../data/badges'
 import {
   bloquer,
+  choisirBadges,
   debloquer,
   demanderAmi,
   majVitrine,
@@ -13,6 +15,7 @@ import {
   type ProfilPublic,
 } from '../state/social'
 import type { Carte as TCarte } from '../types'
+import { BadgesAffiches, PastilleBadge } from './Badges'
 import { Carte } from './Carte'
 
 const ROLES = { chef: 'Chef', officier: 'Officier', membre: 'Membre' }
@@ -67,6 +70,7 @@ export function Profil({ pseudo, base, onFermer, ouvrirCarte, ecrire }: Props) {
               <span className={`point-presence ${p.enLigne ? 'en-ligne' : ''}`} title={p.enLigne ? 'En ligne' : `Vu le ${new Date(p.vuLe).toLocaleString('fr-FR')}`} />
               {p.pseudo}
               {p.clan && <span className="tag-clan">{p.clan.tag}</span>}
+              <BadgesAffiches ids={p.badgesAffiches ?? []} />
             </h2>
             <p className="discret">
               {acc?.nom} · agent depuis le {new Date(p.creeLe).toLocaleDateString('fr-FR')}
@@ -87,7 +91,7 @@ export function Profil({ pseudo, base, onFermer, ouvrirCarte, ecrire }: Props) {
               <div>
                 <dt>Collection</dt>
                 <dd>
-                  {p.collection.toLocaleString('fr-FR')} fiches · {p.legendaires} légendaire{p.legendaires > 1 ? 's' : ''}
+                  {p.collection.toLocaleString('fr-FR')} fiches · {p.legendaires} légendaire{p.legendaires > 1 ? 's' : ''} ou mythique{p.legendaires > 1 ? 's' : ''}
                 </dd>
               </div>
               <div>
@@ -95,6 +99,42 @@ export function Profil({ pseudo, base, onFermer, ouvrirCarte, ecrire }: Props) {
                 <dd>{Number(p.credits).toLocaleString('fr-FR')} ₵</dd>
               </div>
             </dl>
+
+            <h3>
+              Badges <small className="discret">{(p.badges ?? []).length}/{Object.keys(BADGES).length - (p.badges?.includes('createur') ? 0 : 1)}</small>
+            </h3>
+            {p.moi && <p className="discret">Choisissez jusqu'à {MAX_BADGES_AFFICHES} badges à afficher à côté de votre pseudo.</p>}
+            <ul className="grille-badges">
+              {Object.entries(BADGES)
+                // Le badge du créateur n'apparaît que chez lui : ce n'est pas un objectif
+                .filter(([id]) => id !== 'createur' || p.badges?.includes(id))
+                .map(([id, b]) => {
+                  const obtenu = (p.badges ?? []).includes(id)
+                  const affiche = (p.badgesAffiches ?? []).includes(id)
+                  const choisissable = p.moi && obtenu && (affiche || (p.badgesAffiches ?? []).length < MAX_BADGES_AFFICHES)
+                  return (
+                    <li key={id} className={`${obtenu ? '' : 'inactif'} ${affiche ? 'affiche' : ''}`}>
+                      <button
+                        className="badge-ligne"
+                        disabled={!choisissable || occupe}
+                        aria-pressed={p.moi ? affiche : undefined}
+                        onClick={() =>
+                          void agir(() =>
+                            choisirBadges(affiche ? p.badgesAffiches.filter((x) => x !== id) : [...(p.badgesAffiches ?? []), id]),
+                          )
+                        }
+                      >
+                        <PastilleBadge id={id} inactif={!obtenu} />
+                        <span>
+                          <strong>{b.nom}</strong>
+                          <small>{b.description}</small>
+                        </span>
+                        {affiche && <span className="badge-coche">Affiché</span>}
+                      </button>
+                    </li>
+                  )
+                })}
+            </ul>
 
             <h3>Vitrine</h3>
             {p.vitrine.length ? (

@@ -173,7 +173,7 @@ export default function App() {
           <span className="solde" title="Crédits">
             {s.credits.toLocaleString('fr-FR')} ₵
           </span>
-          <BoutonCompte />
+          <BoutonCompte ouvrirProfil={setProfilOuvert} />
         </header>
       )}
 

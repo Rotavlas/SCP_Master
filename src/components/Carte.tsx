@@ -40,7 +40,11 @@ function Embleme({ carte, taille }: { carte: TCarte; taille: number }) {
   }
   if (carte.k === 'p') {
     if (carte.cat === 'Conseil O5') return <div className="embleme embleme-o5">{carte.num ?? 'O5'}</div>
+    if (carte.cat === 'Entité pluripotente' || carte.cat === 'Entités anomales' || carte.cat === 'Cosmologie') {
+      return <div className="embleme embleme-entite">{carte.cat === 'Cosmologie' ? '✒' : '✶'}</div>
+    }
     const initiales = carte.nm
+      .replace(/^The\s+/, '')
       .replace(/^(Dr|Drs|Agent|Director|Directeur|Researcher|Prof)\.?\s+/i, '')
       .split(/\s+/)
       .filter((m) => /^[A-Z"«]/.test(m))
@@ -49,7 +53,7 @@ function Embleme({ carte, taille }: { carte: TCarte; taille: number }) {
       .join('')
     return <div className="embleme embleme-perso">{initiales || '?'}</div>
   }
-  const glyphes: Partial<Record<TCarte['k'], string>> = { g: '◈', n: '∞', d: '▤', c: '❦' }
+  const glyphes: Partial<Record<TCarte['k'], string>> = { e: '◎', g: '◈', n: '∞', d: '▤', c: '❦' }
   if (glyphes[carte.k]) return <div className={`embleme embleme-${carte.k}`}>{glyphes[carte.k]}</div>
   return <Logo taille={taille} />
 }

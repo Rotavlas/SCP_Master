@@ -2,14 +2,14 @@ import type { Base } from '../data/catalogue'
 import { RARETES } from '../data/catalogue'
 import { BOOSTERS, VALEUR_RECYCLAGE } from '../engine/boosters'
 import { VARIANTES } from '../engine/variantes'
-import { supprimerCompte, useCompte } from '../state/enLigne'
+import { supprimerCompte } from '../state/enLigne'
 import { useSauvegarde } from '../state/sauvegarde'
 import { tirer, type Tirage } from './Booster'
+import { BoutonConfirme } from './Confirmer'
 import { Logo } from './Logo'
 
 export function Boutique({ base, ouvrir }: { base: Base; ouvrir: (t: Tirage) => void }) {
   const s = useSauvegarde()
-  const compte = useCompte()
 
   return (
     <section className="boutique">
@@ -25,6 +25,16 @@ export function Boutique({ base, ouvrir }: { base: Base; ouvrir: (t: Tirage) => 
             <p>{b.description}</p>
             <ul className="probas">
               {RARETES.map((r, i) => {
+                if (i === 5) {
+                  // Tirée à part : une chance par carte, soit environ un dossier sur N
+                  const surN = Math.round(1 / (1 - (1 - b.mythique) ** 5))
+                  return (
+                    <li key={r.nom}>
+                      <span className="puce" style={{ background: r.couleur }} />
+                      {r.nom} <strong>1 dossier sur {surN.toLocaleString('fr-FR')}</strong>
+                    </li>
+                  )
+                }
                 const proba = (b.poids[i] * 4 + b.poidsDerniere[i]) / 5
                 return proba > 0 ? (
                   <li key={r.nom}>
@@ -76,14 +86,15 @@ export function Boutique({ base, ouvrir }: { base: Base; ouvrir: (t: Tirage) => 
       <details className="encart">
         <summary>Zone dangereuse</summary>
         <p>Supprimer le compte efface définitivement le profil, la collection et l'historique enregistrés sur le serveur.</p>
-        <button
+        <BoutonConfirme
           className="btn btn-danger"
-          onClick={() => {
-            if (confirm(`Supprimer définitivement le compte ${compte.email ?? ''} et toute sa collection ?`)) void supprimerCompte()
-          }}
+          danger
+          question="Supprimer définitivement le compte et toute sa collection ?"
+          confirmer="Oui, tout supprimer"
+          onConfirme={() => void supprimerCompte()}
         >
           Supprimer mon compte
-        </button>
+        </BoutonConfirme>
       </details>
     </section>
   )

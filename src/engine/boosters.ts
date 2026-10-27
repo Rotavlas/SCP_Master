@@ -22,10 +22,12 @@ export interface TypeBooster {
   poidsDerniere: number[]
   /** multiplicateur des chances de variante */
   bonusVariante: number
+  /** chance qu'une carte du dossier soit une Mythique (tirée à part, toujours standard) */
+  mythique: number
   couleur: string
 }
 
-const MELANGE: Partial<Record<TypeFiche, number>> = { s: 0.66, c: 0.14, d: 0.05, p: 0.06, f: 0.04, g: 0.03, n: 0.02 }
+const MELANGE: Partial<Record<TypeFiche, number>> = { s: 0.64, c: 0.14, d: 0.05, p: 0.06, f: 0.04, g: 0.03, n: 0.02, e: 0.02 }
 const COMMUN = [0.66, 0.24, 0.075, 0.02, 0.005]
 const COMMUN_DERNIERE = [0, 0.7, 0.22, 0.065, 0.015]
 
@@ -39,6 +41,7 @@ export const BOOSTERS: TypeBooster[] = [
     poids: COMMUN,
     poidsDerniere: COMMUN_DERNIERE,
     bonusVariante: 1,
+    mythique: 0.0004,
     couleur: '#c9b98f',
   },
   {
@@ -50,6 +53,7 @@ export const BOOSTERS: TypeBooster[] = [
     poids: COMMUN,
     poidsDerniere: COMMUN_DERNIERE,
     bonusVariante: 1,
+    mythique: 0.0004,
     couleur: '#b9a37a',
   },
   {
@@ -61,17 +65,19 @@ export const BOOSTERS: TypeBooster[] = [
     poids: COMMUN,
     poidsDerniere: COMMUN_DERNIERE,
     bonusVariante: 1,
+    mythique: 0.0004,
     couleur: '#a68c64',
   },
   {
     id: 'personnel',
     nom: 'Dossiers du personnel',
-    description: '5 fiches : personnel, Conseil O5, équipes FIM, Groupes d\'intérêt et canons.',
+    description: '5 fiches : personnel, Conseil O5, équipes FIM, départements, Groupes d\'intérêt et canons.',
     prix: 160,
-    types: { p: 0.45, f: 0.3, g: 0.15, n: 0.1 },
+    types: { p: 0.4, f: 0.27, g: 0.13, n: 0.1, e: 0.1 },
     poids: COMMUN,
     poidsDerniere: COMMUN_DERNIERE,
     bonusVariante: 1.5,
+    mythique: 0.0008,
     couleur: '#8f9db0',
   },
   {
@@ -83,6 +89,7 @@ export const BOOSTERS: TypeBooster[] = [
     poids: [0, 0.68, 0.24, 0.065, 0.015],
     poidsDerniere: [0, 0, 0.72, 0.22, 0.06],
     bonusVariante: 2,
+    mythique: 0.0012,
     couleur: '#8c3b33',
   },
   {
@@ -94,6 +101,7 @@ export const BOOSTERS: TypeBooster[] = [
     poids: [0, 0, 0.72, 0.22, 0.06],
     poidsDerniere: [0, 0, 0, 0.8, 0.2],
     bonusVariante: 4,
+    mythique: 0.004,
     couleur: '#2a2a2a',
   },
 ]
@@ -101,14 +109,17 @@ export const BOOSTERS: TypeBooster[] = [
 export const BOOSTER_PAR_ID = Object.fromEntries(BOOSTERS.map((b) => [b.id, b])) as Record<IdBooster, TypeBooster>
 
 /** Valeur en crédits d'un doublon recyclé (« amnésique administré »). */
-export const VALEUR_RECYCLAGE = [5, 12, 35, 90, 300]
+export const VALEUR_RECYCLAGE = [5, 12, 35, 90, 300, 2500]
 
 export interface CarteTiree {
   carte: Carte
   variante: IdVariante
+  /** Numéro de l'exemplaire (« n° 3 » : le troisième jamais tiré de cette carte et variante) */
+  numero?: number | undefined
 }
 
 /** Les boosters où une carte peut tomber (pour le répertoire). */
 export function boostersPour(carte: Carte): TypeBooster[] {
+  if (carte.ra === 5) return BOOSTERS
   return BOOSTERS.filter((b) => (b.types[carte.k] ?? 0) > 0 && (b.poids[carte.ra] > 0 || b.poidsDerniere[carte.ra] > 0))
 }

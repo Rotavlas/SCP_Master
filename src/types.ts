@@ -10,14 +10,14 @@ export type Classe =
   | 'pending'
   | 'esoteric-class'
 
-/** 0 commune · 1 peu commune · 2 rare · 3 épique · 4 légendaire */
-export type Rarete = 0 | 1 | 2 | 3 | 4
+/** 0 commune · 1 peu commune · 2 rare · 3 épique · 4 légendaire · 5 mythique (choisie à la main) */
+export type Rarete = 0 | 1 | 2 | 3 | 4 | 5
 
 /**
- * Type de fiche : s SCP · f équipe FIM · p personnel (dont Conseil O5) · g Groupe d'intérêt
- * · n canon · d document de Groupe d'intérêt · c conte
+ * Type de fiche : s SCP · f équipe FIM · p personnel (dont Conseil O5 et entités) · e département
+ * · g Groupe d'intérêt · n canon · d document de Groupe d'intérêt · c conte
  */
-export type TypeFiche = 's' | 'f' | 'p' | 'g' | 'n' | 'd' | 'c'
+export type TypeFiche = 's' | 'f' | 'p' | 'e' | 'g' | 'n' | 'd' | 'c'
 
 /** Une carte telle que produite par outils/construire_cartes.py (clés courtes pour alléger le JSON). */
 export interface Carte {
@@ -39,7 +39,7 @@ export interface Carte {
   r?: number
   /** Pages liées (fiches de référence : FIM, personnel, GdI, canons) */
   lp?: number
-  /** SCP que l'équipe FIM a aidé à confiner */
+  /** SCP que l'équipe FIM a aidé à confiner, ou qui portent le tag d'un département ou d'une entité */
   lie?: string[]
   /** Page du wiki quand la fiche est une section d'une page plus grande */
   u?: string

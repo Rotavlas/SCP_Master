@@ -2,9 +2,11 @@ import { useMemo, useState } from 'react'
 import { CLASSES, ORDRE_TYPES, RARETES, TYPES, type Base } from '../data/catalogue'
 import { VALEUR_RECYCLAGE } from '../engine/boosters'
 import { recyclerTout } from '../state/actions'
+import { brulerLot, type ModeBrulage } from '../state/marche'
 import { TAILLE_DECK, doublonsRecyclables, modifier, useSauvegarde, varianteAffichee } from '../state/sauvegarde'
 import type { Carte as TCarte, Classe, TypeFiche } from '../types'
 import { Carte } from './Carte'
+import { BoutonConfirme } from './Confirmer'
 
 const PAR_PAGE = 60
 
@@ -39,6 +41,9 @@ export function Collection({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id
   const [serie, setSerie] = useState<number | 'toutes'>('toutes')
   const [tri, setTri] = useState<Tri>('numero')
   const [page, setPage] = useState(0)
+  // Sélection multiple : null hors du mode sélection
+  const [selection, setSelection] = useState<Set<string> | null>(null)
+  const [occupe, setOccupe] = useState(false)
 
   const filtrees = useMemo(() => {
     const r = recherche.trim().toLowerCase()
@@ -84,12 +89,26 @@ export function Collection({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id
     return total + (c ? doublonsRecyclables(s, id) * VALEUR_RECYCLAGE[c.ra] : 0)
   }, 0)
 
-  function toutRecycler() {
-    if (!confirm(`Recycler tous les doublons contre ${valeurDoublons} crédits ? Un exemplaire de chaque carte et toutes les variantes rares sont conservés.`)) return
-    void recyclerTout()
+  const equipe = s.deck.map((id) => base.parId.get(id)).filter((c): c is TCarte => !!c)
+
+  function basculer(id: string) {
+    if (!selection || !s.collection[id]) return
+    const suivante = new Set(selection)
+    if (suivante.has(id)) suivante.delete(id)
+    else suivante.add(id)
+    setSelection(suivante)
   }
 
-  const equipe = s.deck.map((id) => base.parId.get(id)).filter((c): c is TCarte => !!c)
+  const choisies = selection ? [...selection].filter((id) => s.collection[id]) : []
+  const gainDoublons = choisies.reduce((t, id) => t + doublonsRecyclables(s, id) * VALEUR_RECYCLAGE[base.parId.get(id)?.ra ?? 0], 0)
+  const gainUn = choisies.reduce((t, id) => t + VALEUR_RECYCLAGE[base.parId.get(id)?.ra ?? 0], 0)
+
+  async function brulerSelection(mode: ModeBrulage) {
+    setOccupe(true)
+    await brulerLot(choisies, mode)
+    setOccupe(false)
+    setSelection(new Set())
+  }
 
   return (
     <section className="collection">
@@ -114,9 +133,13 @@ export function Collection({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id
             Composer automatiquement
           </button>
           {valeurDoublons > 0 && (
-            <button className="btn" onClick={toutRecycler}>
+            <BoutonConfirme
+              question={`Recycler tous les doublons contre ${valeurDoublons} ₵ ? Un exemplaire de chaque carte et les variantes rares sont gardés.`}
+              confirmer="Recycler"
+              onConfirme={() => void recyclerTout()}
+            >
               Recycler tous les doublons (+{valeurDoublons} ₵)
-            </button>
+            </BoutonConfirme>
           )}
         </div>
       </div>
@@ -180,26 +203,95 @@ export function Collection({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id
         </select>
       </div>
 
-      <p className="discret resultat">
-        {filtrees.length.toLocaleString('fr-FR')} dossier{filtrees.length > 1 ? 's' : ''}
-        {possession === 'possedees' && filtrees.length === 0 && ' — ouvrez un booster pour commencer votre collection.'}
-      </p>
+      <div className="resultat-ligne">
+        <p className="discret resultat">
+          {filtrees.length.toLocaleString('fr-FR')} dossier{filtrees.length > 1 ? 's' : ''}
+          {possession === 'possedees' && filtrees.length === 0 && ' — ouvrez un booster pour commencer votre collection.'}
+        </p>
+        <div className="actions">
+          {s.nouvelles.length > 0 && (
+            <button className="btn" onClick={() => modifier((x) => ({ ...x, nouvelles: [] }))}>
+              Tout marquer comme lu ({s.nouvelles.length})
+            </button>
+          )}
+          <button className={`btn ${selection ? 'btn-principal' : ''}`} aria-pressed={!!selection} onClick={() => setSelection(selection ? null : new Set())}>
+            {selection ? 'Terminer la sélection' : 'Sélection multiple'}
+          </button>
+        </div>
+      </div>
 
-      <div className="grille">
+      {selection && (
+        <div className="barre-selection" role="toolbar" aria-label="Actions sur la sélection">
+          <strong>
+            {choisies.length} dossier{choisies.length > 1 ? 's' : ''} sélectionné{choisies.length > 1 ? 's' : ''}
+          </strong>
+          <button className="btn" onClick={() => setSelection(new Set(filtrees.filter((c) => s.collection[c.id]).map((c) => c.id)))}>
+            Tout sélectionner ({filtrees.filter((c) => s.collection[c.id]).length})
+          </button>
+          <button className="btn" disabled={!choisies.length} onClick={() => setSelection(new Set())}>
+            Vider
+          </button>
+          <button
+            className="btn"
+            disabled={!choisies.length}
+            onClick={() => modifier((x) => ({ ...x, favoris: [...new Set([...x.favoris, ...choisies])] }))}
+          >
+            Ajouter aux favoris
+          </button>
+          <button
+            className="btn"
+            disabled={!choisies.length}
+            onClick={() => modifier((x) => ({ ...x, nouvelles: x.nouvelles.filter((id) => !selection.has(id)) }))}
+          >
+            Marquer comme lus
+          </button>
+          <BoutonConfirme
+            disabled={!choisies.length || occupe || gainDoublons === 0}
+            question={`Brûler les doublons standard de ${choisies.length} dossier${choisies.length > 1 ? 's' : ''} ? Un exemplaire de chaque est gardé.`}
+            confirmer={`Brûler (+${gainDoublons.toLocaleString('fr-FR')} ₵)`}
+            onConfirme={() => void brulerSelection('doublons')}
+          >
+            Brûler les doublons (+{gainDoublons.toLocaleString('fr-FR')} ₵)
+          </BoutonConfirme>
+          <BoutonConfirme
+            className="btn btn-danger"
+            danger
+            disabled={!choisies.length || occupe}
+            question={`Brûler un exemplaire standard de chacun des ${choisies.length} dossiers ? Une carte en un seul exemplaire quitte la collection.`}
+            confirmer={`Brûler (jusqu'à +${gainUn.toLocaleString('fr-FR')} ₵)`}
+            onConfirme={() => void brulerSelection('un')}
+          >
+            Brûler un exemplaire de chaque
+          </BoutonConfirme>
+          <BoutonConfirme
+            className="btn btn-danger"
+            danger
+            disabled={!choisies.length || occupe}
+            question="Brûler TOUS les exemplaires standard libres de la sélection ? Les variantes rares, souvenirs et cartes en vente sont gardés."
+            confirmer="Tout brûler"
+            onConfirme={() => void brulerSelection('tous')}
+          >
+            Tout brûler
+          </BoutonConfirme>
+        </div>
+      )}
+
+      <div className={`grille ${selection ? 'en-selection' : ''}`}>
         {visibles.map((c) => (
-          <Carte
-            key={c.id}
-            carte={c}
-            base={base}
-            taille="p"
-            scellee={!s.collection[c.id]}
-            quantite={s.collection[c.id]}
-            variante={s.collection[c.id] ? varianteAffichee(s, c.id) : undefined}
-            nouvelle={s.nouvelles.includes(c.id)}
-            favori={s.favoris.includes(c.id)}
-            souhait={s.souhaits.includes(c.id)}
-            onClick={() => ouvrirCarte(c.id)}
-          />
+          <div key={c.id} className={selection && selection.has(c.id) ? 'case-selection cochee' : selection ? 'case-selection' : undefined}>
+            <Carte
+              carte={c}
+              base={base}
+              taille="p"
+              scellee={!s.collection[c.id]}
+              quantite={s.collection[c.id]}
+              variante={s.collection[c.id] ? varianteAffichee(s, c.id) : undefined}
+              nouvelle={s.nouvelles.includes(c.id)}
+              favori={s.favoris.includes(c.id)}
+              souhait={s.souhaits.includes(c.id)}
+              onClick={() => (selection ? basculer(c.id) : ouvrirCarte(c.id))}
+            />
+          </div>
         ))}
       </div>
 

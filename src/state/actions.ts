@@ -10,14 +10,14 @@ import { appeler, appelerDuel, appliquerProfil, envoyerPreferences, type ProfilS
 import { ajouterCartes, modifier, notifier, recyclerDoublons } from './sauvegarde'
 
 export async function tirerBooster(base: Base, type: TypeBooster, depuisStock: boolean): Promise<CarteTiree[] | null> {
-  const r = await appeler<{ cartes: { id: string; v: IdVariante }[]; profil: ProfilServeur }>('ouvrir_booster', {
+  const r = await appeler<{ cartes: { id: string; v: IdVariante; n?: number }[]; profil: ProfilServeur }>('ouvrir_booster', {
     p_type: type.id,
     p_depuis_stock: depuisStock,
   })
   if (!r) return null
   const cartes = r.cartes
-    .map((c) => ({ carte: base.parId.get(c.id), variante: c.v }))
-    .filter((t): t is CarteTiree => {
+    .map((c) => ({ carte: base.parId.get(c.id), variante: c.v, numero: c.n }))
+    .filter((t): t is CarteTiree & { numero: number | undefined } => {
       // Catalogue du navigateur plus ancien que celui du serveur : la carte existe mais ne s'affiche pas
       if (!t.carte) notifier('Nouvelles fiches disponibles : rechargez la page pour les voir')
       return !!t.carte

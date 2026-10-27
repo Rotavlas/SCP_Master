@@ -130,6 +130,31 @@ await test('les cartes souhaitées sont retirées de la liste et les nouvelles s
   const tirees = r.cartes.map((c) => c.id)
   assert.equal(r.profil.souhaits.includes('scp-173'), !tirees.includes('scp-173'))
 })
+await test('une Mythique tombe en version standard, numérotée, sans doublon dans le dossier', async () => {
+  await admin(`update prive.types_boosters set mythique = 1 where id = 'standard'`)
+  await admin(`update public.profils set boosters = 2 where id = '${A}'`)
+  try {
+    const r = await valeur(A, "select public.ouvrir_booster('standard', true)")
+    const ids = r.cartes.map((c) => c.id)
+    const raretes = (await admin('select ra from public.cartes where id = any($1)', [ids])).rows.map((x) => x.ra)
+    assert.deepEqual(raretes, [5, 5, 5, 5, 5])
+    assert.equal(new Set(ids).size, 5)
+    assert.ok(r.cartes.every((c) => c.v === 'std' && c.n === 1), JSON.stringify(r.cartes))
+    // Le numéro suit l'ordre d'obtention de chaque carte
+    const s = await valeur(A, "select public.ouvrir_booster('standard', true)")
+    for (const c of s.cartes) assert.equal(c.n, ids.includes(c.id) ? 2 : 1)
+  } finally {
+    await admin(`update prive.types_boosters set mythique = 0.0004 where id = 'standard'`)
+  }
+})
+await test('une Mythique se recycle 2 500 ₵ et compte dans le classement des légendaires', async () => {
+  const id = (await admin('select id from public.cartes where ra = 5 limit 1')).rows[0].id
+  assert.equal((await admin(`select prive.valeur_brulage(5, 'std') as v`)).rows[0].v, 2500)
+  const avant = await valeur(A, "select (public.classement('legendaires') -> 'moi' ->> 'valeur')::int")
+  assert.ok(avant >= 5, `légendaires et mythiques : ${avant}`)
+  const n = (await admin(`select count(*)::int as n from public.exemplaires where proprietaire = '${A}' and carte_id = $1`, [id])).rows[0].n
+  if (n >= 2) assert.equal(await valeur(A, 'select (public.recycler_doublons($1) ->> \'gain\')::int', [id]), (n - 1) * 2500)
+})
 await test('boosters gratuits recrédités avec le temps, 10 au maximum', async () => {
   await admin(`update public.profils set boosters = 0, dernier_booster = now() - interval '35 minutes' where id = '${A}'`)
   assert.equal((await valeur(A, 'select public.mon_etat()')).profil.boosters, 3)
@@ -392,6 +417,24 @@ await test("brûler son dernier exemplaire le retire de l'équipe ; les souvenir
   await echoue(en(B, "select public.bruler('scp-999', 'std')"), /Aucun exemplaire libre/)
 })
 
+await test('brûlage groupé : les doublons gardent un exemplaire, « un » brûle le dernier', async () => {
+  await donner(B, 'scp-173', 3)
+  await donner(B, 'scp-096', 1)
+  await donner(B, 'scp-096', 1, 'holo')
+  const ra = (await admin("select ra from public.cartes where id = 'scp-173'")).rows[0].ra
+  const attendus = (await possede(B, 'scp-173', 'std')) - 1 + (await possede(B, 'scp-096', 'std'))
+  const r = await valeur(B, "select public.bruler_lot(array['scp-173', 'scp-096'], 'doublons')")
+  // scp-096 : l'exemplaire holo compte comme celui qu'on garde, le standard part
+  assert.equal(await possede(B, 'scp-173', 'std'), 1)
+  assert.equal(await possede(B, 'scp-096', 'std'), 0)
+  assert.equal(await possede(B, 'scp-096', 'holo'), 1)
+  assert.equal(r.detruits, attendus)
+  assert.equal((await valeur(B, "select public.bruler_lot(array['scp-173'], 'un')")).gain, [5, 12, 35, 90, 300][ra])
+  assert.equal(await possede(B, 'scp-173', 'std'), 0)
+  await echoue(en(B, "select public.bruler_lot(array['scp-173'], 'autre')"), /inconnu/)
+  await echoue(en(null, "select public.bruler_lot(array['scp-173'], 'un')"), /permission denied/)
+})
+
 console.log('Échanges')
 await test('chercher un joueur par le début de son pseudo', async () => {
   assert.deepEqual(await valeur(A, "select public.chercher_joueurs('doc')"), ['Docteur Bravo'])
@@ -628,6 +671,20 @@ await test('profil public : vitrine, clan, relation', async () => {
   assert.equal(p.clan.tag, 'S19')
   assert.equal(p.relation, 'ami')
   assert.equal((await valeur(G, "select public.profil_public('Echo')")).relation, 'aucune')
+})
+await test('badges : calculés par le serveur, 3 au plus affichés, le badge du créateur ne se choisit pas', async () => {
+  const p = await valeur(F, "select public.profil_public('Echo')")
+  assert.ok(p.badges.includes('esprit-de-corps') && p.badges.includes('premiere-heure'), p.badges.join(','))
+  assert.ok(!p.badges.includes('createur'))
+  await echoue(en(E, "select public.choisir_badges(array['createur'])"), /obtenus/)
+  await echoue(en(E, "select public.choisir_badges(array['esprit-de-corps', 'premiere-heure', 'premier-dossier', 'archiviste'])"), /obtenus/)
+  assert.deepEqual(await valeur(E, "select public.choisir_badges(array['premiere-heure', 'esprit-de-corps', 'premiere-heure'])"), ['premiere-heure', 'esprit-de-corps'])
+  await admin(`insert into prive.badges_speciaux values ('${E}', 'createur')`)
+  await valeur(E, "select public.choisir_badges(array['createur'])")
+  assert.deepEqual((await valeur(F, "select public.profil_public('Echo')")).badgesAffiches, ['createur'])
+  await admin(`delete from prive.badges_speciaux where joueur = '${E}'`)
+  // Un badge perdu disparaît de l'affichage
+  assert.deepEqual((await valeur(F, "select public.profil_public('Echo')")).badgesAffiches, [])
 })
 await test('les classements et profils sont réservés aux joueurs connectés', async () => {
   await echoue(en(null, "select public.classement('elo')"), /permission denied/)

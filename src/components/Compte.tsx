@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { connexionEmail, connexionFournisseur, deconnexion, useCompte, useFournisseurs, verifierCode } from '../state/enLigne'
+import { useSauvegarde } from '../state/sauvegarde'
 import { Logo } from './Logo'
 
 const NOMS_FOURNISSEURS = { discord: 'Discord', google: 'Google', github: 'GitHub' } as const
@@ -13,20 +14,35 @@ export function LogoDiscord({ taille = 18 }: { taille?: number }) {
   )
 }
 
-/** Bouton du bandeau : compte connecté, avec déconnexion. */
-export function BoutonCompte() {
+/**
+ * Bouton du bandeau : « ton profil », avec déconnexion. L'adresse e-mail du compte (celle de Discord,
+ * par exemple) n'est jamais affichée : seul le pseudo public apparaît.
+ */
+export function BoutonCompte({ ouvrirProfil }: { ouvrirProfil: (pseudo: string) => void }) {
   const compte = useCompte()
+  const s = useSauvegarde()
   const [menu, setMenu] = useState(false)
   if (compte.statut !== 'connecte') return null
   return (
     <div className="compte-menu">
-      <button className="btn btn-compte connecte" onClick={() => setMenu(!menu)} aria-expanded={menu}>
+      <button className="btn btn-compte connecte" onClick={() => setMenu(!menu)} aria-expanded={menu} title="Ton profil">
         <span className="pastille-en-ligne" aria-hidden="true" />
-        En ligne
+        {s.agent || 'Ton profil'}
       </button>
       {menu && (
         <div className="compte-deroulant" role="menu">
-          <p className="discret">{compte.email}</p>
+          {s.agent && (
+            <button
+              className="btn btn-principal"
+              role="menuitem"
+              onClick={() => {
+                setMenu(false)
+                ouvrirProfil(s.agent)
+              }}
+            >
+              Ton profil et tes badges
+            </button>
+          )}
           <button
             className="btn"
             role="menuitem"

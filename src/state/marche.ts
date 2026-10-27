@@ -166,6 +166,18 @@ export async function bruler(carte: string, variante: IdVariante): Promise<numbe
   return r.gain
 }
 
+/** Brûlage groupé (exemplaires standard) : un de chaque carte, les doublons, ou tout ce qui est libre. */
+export type ModeBrulage = 'un' | 'doublons' | 'tous'
+
+export async function brulerLot(cartes: string[], mode: ModeBrulage): Promise<number | null> {
+  const r = await appeler<{ gain: number; detruits: number; profil: ProfilServeur }>('bruler_lot', { p_cartes: cartes, p_mode: mode })
+  if (!r) return null
+  await rechargerEtat()
+  if (r.detruits) notifier(`${r.detruits} exemplaire${r.detruits > 1 ? 's' : ''} incinéré${r.detruits > 1 ? 's' : ''} : +${r.gain.toLocaleString('fr-FR')} ₵`, 'succes')
+  else notifier('Aucun exemplaire standard libre à brûler dans la sélection')
+  return r.gain
+}
+
 // ---------- Échanges ----------
 
 export const chercherJoueurs = (texte: string) => appeler<string[]>('chercher_joueurs', { p_texte: texte })

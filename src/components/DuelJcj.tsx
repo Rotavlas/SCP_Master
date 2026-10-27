@@ -6,6 +6,7 @@ import { abandonner, etatDuel, jouerCarteJcj, repondreJcj, useDirectDuel, type C
 import { useSauvegarde, varianteAffichee } from '../state/sauvegarde'
 import type { Carte as TCarte } from '../types'
 import { Carte } from './Carte'
+import { BoutonConfirme } from './Confirmer'
 
 const LETTRES = ['A', 'B', 'C', 'D']
 /** Marge du serveur après la fin d'une question (serveur/commun.ts, GRACE) */
@@ -205,16 +206,15 @@ export function DuelJcj({ id, base, onQuitter, ouvrirProfil }: { id: string; bas
 
       {e.phase !== 'fin' && (
         <div className="actions centre">
-          <button
+          <BoutonConfirme
             className="btn btn-discret"
-            onClick={() => {
-              if (confirm(vue.classe ? 'Abandonner ? Le duel compte comme une défaite (Elo).' : 'Abandonner ce duel amical ?')) {
-                void envoyer(() => abandonner(id))
-              }
-            }}
+            danger
+            question={vue.classe ? 'Abandonner ? Le duel compte comme une défaite (Elo).' : 'Abandonner ce duel amical ?'}
+            confirmer="Abandonner"
+            onConfirme={() => void envoyer(() => abandonner(id))}
           >
             Abandonner
-          </button>
+          </BoutonConfirme>
         </div>
       )}
     </section>

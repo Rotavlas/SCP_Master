@@ -1,5 +1,5 @@
 import { TYPES, designation, nomClasse, type Base } from '../data/catalogue'
-import type { Carte } from '../types'
+import type { Carte, Rarete } from '../types'
 
 export interface Question {
   /** Carte sur laquelle porte la question */
@@ -16,7 +16,7 @@ export interface Question {
 const EXPURGE = '████'
 const CLASSES_STANDARD = ['Safe', 'Euclid', 'Keter', 'Thaumiel', 'Apollyon', 'Neutralized']
 const SURNOM_INCONNU = /^\[DONNÉES EXPURGÉES\]$|^\[ACCESS DENIED\]$|^\[unknown\]$/i
-const RARETES_TEXTE = ['Commune', 'Peu commune', 'Rare', 'Épique', 'Légendaire']
+const RARETES_TEXTE = ['Commune', 'Peu commune', 'Rare', 'Épique', 'Légendaire', 'Mythique']
 const TAGS_GENERIQUES = new Set(['tale', 'goi-format', 'hub'])
 
 function melanger<T>(liste: T[]): T[] {
@@ -63,7 +63,7 @@ function voisines(base: Base, carte: Carte, nombre: number, exclure: Carte[] = [
   const choisies: Carte[] = []
   const ids = new Set([carte.id, ...exclure.map((c) => c.id)])
   for (let essai = 0; choisies.length < nombre && essai < 300; essai++) {
-    const rarete = Math.min(4, carte.ra + (Math.random() < 0.5 ? 0 : 1))
+    const rarete = Math.min(5, carte.ra + (Math.random() < 0.5 ? 0 : 1))
     const pool = parRarete[rarete].length > 4 ? parRarete[rarete] : parRarete.flat()
     const c = choisir(pool)
     if (!ids.has(c.id) && !SURNOM_INCONNU.test(c.nm) && (!filtre || filtre(c))) {
@@ -168,10 +168,16 @@ const GENERATEURS: { poids: number; identification?: boolean; f: Generateur }[] 
   {
     poids: 3,
     f: (b, s) => {
-      if (s.k !== 'f' || !s.lie?.length) return null
+      if (!s.lie?.length) return null
       const lie = s.lie
-      const leurres = voisines(b, b.auHasard(s.ra, ['s']), 6, [], (c) => !lie.includes(c.num ?? '')).map((c) => c.num ?? '')
-      return construire(s, `Au confinement de quelle anomalie l'équipe ${s.num} a-t-elle participé ?`, choisir(lie), leurres, 2)
+      const leurres = voisines(b, b.auHasard(Math.min(s.ra, 4) as Rarete, ['s']), 6, [], (c) => !lie.includes(c.num ?? '')).map((c) => c.num ?? '')
+      const intitule =
+        s.k === 'f'
+          ? `Au confinement de quelle anomalie l'équipe ${s.num} a-t-elle participé ?`
+          : s.k === 'e'
+            ? `Quel dossier implique ${designation(s)} ?`
+            : `À quelle anomalie ${designation(s)} est-il lié ?`
+      return construire(s, intitule, choisir(lie), leurres, 2)
     },
   },
   {

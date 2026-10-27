@@ -25,7 +25,7 @@ export function Accueil({ base, aller, ouvrirCarte }: Props) {
   }, [s.agent])
   const acc = accreditation(s.xp)
   const possedees = Object.keys(s.collection)
-  const parRarete = [0, 0, 0, 0, 0]
+  const parRarete = RARETES.map(() => 0)
   for (const id of possedees) {
     const c = base.parId.get(id)
     if (c) parRarete[c.ra]++

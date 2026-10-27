@@ -3,6 +3,7 @@ import { DUREES, netVendeur } from '../engine/marche'
 import { PAR_ID, VARIANTES, type IdVariante } from '../engine/variantes'
 import { bruler, chargerCours, mettreAuxEncheres, type Cours } from '../state/marche'
 import type { Carte } from '../types'
+import { BoutonConfirme } from './Confirmer'
 import { CoursGraphique } from './CoursGraphique'
 
 const credits = (n: number | null) => (n === null ? '—' : `${n.toLocaleString('fr-FR')} ₵`)
@@ -29,7 +30,6 @@ export function MarcheCarte({ carte, variante: varianteAffichee, voirMarche }: {
   })
 
   async function incinerer() {
-    if (!confirm(`Brûler un exemplaire ${PAR_ID[variante].nom.toLowerCase()} de ${carte.num ?? carte.nm} contre ${c.brulage} ₵ ? Il sera détruit définitivement.`)) return
     setOccupe(true)
     await bruler(carte.id, variante)
     setOccupe(false)
@@ -95,9 +95,17 @@ export function MarcheCarte({ carte, variante: varianteAffichee, voirMarche }: {
           <button className="btn" disabled={occupe} onClick={() => setVente(true)}>
             Mettre aux enchères
           </button>
-          <button className="btn btn-danger" disabled={occupe} onClick={() => void incinerer()} title="L'exemplaire est détruit : il quitte le jeu pour de bon.">
+          <BoutonConfirme
+            className="btn btn-danger"
+            danger
+            disabled={occupe}
+            title="L'exemplaire est détruit : il quitte le jeu pour de bon."
+            question={`Brûler un exemplaire ${PAR_ID[variante].nom.toLowerCase()} de ${carte.num ?? carte.nm} ? Il sera détruit définitivement.`}
+            confirmer={`Brûler (+${c.brulage.toLocaleString('fr-FR')} ₵)`}
+            onConfirme={() => void incinerer()}
+          >
             Brûler un exemplaire (+{c.brulage.toLocaleString('fr-FR')} ₵)
-          </button>
+          </BoutonConfirme>
         </div>
       )}
       {vente && (

@@ -34,6 +34,7 @@ import {
   type ResumeClan,
 } from '../state/social'
 import { Carte } from './Carte'
+import { BoutonConfirme, BoutonSaisie } from './Confirmer'
 
 export type OngletSocial = 'amis' | 'clan' | 'messages'
 
@@ -330,8 +331,6 @@ function MonClanVue({ base, clan, recharger, ouvrirProfil }: { base: Base; clan:
   const dirige = clan.monRole === 'chef' || clan.monRole === 'officier'
 
   async function gerer(pseudo: string, action: ActionMembre) {
-    if (action === 'exclure' && !confirm(`Exclure ${pseudo} du clan ?`)) return
-    if (action === 'chef' && !confirm(`Confier la direction du clan à ${pseudo} ? Vous deviendrez officier.`)) return
     if (await gererMembre(pseudo, action)) recharger()
   }
 
@@ -404,15 +403,25 @@ function MonClanVue({ base, clan, recharger, ouvrirProfil }: { base: Base; clan:
                         <button className="btn" onClick={() => void gerer(m.pseudo, 'retrograder')}>
                           Rétrograder
                         </button>
-                        <button className="btn" onClick={() => void gerer(m.pseudo, 'chef')}>
+                        <BoutonConfirme
+                          question={`Confier la direction du clan à ${m.pseudo} ? Vous deviendrez officier.`}
+                          confirmer="Nommer chef"
+                          onConfirme={() => void gerer(m.pseudo, 'chef')}
+                        >
                           Nommer chef
-                        </button>
+                        </BoutonConfirme>
                       </>
                     ))}
                   {(clan.monRole === 'chef' || m.role === 'membre') && (
-                    <button className="btn btn-discret" onClick={() => void gerer(m.pseudo, 'exclure')}>
+                    <BoutonConfirme
+                      className="btn btn-discret"
+                      danger
+                      question={`Exclure ${m.pseudo} du clan ?`}
+                      confirmer="Exclure"
+                      onConfirme={() => void gerer(m.pseudo, 'exclure')}
+                    >
                       Exclure
-                    </button>
+                    </BoutonConfirme>
                   )}
                 </span>
               )}
@@ -426,16 +435,15 @@ function MonClanVue({ base, clan, recharger, ouvrirProfil }: { base: Base; clan:
               Réglages du clan
             </button>
           )}
-          <button
+          <BoutonConfirme
             className="btn btn-discret"
-            onClick={() => {
-              if (confirm(clan.monRole === 'chef' ? 'Quitter le clan ? La direction passera au plus ancien officier.' : 'Quitter le clan ?')) {
-                void quitterClan().then((r) => r && recharger())
-              }
-            }}
+            danger
+            question={clan.monRole === 'chef' ? 'Quitter le clan ? La direction passera au plus ancien officier.' : 'Quitter le clan ?'}
+            confirmer="Quitter"
+            onConfirme={() => void quitterClan().then((r) => r && recharger())}
           >
             Quitter le clan
-          </button>
+          </BoutonConfirme>
         </div>
         {reglages && (
           <form
@@ -638,16 +646,15 @@ function Chat({ destinataire, ouvrirProfil }: { destinataire: Destinataire; ouvr
               <span className="heure">
                 {new Date(m.creeLe).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}
                 {!m.moi && (
-                  <button
+                  <BoutonSaisie
                     className="signaler"
                     title="Signaler ce message"
-                    onClick={() => {
-                      const raison = prompt('Pourquoi signaler ce message ?')
-                      if (raison !== null) void signalerMessage(m.id, raison)
-                    }}
+                    question="Pourquoi signaler ce message ?"
+                    envoyer="Signaler"
+                    onEnvoi={(raison) => void signalerMessage(m.id, raison)}
                   >
                     ⚑
-                  </button>
+                  </BoutonSaisie>
                 )}
               </span>
             </div>

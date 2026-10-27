@@ -49,8 +49,32 @@ SEUILS_RARETE = [0.01, 0.05, 0.15, 0.40]
 # Les types de fiches de référence sont petits (51 à 200 cartes) : 1 % y ferait un ou deux légendaires
 SEUILS_REFERENCE = [0.04, 0.12, 0.27, 0.55]
 # Icônes de la Fondation, légendaires d'office : leur notoriété vient surtout d'en dehors du wiki
-# (jeux SCP: Containment Breach et Secret Laboratory), que les mentions dans le wiki ne mesurent pas
-ICONES = {"fim:epsilon-11", "gdi:the-chaos-insurgency"}
+# (jeux SCP: Containment Breach et Secret Laboratory), que les mentions dans le wiki ne mesurent pas.
+# Rēsh-1 : choix du créateur du jeu
+ICONES = {"fim:epsilon-11", "gdi:the-chaos-insurgency", "fim:r-sh-1"}
+# Rareté Mythique (5), au-dessus de Légendaire : choisies à la main, hors du classement par popularité
+MYTHIQUES = {"perso:aaron-siegel", "perso:the-administrator", "perso:o5-1", "entite:scarlet-king",
+             "fim:alpha-1", "dr-clef-s-proposal", "perso:les-auteurs"}
+# Tags de la section « Departments » qui désignent des équipes FIM, déjà des cartes
+TAGS_FIM = {"last-hope", "samsara", "angle-grinders"}
+# Noms que la description d'un tag ne donne pas proprement
+NOMS_DEPARTEMENTS = {"delta-t": "Temporal Anomalies Department", "spicy-crust-pizzeria": "Spicy Crust Pizzeria"}
+NOMS_ENTITES = {"the-serpent": "The Serpent", "hanged-king": "The Hanged King", "yaldabaoth": "Yaldabaoth",
+                "nameless": "The Nameless", "mister": "Little Misters", "homo-sapiens-sidhe": "Homo sapiens sidhe", "malo": "MalO",
+                "brothers-of-death": "The Three Brothers of Death", "anafabula": "Anafabula",
+                "pattern-screamer": "Pattern Screamers", "with-many-voices": "With Many Voices"}
+# Entités hors des sections d'entités de la liste des tags
+ENTITES_EN_PLUS = {"scarlet-king": "The Scarlet King"}
+TEXTE_AUTEURS_FR = ("En pataphysique, les Auteurs sont les êtres de la strate narrative située au-dessus de la "
+                    "réalité de la Fondation : les écrivains dont les histoires sont l'univers lui-même. Chaque anomalie, "
+                    "chaque brèche de confinement, chaque mort est une ligne qu'ils ont écrite, et de rares entités ont "
+                    "tenté de remonter les strates pour les rencontrer.")
+# Le nom sous lequel les joueurs connaissent certaines propositions SCP-001
+NOMS_001 = {"dr-clef-s-proposal": "The Gate Guardian"}
+TEXTE_AUTEURS = ("In pataphysics, the Authors are the beings of the narrative layer above the Foundation's "
+                 "reality: the writers whose stories are the universe itself. Every anomaly, every containment "
+                 "breach, every death is a line they wrote, and a few rare entities have tried to climb back "
+                 "up the layers to meet them.")
 # Les contes et documents trop mal notés ne deviennent pas des cartes
 SEUIL_NOTE_CONTE = 10
 
@@ -363,6 +387,109 @@ def conseil_o5(dossier):
     return sortie
 
 
+def entrees_tags(dossier):
+    """Liste des tags du wiki : {tag: (section, nom lié dans la description, page liée, description)}."""
+    brut = (dossier / "pages" / "tag-list.html").read_text(encoding="utf-8", errors="replace")
+    entrees = {}
+    for titre, corps in re.findall(r"<h3[^>]*>(.*?)</h3>(.*?)(?=<h[23][^>]*>)", brut, re.S):
+        titre = html.unescape(re.sub(r"<[^>]+>", "", titre)).strip()
+        for tag, desc in re.findall(r'<li><strong><a href="[^"]*/tag/([a-z0-9\-]+)">.*?</strong>\s*&#8212;\s*(.*?)</li>', corps, re.S):
+            lien = re.search(r'<a href="https?://(?:scpwiki\.com|scp-wiki\.wikidot\.com)/([^"#]+)"[^>]*>(.*?)</a>', desc)
+            nom = html.unescape(re.sub(r"<[^>]+>", "", lien.group(2))).strip() if lien else None
+            texte = html.unescape(re.sub(r"<[^>]+>", "", desc)).replace("\xa0", " ").strip()
+            entrees.setdefault(tag, (titre, nom, lien.group(1) if lien else None, texte))
+    return entrees
+
+
+def nom_depuis_description(texte):
+    m = re.search(r"(?:related to|relating to|Features)\s+(?:the Foundation's |the |The )?(.+?)(?:,| \(| or |\.$)", texte)
+    return m.group(1).strip() if m else texte
+
+
+def departements(dossier, entrees):
+    """Départements de la Fondation, d'après la section « Departments » de la liste des tags."""
+    sortie = []
+    for tag, (section_tags, nom, page, texte) in entrees.items():
+        if section_tags != "Departments" or tag in TAGS_FIM:
+            continue
+        nom = NOMS_DEPARTEMENTS.get(tag) or nom or nom_depuis_description(texte)
+        sortie.append({"k": "e", "id": "dept:" + tag, "nm": nom, "cat": categorie_departement(nom),
+                       "u": page or f"system:page-tags/tag/{tag}", "x": texte,
+                       "_pages": set(), "_tags": {tag}, "_mots": len(texte.split()), "_scp": []})
+    return sortie
+
+
+def categorie_departement(nom):
+    for mot, cat in (("Division", "Division"), ("Committee", "Comité"), ("Administration", "Administration"),
+                     ("Authority", "Autorité"), ("Office", "Bureau"), ("Team", "Équipe de recherche")):
+        if mot in nom:
+            return cat
+    return "Société-écran" if "Pizz" in nom else "Département"
+
+
+def entites(dossier, entrees):
+    """Entités pluripotentes et groupes d'entités anomales, d'après la liste des tags."""
+    sortie = []
+    for tag, (section_tags, nom, page, texte) in entrees.items():
+        if section_tags not in ("Pluripotent Entities", "Anomalous Entities") and tag not in ENTITES_EN_PLUS:
+            continue
+        nom = ENTITES_EN_PLUS.get(tag) or NOMS_ENTITES.get(tag) or nom_depuis_description(texte)
+        sortie.append({"k": "p", "id": "entite:" + tag, "nm": nom,
+                       "cat": "Entités anomales" if section_tags == "Anomalous Entities" else "Entité pluripotente",
+                       "u": f"system:page-tags/tag/{tag}", "x": texte,
+                       "_pages": set(), "_tags": {tag}, "_mots": len(texte.split()), "_scp": []})
+    return sortie
+
+
+def fondateurs(dossier, entrees):
+    """Figures absentes des dossiers du wiki : Aaron Siegel (dossier O5-1) et les Auteurs (pataphysique)."""
+    brut = (dossier / "pages" / "o5-command-dossier.html").read_text(encoding="utf-8", errors="replace")
+    texte = re.sub(r"\s+", " ", texte_page(contenu_principal(brut)))
+    phrases = [p for p in re.split(r"(?<=\.)\s+", texte) if re.search(r"Siegel|Cornell", p)]
+    pataphysique = entrees.get("pataphysics-dept")
+    return [
+        {"k": "p", "id": "perso:aaron-siegel", "nm": "Aaron Siegel", "cat": "Fondateur", "u": "o5-command-dossier",
+         "x": extrait(" ".join(dict.fromkeys(phrases)), 300),
+         "_pages": set(), "_tags": set(), "_mots": len(" ".join(phrases).split()), "_scp": []},
+        {"k": "p", "id": "perso:les-auteurs", "nm": "The Authors", "cat": "Cosmologie",
+         "u": pataphysique[2] if pataphysique and pataphysique[2] else "system:page-tags/tag/pataphysics-dept",
+         "x": TEXTE_AUTEURS, "_pages": set(), "_tags": {"pataphysics-dept"}, "_mots": len(TEXTE_AUTEURS.split()),
+         "_scp": []},
+    ]
+
+
+def propositions_001(dossier):
+    """Les propositions du hub SCP-001, téléchargées par outils/telecharger_pages.mjs."""
+    titres = dict(re.findall(r'<li[^>]*><a href="/([^"]+)">([^<]+)</a>',
+                             (dossier / "pages" / "tags" / "001-proposal.html").read_text(encoding="utf-8")))
+    hub = (dossier / "pages" / "scp-001.html").read_text(encoding="utf-8", errors="replace")
+    sortie = []
+    for lien in dict.fromkeys(re.findall(r'href="/([a-z0-9\-:]+)"[^>]*>CODE NAME', hub)):
+        f = dossier / "pages" / "001" / f"{lien.replace(':', '_')}.html"
+        if not f.exists():
+            continue
+        brut = f.read_text(encoding="utf-8", errors="replace")
+        contenu = contenu_principal(brut)
+        texte = texte_page(contenu)
+        tags = re.findall(r'/system:page-tags/tag/([a-z0-9\-]+)#pages', brut)
+        classe = next((c for c in CLASSES if c in tags), "pending")
+        procedures = section(texte, r"Special Containment Procedures?\s*:?", [r"\bDescription\s*:", r"\bAddendum"])
+        description = section(texte, r"\bDescription\s*:", [r"\bAddendum", r"\bAppendix", r"\bExperiment Log",
+                                                             r"\bInterview", r"\bIncident", r"\bDocument", r"\bNote:"])
+        note = re.search(r'class="number prw54353">([+\-]?\d+)', brut)
+        images = [html.unescape(i) for i in re.findall(r'<img[^>]+src="([^"]+)"', contenu) if "wdfiles.com" in i]
+        sortie.append({
+            "k": "s", "id": lien, "num": "SCP-001", "n": 1, "s": 0,
+            "nm": NOMS_001.get(lien) or html.unescape(titres.get(lien) or lien),
+            "c": classe, "ce": nom_classe(texte, classe), "r": int(note.group(1)) if note else 0,
+            "a": auteurs(html.unescape(brut), None), "t": tags_utiles(tags), "img": image_relative(images),
+            "x": extrait(description or texte[len(procedures):], 300), "q": extrait(procedures, 220),
+            "_mots": len(texte.split()), "_proc": len(procedures.split()), "_unc": "uncontained" in tags,
+            "_pop": 0.65 * math.log1p(max(int(note.group(1)) if note else 0, 0)) / 9.4,
+        })
+    return sortie
+
+
 def charger_contenus(dossier, motif):
     contenus = {}
     for f in sorted(dossier.glob(motif)):
@@ -402,6 +529,14 @@ def cles_mention(c):
             cles.append(("mtf", (m.group(1), m.group(2))))
         if len(c["nm"].split()) >= 2:
             cles.append(("phrase", c["nm"]))
+    elif c["k"] == "p" and c["cat"] == "Cosmologie":
+        # « Authors » figure dans les crédits de presque toutes les pages : seul le tag compte
+        return []
+    elif c["k"] == "p" and c["cat"] in ("Entité pluripotente", "Entités anomales", "Fondateur"):
+        # Le dernier mot (« King », « Siegel ») ne suffit pas : on exige le nom complet
+        cles.append(("phrase", re.sub(r"^The ", "", c["nm"])))
+    elif c["k"] == "e":
+        cles.append(("phrase", re.sub(r"^The ", "", c["nm"])))
     elif c["k"] == "p":
         if re.fullmatch(r"O5-\d+", c["nm"]):
             return [("o5", c["nm"][3:])]
@@ -466,7 +601,13 @@ def rarete_et_stats(cartes):
         total = len(liste)
         seuils = SEUILS_RARETE if liste[0]["k"] in ("s", "c", "d") else SEUILS_REFERENCE
         for rang, c in enumerate(liste):
-            c["ra"] = 4 if c["id"] in ICONES else 4 - next((i for i, s in enumerate(seuils) if rang / total < s), 4)
+            if c["id"] in MYTHIQUES:
+                c["ra"] = 5
+            elif c["id"] in ICONES or (c["k"] == "s" and c.get("s") == 0):
+                # Toutes les propositions SCP-001 sont légendaires
+                c["ra"] = 4
+            else:
+                c["ra"] = 4 - next((i for i, s in enumerate(seuils) if rang / total < s), 4)
             c["p"] = rang + 1
             mult = 1 + 0.08 * c["ra"]
             mots = 8 + 11 * math.log1p(c["_mots"] / 60)
@@ -482,8 +623,10 @@ def rarete_et_stats(cartes):
                 # Fiches de référence : textes courts, l'influence (pages liées) compense
                 menace = mots + 12 + 3 * math.log1p(len(c.get("_scp", [])))
                 confinement = 18 + 6 * math.log1p(c["lp"] * 2)
-            c["atk"] = borne(menace * mult)
-            c["def"] = borne(confinement * mult)
+            # Une Mythique domine toujours le combat, quelle que soit la longueur de sa fiche
+            plancher = 82 if c["ra"] == 5 else 5
+            c["atk"] = borne(max(menace * mult, plancher))
+            c["def"] = borne(max(confinement * mult, plancher))
 
 
 def main():
@@ -560,6 +703,14 @@ def main():
                      + 0.10 * math.log1p(len(hubs_page)) / 3),
         })
 
+    # Propositions SCP-001 du hub : seule celle de qntm est dans l'export scp-data
+    deja = {c["id"]: c for c in brutes}
+    for c in propositions_001(dossier):
+        if c["id"] in deja:
+            deja[c["id"]]["nm"] = c["nm"]
+        else:
+            brutes.append(c)
+
     # Contes et documents de Groupes d'intérêt : des pages notées, comme les SCP
     gdi, tag_vers_groupe = groupes(dossier)
     for source, contenu_source, k in ((contes, contenus_contes, "c"), (docs_gdi, contenus_gdi, "d")):
@@ -588,7 +739,9 @@ def main():
 
     # Fiches de référence : équipes FIM, personnel et Conseil O5, Groupes d'intérêt, canons.
     # Leur notoriété : les pages qui les citent dans leur texte, portent leur tag ou font partie de leur hub.
-    reference = fim(dossier) + personnel(dossier) + conseil_o5(dossier) + gdi + canons(dossier)
+    tags_wiki = entrees_tags(dossier)
+    reference = (fim(dossier) + personnel(dossier) + conseil_o5(dossier) + gdi + canons(dossier)
+                 + departements(dossier, tags_wiki) + entites(dossier, tags_wiki) + fondateurs(dossier, tags_wiki))
     mentions = mentions_wiki(reference, ((items, contenus), (contes, contenus_contes), (docs_gdi, contenus_gdi)))
     for c in reference:
         pages = c.pop("_pages")
@@ -607,8 +760,10 @@ def main():
         # Chaque page compte selon sa note, sans qu'une seule page très notée écrase les autres
         c["_pop"] = (sum(math.log1p(max(notes[p], 0)) for p in fortes)
                      + 0.25 * sum(math.log1p(max(notes[p], 0)) for p in de_la_section))
-        if c["k"] == "f":
-            c["_scp"] = sorted(c["_scp"], key=lambda p: -notes.get(p, 0))
+        if "_scp" in c:
+            # Départements et entités : les SCP qui portent leur tag
+            scp = c["_scp"] or [p for p in fortes if re.fullmatch(r"scp-\d+", p)]
+            c["_scp"] = sorted(scp, key=lambda p: -notes.get(p, 0))
             c["lie"] = [p.upper() for p in c["_scp"][:6]]
         brutes.append(c)
 
@@ -623,7 +778,7 @@ def main():
 
     rarete_et_stats(brutes)
 
-    ordre = "sfpgndc"
+    ordre = "sfpegndc"
     brutes.sort(key=lambda c: (ordre.index(c["k"]), c.get("s") or 0, c.get("n") or 0,
                                (c.get("num") or c["nm"]).lower()))
     cartes = [{k: v for k, v in c.items() if not k.startswith("_") and v not in (None, "", [])} for c in brutes]
@@ -638,7 +793,7 @@ def main():
     SORTIE.write_text(json.dumps(sortie, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
     for k in ordre:
         sel = [c for c in cartes if c["k"] == k]
-        print(k, len(sel), [sum(1 for c in sel if c["ra"] == i) for i in range(5)])
+        print(k, len(sel), [sum(1 for c in sel if c["ra"] == i) for i in range(6)])
     print(f"{len(cartes)} cartes -> {SORTIE} ({SORTIE.stat().st_size / 1e6:.1f} Mo)")
 
     if (dossier / "fr").exists():
@@ -681,6 +836,7 @@ def traduire(dossier, cartes):
         if t:
             sortie[c["id"]] = t
     sortie.update(traduire_references(dossier, cartes))
+    sortie["perso:les-auteurs"] = {"nm": "Les Auteurs", "x": TEXTE_AUTEURS_FR}
     return sortie
 
 

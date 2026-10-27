@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
-import { RARETES, type Base } from '../data/catalogue'
+import { RARETES, designation, type Base } from '../data/catalogue'
 import { BOOSTERS, type CarteTiree, type TypeBooster } from '../engine/boosters'
 import { PAR_ID, PRESTIGE } from '../engine/variantes'
 import { tirerBooster } from '../state/actions'
 import { notifier, obtenir, useSauvegarde } from '../state/sauvegarde'
-import type { Ecran } from '../types'
+import type { Carte as TCarte, Ecran } from '../types'
 import { Carte } from './Carte'
 import { CompteARebours } from './CompteARebours'
 import { Logo } from './Logo'
@@ -21,6 +21,22 @@ export interface Tirage {
 }
 
 const valeur = (t: CarteTiree) => t.carte.ra * 10 + (5 - PRESTIGE.indexOf(t.variante))
+
+/** Couleur et dernière ligne du protocole de chaque Mythique */
+const SIGNATURES: Record<string, { couleur: string; ligne: string }> = {
+  'perso:aaron-siegel': { couleur: '#7fc8ff', ligne: 'Cornell, 1891 : un physicien disparaît des registres' },
+  'perso:the-administrator': { couleur: '#f2f2f2', ligne: "Identité de l'Administrateur : [EXPURGÉ]" },
+  'perso:o5-1': { couleur: '#e6e6e6', ligne: 'Siège n° 1 du Conseil O5 : présence confirmée' },
+  'entite:scarlet-king': { couleur: '#d0102f', ligne: "Le Roi écarlate s'éveille" },
+  'fim:alpha-1': { couleur: '#e0262b', ligne: "La Main droite rouge ne répond qu'au Conseil" },
+  'dr-clef-s-proposal': { couleur: '#ffcf5a', ligne: 'Quatre ailes de flammes au-dessus du Site 0' },
+  'perso:les-auteurs': { couleur: '#b48cff', ligne: 'Strate narrative supérieure : lecture seule' },
+}
+const signature = (carte: TCarte) => SIGNATURES[carte.id] ?? { couleur: RARETES[5].couleur, ligne: 'Dossier de niveau 5 déclassifié' }
+/** Durée du protocole d'une Mythique avant la révélation (ms), en phase avec les animations .pm-* */
+const DUREE_PROTOCOLE = 5400
+/** Version courte pour une Légendaire (.protocole-legendaire) */
+const DUREE_PROTOCOLE_LEGENDAIRE = 2700
 
 let tirageEnCours = false
 
@@ -95,6 +111,7 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
   const [revelee, setRevelee] = useState(false)
   const [suspense, setSuspense] = useState(false)
   const [sortie, setSortie] = useState(false)
+  const [protocole, setProtocole] = useState(false)
   const glisse = useRef<{ x: number; largeur: number } | null>(null)
   const courante = tirage.cartes[index]
 
@@ -133,18 +150,25 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
     else setDechirure(0)
   }
 
+  const reveler = useCallback(() => {
+    const t = tirage.cartes[index]
+    setSuspense(false)
+    setProtocole(false)
+    setRevelee(true)
+    if (tirage.souhaits.has(t.carte.id)) notifier(`Souhait exaucé : ${t.carte.num ?? t.carte.nm}`, 'succes')
+    if (t.variante !== 'std') notifier(`Variante ${PAR_ID[t.variante].nom} !`, 'rare')
+    if (t.carte.ra === 5) notifier(`Mythique : ${designation(t.carte)}${t.numero ? `, exemplaire n° ${t.numero}` : ''}`, 'rare')
+  }, [index, tirage])
+
   const avancer = useCallback(() => {
-    if (etape !== 'pile' || suspense || sortie) return
+    if (etape !== 'pile' || suspense || sortie || protocole) return
     if (!revelee) {
       const t = tirage.cartes[index]
       const spectaculaire = t.carte.ra >= 3 || t.variante !== 'std'
-      const reveler = () => {
-        setSuspense(false)
-        setRevelee(true)
-        if (tirage.souhaits.has(t.carte.id)) notifier(`Souhait exaucé : ${t.carte.num ?? t.carte.nm}`, 'succes')
-        if (t.variante !== 'std') notifier(`Variante ${PAR_ID[t.variante].nom} !`, 'rare')
-      }
-      if (spectaculaire) {
+      // Légendaire et Mythique (en version standard) ont leur protocole ; une variante garde son effet propre
+      if (t.carte.ra === 5 || (t.carte.ra === 4 && t.variante === 'std')) {
+        setProtocole(true)
+      } else if (spectaculaire) {
         setSuspense(true)
         setTimeout(reveler, 900)
       } else reveler()
@@ -157,7 +181,7 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
       if (index >= tirage.cartes.length - 1) setEtape('bilan')
       else setIndex(index + 1)
     }, 380)
-  }, [etape, suspense, sortie, revelee, index, tirage])
+  }, [etape, suspense, sortie, protocole, revelee, index, tirage, reveler])
 
   useEffect(() => {
     const touche = (e: KeyboardEvent) => {
@@ -206,18 +230,23 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
   }
 
   if (etape === 'pile' && courante) {
-    const { carte, variante } = courante
+    const { carte, variante, numero } = courante
     const restantes = tirage.cartes.length - index - 1
-    const fx = revelee ? (variante !== 'std' ? 'variante' : `ra-${carte.ra}`) : ''
+    const fx = revelee ? (carte.ra === 5 ? 'ra-5' : variante !== 'std' ? 'variante' : `ra-${carte.ra}`) : ''
+    const couleurFx = carte.ra === 5 ? signature(carte).couleur : variante !== 'std' ? PAR_ID[variante].couleur : RARETES[carte.ra].couleur
     return (
       <section className="booster-ouverture">
         <p className="dossier-entete">
           {tirage.type.nom} · fiche {index + 1}/{tirage.cartes.length}
         </p>
-        <div className={`scene ${revelee && carte.ra === 4 ? 'secousse-ecran' : ''}`} onClick={avancer} role="button" aria-label={revelee ? 'Carte suivante' : 'Révéler la carte'}>
-          {revelee && <div className={`fx fx-${fx}`} style={{ ['--fx' as string]: variante !== 'std' ? PAR_ID[variante].couleur : RARETES[carte.ra].couleur }} aria-hidden="true">
+        {protocole && <Protocole carte={carte} onFini={reveler} />}
+        <div className={`scene ${revelee && carte.ra >= 4 ? 'secousse-ecran' : ''}`} onClick={avancer} role="button" aria-label={revelee ? 'Carte suivante' : 'Révéler la carte'}>
+          {revelee && <div className={`fx fx-${fx}`} style={{ ['--fx' as string]: couleurFx }} aria-hidden="true">
             <span className="fx-rayons" />
-            {(carte.ra >= 3 || variante !== 'std') && Array.from({ length: 18 }, (_, i) => <span key={i} className="fx-particule" style={{ ['--a' as string]: `${i * 20}deg`, ['--d' as string]: `${(i % 4) * 0.08}s` }} />)}
+            {(carte.ra >= 3 || variante !== 'std') &&
+              Array.from({ length: carte.ra === 5 ? 36 : 18 }, (_, i) => (
+                <span key={i} className="fx-particule" style={{ ['--a' as string]: `${i * (carte.ra === 5 ? 10 : 20)}deg`, ['--d' as string]: `${(i % 4) * 0.08}s` }} />
+              ))}
           </div>}
           {Array.from({ length: Math.min(restantes, 4) }, (_, i) => (
             <div key={i} className="pile-dos" style={{ ['--i' as string]: i + 1 }} aria-hidden="true" />
@@ -233,7 +262,12 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
             </div>
           </div>
           {revelee && variante !== 'std' && <div className="banniere-variante">Variante · {PAR_ID[variante].nom}</div>}
-          {revelee && carte.ra >= 3 && variante === 'std' && <div className="banniere-variante" style={{ ['--fx' as string]: RARETES[carte.ra].couleur }}>{RARETES[carte.ra].nom}</div>}
+          {revelee && carte.ra >= 3 && variante === 'std' && (
+            <div className={`banniere-variante ${carte.ra === 5 ? 'banniere-mythique' : ''}`} style={{ ['--fx' as string]: couleurFx }}>
+              {RARETES[carte.ra].nom}
+              {carte.ra === 5 && numero ? ` · exemplaire n° ${numero}` : ''}
+            </div>
+          )}
         </div>
         <p className="consigne">{revelee ? 'Cliquez pour passer à la suivante' : 'Cliquez pour retourner la carte'}</p>
         <button className="btn btn-discret" onClick={() => setEtape('bilan')}>
@@ -279,5 +313,52 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
         </button>
       </div>
     </section>
+  )
+}
+
+/**
+ * Le protocole d'une Légendaire ou d'une Mythique : l'écran s'éteint, la sirène tourne, le terminal
+ * demande l'autorisation et tamponne le dossier. Une Légendaire a droit à la version courte et dorée.
+ * Un clic l'abrège une fois la première ligne affichée.
+ */
+function Protocole({ carte, onFini }: { carte: TCarte; onFini: () => void }) {
+  const debut = useRef(Date.now())
+  const mythique = carte.ra === 5
+  const sig = mythique ? signature(carte) : { couleur: RARETES[4].couleur, ligne: '' }
+  useEffect(() => {
+    const t = setTimeout(onFini, mythique ? DUREE_PROTOCOLE : DUREE_PROTOCOLE_LEGENDAIRE)
+    return () => clearTimeout(t)
+  }, [onFini, mythique])
+  const lignes = mythique
+    ? [
+        '> ALERTE : dossier de niveau 5 détecté',
+        "> Vérification de l'accréditation… O5",
+        '> Autorisation du Conseil : ACCORDÉE',
+        `> Déclassification : ${designation(carte)}`,
+        `> ${sig.ligne}`,
+      ]
+    : ['> Dossier de niveau 4 : accès restreint', `> Déclassification : ${designation(carte)}`]
+  return (
+    <div
+      className={`protocole-mythique ${mythique ? '' : 'protocole-legendaire'}`}
+      style={{ ['--sig' as string]: sig.couleur }}
+      onClick={() => Date.now() - debut.current > (mythique ? 1200 : 600) && onFini()}
+      role="alert"
+      aria-label={`Carte ${mythique ? 'mythique' : 'légendaire'} : ${designation(carte)}`}
+    >
+      <div className="pm-sirene" aria-hidden="true" />
+      <div className="pm-bandeau" aria-hidden="true">
+        <span>{(mythique ? 'BRÈCHE · ACCÈS NIVEAU 5 · CONSEIL O5 · ' : 'ACCÈS NIVEAU 4 · DOSSIER LÉGENDAIRE · ').repeat(6)}</span>
+      </div>
+      <div className="pm-terminal">
+        {lignes.map((l, i) => (
+          <p key={i} style={{ ['--i' as string]: i, ['--n' as string]: l.length }}>
+            <span>{l}</span>
+          </p>
+        ))}
+      </div>
+      <div className="pm-tampon">{mythique ? 'Mythique' : 'Légendaire'}</div>
+      <div className="pm-flash" aria-hidden="true" />
+    </div>
   )
 }

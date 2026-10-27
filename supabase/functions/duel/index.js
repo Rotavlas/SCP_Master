@@ -122,6 +122,32 @@ function degats(attaquant, defenseur, temps, plusRapide) {
 	return Math.max(8, Math.round(base * vitesse * course));
 }
 // src/data/catalogue.ts
+const RARETES = [
+	{
+		nom: "Commune",
+		couleur: "#9aa3a8"
+	},
+	{
+		nom: "Peu commune",
+		couleur: "#5fbf7f"
+	},
+	{
+		nom: "Rare",
+		couleur: "#4a9dff"
+	},
+	{
+		nom: "Épique",
+		couleur: "#b26bff"
+	},
+	{
+		nom: "Légendaire",
+		couleur: "#f4b740"
+	},
+	{
+		nom: "Mythique",
+		couleur: "#ff3b5c"
+	}
+];
 const CLASSES = {
 	safe: {
 		nom: "Safe",
@@ -186,6 +212,13 @@ const TYPES = {
 		couleur: "#4b5d7a",
 		article: "qui"
 	},
+	e: {
+		nom: "Département",
+		pluriel: "Départements",
+		court: "Dépt",
+		couleur: "#5b6b3a",
+		article: "quel département"
+	},
 	g: {
 		nom: "Groupe d'intérêt",
 		pluriel: "Groupes d'intérêt",
@@ -219,6 +252,7 @@ const ORDRE_TYPES = [
 	"s",
 	"f",
 	"p",
+	"e",
 	"g",
 	"n",
 	"d",
@@ -235,13 +269,7 @@ function designation(carte) {
 var Base = class Base {
 	cartes;
 	parId = /* @__PURE__ */ new Map();
-	parRarete = [
-		[],
-		[],
-		[],
-		[],
-		[]
-	];
+	parRarete = RARETES.map(() => []);
 	/** Cartes par type puis par rareté */
 	parType = /* @__PURE__ */ new Map();
 	prefixeImage;
@@ -256,13 +284,7 @@ var Base = class Base {
 		} : c) : catalogue.cartes;
 		this.prefixeImage = catalogue.prefixeImage;
 		this.genere = catalogue.genere;
-		for (const k of ORDRE_TYPES) this.parType.set(k, [
-			[],
-			[],
-			[],
-			[],
-			[]
-		]);
+		for (const k of ORDRE_TYPES) this.parType.set(k, RARETES.map(() => []));
 		for (const c of this.cartes) {
 			this.parId.set(c.id, c);
 			this.parRarete[c.ra].push(c);
@@ -317,7 +339,8 @@ const RARETES_TEXTE = [
 	"Peu commune",
 	"Rare",
 	"Épique",
-	"Légendaire"
+	"Légendaire",
+	"Mythique"
 ];
 const TAGS_GENERIQUES = /* @__PURE__ */ new Set([
 	"tale",
@@ -370,7 +393,7 @@ function voisines(base, carte, nombre, exclure = [], filtre) {
 	const choisies = [];
 	const ids = /* @__PURE__ */ new Set([carte.id, ...exclure.map((c) => c.id)]);
 	for (let essai = 0; choisies.length < nombre && essai < 300; essai++) {
-		const rarete = Math.min(4, carte.ra + (Math.random() < .5 ? 0 : 1));
+		const rarete = Math.min(5, carte.ra + (Math.random() < .5 ? 0 : 1));
 		const c = choisir$1(parRarete[rarete].length > 4 ? parRarete[rarete] : parRarete.flat());
 		if (!ids.has(c.id) && !SURNOM_INCONNU.test(c.nm) && (!filtre || filtre(c))) {
 			ids.add(c.id);
@@ -461,10 +484,10 @@ const GENERATEURS = [
 	{
 		poids: 3,
 		f: (b, s) => {
-			if (s.k !== "f" || !s.lie?.length) return null;
+			if (!s.lie?.length) return null;
 			const lie = s.lie;
-			const leurres = voisines(b, b.auHasard(s.ra, ["s"]), 6, [], (c) => !lie.includes(c.num ?? "")).map((c) => c.num ?? "");
-			return construire(s, `Au confinement de quelle anomalie l'équipe ${s.num} a-t-elle participé ?`, choisir$1(lie), leurres, 2);
+			const leurres = voisines(b, b.auHasard(Math.min(s.ra, 4), ["s"]), 6, [], (c) => !lie.includes(c.num ?? "")).map((c) => c.num ?? "");
+			return construire(s, s.k === "f" ? `Au confinement de quelle anomalie l'équipe ${s.num} a-t-elle participé ?` : s.k === "e" ? `Quel dossier implique ${designation(s)} ?` : `À quelle anomalie ${designation(s)} est-il lié ?`, choisir$1(lie), leurres, 2);
 		}
 	},
 	{
