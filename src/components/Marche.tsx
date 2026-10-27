@@ -9,6 +9,7 @@ import {
   chercherJoueurs,
   collectionEchangeable,
   encherir,
+  historiqueMises,
   mesEchanges,
   proposerEchange,
   repondreEchange,
@@ -17,6 +18,7 @@ import {
   type Enchere,
   type EtatMarche,
   type LigneOffre,
+  type Mise,
   type Offre,
 } from '../state/marche'
 import { useSauvegarde } from '../state/sauvegarde'
@@ -236,10 +238,11 @@ function LigneEnchere({
           <strong key={e.mise ?? 'depart'} className="prix-maj">
             {credits(e.mise ?? e.prixDepart)}
           </strong>
-          <span className="discret">{e.mise === null ? ' mise de départ' : ` · ${e.nbMises} mise${e.nbMises > 1 ? 's' : ''}`}</span>
+          <span className="discret">{e.mise === null ? ' mise de départ' : ` par ${e.enTete ? 'vous' : e.meneur ?? '—'}`}</span>
           {e.enTete && <span className="badge-tete">Vous menez</span>}
         </p>
         <p className={`enchere-fin ${urgent ? 'urgent' : ''}`}>Fin dans {tempsRestant(fin, maintenant)}</p>
+        {e.nbMises > 0 && <HistoriqueMises idEnchere={e.id} nbMises={e.nbMises} />}
       </div>
       <div className="enchere-actions">
         {e.aMoi ? (
@@ -276,6 +279,35 @@ function LigneEnchere({
         )}
       </div>
     </article>
+  )
+}
+
+/** Les mises d'une enchère, dépliables ; rechargées à chaque nouvelle mise (nbMises change avec le direct). */
+function HistoriqueMises({ idEnchere, nbMises }: { idEnchere: string; nbMises: number }) {
+  const [ouvert, setOuvert] = useState(false)
+  const [mises, setMises] = useState<Mise[] | null>(null)
+  useEffect(() => {
+    if (ouvert) void historiqueMises(idEnchere).then(setMises)
+  }, [ouvert, idEnchere, nbMises])
+
+  return (
+    <div className="historique-mises">
+      <button className="btn-lien" aria-expanded={ouvert} onClick={() => setOuvert(!ouvert)}>
+        {ouvert ? 'Masquer' : 'Historique des'} {nbMises} mise{nbMises > 1 ? 's' : ''}
+      </button>
+      {ouvert && (
+        <ol>
+          {!mises && <li className="discret">Chargement…</li>}
+          {mises?.map((m, i) => (
+            <li key={`${m.le}-${i}`} className={`${i === 0 ? 'meilleure' : ''} ${m.moi ? 'moi' : ''}`}>
+              <strong>{credits(m.montant)}</strong>
+              <span>{m.moi ? 'vous' : m.pseudo}</span>
+              <span className="discret">{new Date(m.le).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+            </li>
+          ))}
+        </ol>
+      )}
+    </div>
   )
 }
 

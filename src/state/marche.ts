@@ -18,6 +18,8 @@ export interface Enchere {
   nbMises: number
   fin: string
   vendeur: string
+  /** Pseudo du meilleur enchérisseur */
+  meneur: string | null
   aMoi: boolean
   enTete: boolean
 }
@@ -117,6 +119,16 @@ export async function annulerEnchere(idEnchere: string): Promise<boolean> {
   if (ok) await rechargerEtat()
   return !!ok
 }
+
+export interface Mise {
+  pseudo: string
+  montant: number
+  le: string
+  moi: boolean
+}
+
+/** Les 50 dernières mises d'une enchère, de la plus récente à la plus ancienne */
+export const historiqueMises = (idEnchere: string) => appeler<Mise[]>('historique_mises', { p_enchere: idEnchere })
 
 export const chargerCours = (carte: string) => appeler<Cours>('cours_carte', { p_carte: carte })
 

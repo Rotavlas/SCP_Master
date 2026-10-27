@@ -315,6 +315,15 @@ await test('une mise de dernière seconde prolonge la vente de 2 minutes', async
   const reste = (await admin('select extract(epoch from fin - now())::int as s from public.encheres where id = $1', [vente])).rows[0].s
   assert.ok(reste >= 110, `${reste} s restantes`)
 })
+await test("l'historique des mises donne le pseudo de chaque enchérisseur, et la liste le meneur", async () => {
+  const h = await valeur(A, 'select public.historique_mises($1)', [vente])
+  assert.deepEqual(h.map((m) => [m.pseudo, Number(m.montant)]), [['Docteur Bravo', 120], ['Chercheur Charlie', 105], ['Docteur Bravo', 100]])
+  assert.ok(h.every((m) => m.moi === false), "A n'a pas misé")
+  assert.equal((await valeur(B, 'select public.historique_mises($1)', [vente]))[0].moi, true)
+  const e = (await valeur(C, 'select public.marche()')).ouvertes.find((x) => x.id === vente)
+  assert.equal(e.meneur, 'Docteur Bravo')
+  await echoue(en(null, 'select public.historique_mises($1)', [vente]), /permission denied/)
+})
 await test("une vente qui a reçu une mise ne peut plus être retirée", async () => {
   await echoue(en(A, 'select public.annuler_enchere($1)', [vente]), /déjà reçu une mise/)
 })

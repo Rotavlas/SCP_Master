@@ -2945,6 +2945,53 @@ select:focus {
   width: 7.5rem;
 }
 
+.historique-mises {
+  margin-top: 0.4rem;
+}
+
+.historique-mises .btn-lien {
+  margin: 0;
+  padding: 0;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.historique-mises ol {
+  list-style: none;
+  margin: 0.4rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.15rem;
+  max-height: 180px;
+  overflow-y: auto;
+  font-size: 0.85rem;
+}
+
+.historique-mises li {
+  display: grid;
+  grid-template-columns: 6.5rem 1fr auto;
+  gap: 0.6rem;
+  padding: 0.2rem 0.4rem;
+  border-radius: 4px;
+}
+
+.historique-mises li strong {
+  font-family: var(--mono);
+  font-weight: 500;
+}
+
+.historique-mises li.meilleure {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.historique-mises li.meilleure strong {
+  font-weight: 700;
+}
+
+.historique-mises li.moi span:first-of-type {
+  color: var(--vert);
+}
+
 .historique {
   width: 100%;
   border-collapse: collapse;
