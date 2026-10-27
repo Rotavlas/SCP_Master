@@ -252,8 +252,8 @@ await test('commencer un duel abandonne le précédent, sans gain', async () => 
   const l = (await admin('select issue, credits from prive.duels_ia where id = $1', [premier.id])).rows[0]
   assert.deepEqual(l, { issue: 'defaite', credits: 0 })
 })
-await test('au-delà de 30 duels récompensés par jour, plus de gains', async () => {
-  await admin(`insert into prive.duels_ia (joueur, niveau, debut, fin, credits) select $1, 1, now(), now(), 40 from generate_series(1, 30)`, [B])
+await test('au-delà de 10 duels récompensés par jour, plus de gains', async () => {
+  await admin(`insert into prive.duels_ia (joueur, niveau, debut, fin, credits) select $1, 1, now(), now(), 40 from generate_series(1, 10)`, [B])
   const d = (await appel('jeton-B', { action: 'debuter', niveau: 1 })).corps
   let r
   for (const carte of d.main) {
@@ -273,6 +273,152 @@ await test('CORS : seule l\'origine du jeu est autorisée', async () => {
   const r = await traiter(new Request(`${URL_SUPABASE}/functions/v1/duel`, { method: 'OPTIONS', headers: { Origin: 'https://pirate.example' } }), env)
   assert.equal(r.status, 204)
   assert.equal(r.headers.get('Access-Control-Allow-Origin'), SITE)
+})
+
+console.log('Duels entre joueurs')
+const C = '00000000-0000-0000-0000-00000000000c'
+await db.exec(`insert into auth.users (id) values ('${C}')`)
+JETONS['jeton-C'] = C
+await admin(`update public.profils set pseudo = 'Alpha', langue = 'vo' where id = '${A}'`)
+await admin(`update public.profils set pseudo = 'Bravo', langue = 'vo' where id = '${B}'`)
+await admin(`update public.profils set pseudo = 'Charlie' where id = '${C}'`)
+const secretJcj = async (id) => (await admin('select etat from prive.duels_jcj_secret where duel = $1', [id])).rows[0].etat
+const ligneJcj = async (id) => (await admin('select statut, etat, issue, classe from public.duels_jcj where id = $1', [id])).rows[0]
+const elo = async (j) => (await admin('select elo from public.profils where id = $1', [j])).rows[0].elo
+
+/** Une manche complète : les deux joueurs jouent leur première carte et répondent (juste ou non). */
+async function mancheJcj(id, justeA, justeB, delaiA = 2, delaiB = 4) {
+  const a = (await appel('jeton-A', { action: 'jcj_etat', id })).corps
+  const b = (await appel('jeton-B', { action: 'jcj_etat', id })).corps
+  assert.equal((await appel('jeton-A', { action: 'jcj_jouer', id, carte: a.main[0] })).statut, 200)
+  const q = await appel('jeton-B', { action: 'jcj_jouer', id, carte: b.main[0] })
+  assert.equal(q.statut, 200, q.texte)
+  const bonne = (await secretJcj(id)).question.bonne
+  const n = q.corps.etat.question.options.length
+  horloge += delaiA * 1000
+  await appel('jeton-A', { action: 'jcj_repondre', id, choix: justeA ? bonne : (bonne + 1) % n })
+  horloge += (delaiB - delaiA) * 1000
+  const r = await appel('jeton-B', { action: 'jcj_repondre', id, choix: justeB ? bonne : (bonne + 1) % n })
+  assert.equal(r.statut, 200, r.texte)
+  return r.corps
+}
+
+let jcj
+await test('la file classée apparie deux joueurs et ouvre le duel', async () => {
+  const a = await appel('jeton-A', { action: 'jcj_file' })
+  assert.equal(a.statut, 200, a.texte)
+  assert.equal(a.corps.attente, true)
+  const b = await appel('jeton-B', { action: 'jcj_file' })
+  assert.equal(b.statut, 200, b.texte)
+  jcj = b.corps.duel.id
+  assert.equal(b.corps.duel.cote, 'b')
+  assert.equal(b.corps.duel.classe, true)
+  assert.equal(b.corps.duel.adversaire.pseudo, 'Alpha')
+  assert.equal(b.corps.duel.etat.phase, 'choix')
+  assert.equal(b.corps.duel.main.length, 5)
+  const a2 = await appel('jeton-A', { action: 'jcj_file' })
+  assert.equal(a2.corps.duel.id, jcj, 'A retrouve le duel en relançant la file')
+  assert.deepEqual(a2.corps.duel.main, equipeA)
+})
+await test("un troisième joueur ne peut ni lire ni jouer le duel", async () => {
+  assert.equal((await appel('jeton-C', { action: 'jcj_etat', id: jcj })).statut, 404)
+  assert.equal((await appel('jeton-C', { action: 'jcj_jouer', id: jcj, carte: equipeA[0] })).statut, 404)
+})
+await test("pas de question tant que les deux n'ont pas choisi, et jamais la bonne réponse", async () => {
+  const a = await appel('jeton-A', { action: 'jcj_jouer', id: jcj, carte: equipeA[0] })
+  assert.equal(a.corps.etat.phase, 'choix')
+  assert.equal(a.corps.etat.choisi.a, true)
+  assert.equal((await appel('jeton-A', { action: 'jcj_jouer', id: jcj, carte: equipeA[1] })).statut, 409, 'une seule carte par manche')
+  const mainB = (await appel('jeton-B', { action: 'jcj_etat', id: jcj })).corps.main
+  assert.equal((await appel('jeton-B', { action: 'jcj_jouer', id: jcj, carte: equipeA[0] === mainB[0] ? 'scp-000' : equipeA[0] })).statut, 400, 'carte hors de sa main')
+  const b = await appel('jeton-B', { action: 'jcj_jouer', id: jcj, carte: mainB[0] })
+  assert.equal(b.corps.etat.phase, 'question')
+  assert.ok(!b.texte.includes('"bonne"'), 'la bonne réponse ne quitte pas le serveur')
+  assert.ok(!JSON.stringify((await ligneJcj(jcj)).etat).includes('"bonne"'), "ni l'état diffusé aux joueurs")
+  assert.ok(!JSON.stringify((await ligneJcj(jcj)).etat).includes(mainB[0]), 'la carte de B reste cachée pendant la question')
+})
+await test('les deux répondent : le serveur corrige et applique les dégâts', async () => {
+  const bonne = (await secretJcj(jcj)).question.bonne
+  horloge += 2000
+  const a = await appel('jeton-A', { action: 'jcj_repondre', id: jcj, choix: bonne })
+  assert.equal(a.corps.etat.repondu.a, true)
+  assert.equal((await appel('jeton-A', { action: 'jcj_repondre', id: jcj, choix: bonne })).statut, 409, 'une seule réponse')
+  horloge += 3000
+  const b = await appel('jeton-B', { action: 'jcj_repondre', id: jcj, choix: (bonne + 1) % 4 })
+  const d = b.corps.etat.dernier
+  assert.equal(d.bonne, bonne)
+  assert.equal(d.choix.a, bonne)
+  assert.ok(d.degats.b > 0, 'B prend des dégâts')
+  assert.equal(d.degats.a, 0, 'A ne prend rien')
+  assert.equal(b.corps.etat.pv.b, 100 - d.degats.b)
+  assert.equal(b.corps.etat.manche, 2)
+  assert.equal(b.corps.etat.phase, 'choix')
+  assert.equal(b.corps.main.length, 4, 'la carte jouée a quitté la main')
+})
+await test('délai de choix dépassé : la carte est jouée d\'office', async () => {
+  horloge += 30_000
+  const r = await appel('jeton-A', { action: 'jcj_etat', id: jcj })
+  assert.equal(r.corps.etat.phase, 'question')
+  assert.equal(r.corps.etat.choisi.a && r.corps.etat.choisi.b, true)
+})
+await test('délai de réponse dépassé : personne ne frappe', async () => {
+  const pv = (await ligneJcj(jcj)).etat.pv
+  horloge += 30_000
+  const r = await appel('jeton-B', { action: 'jcj_etat', id: jcj })
+  assert.equal(r.corps.etat.manche, 3)
+  assert.deepEqual(r.corps.etat.pv, pv)
+  assert.deepEqual(r.corps.etat.dernier.choix, { a: null, b: null })
+})
+await test("fin du duel : l'issue vient des points de vie, Elo et gains appliqués", async () => {
+  const [eloA, eloB] = [await elo(A), await elo(B)]
+  let r
+  // A répond juste, B faux : B peut tomber à 0 avant la 5e manche
+  for (let i = 0; i < 3 && r?.etat.phase !== 'fin'; i++) r = await mancheJcj(jcj, true, false)
+  assert.equal(r.etat.phase, 'fin')
+  assert.ok(r.etat.pv.a > r.etat.pv.b)
+  assert.equal(r.etat.fin.issue, 'a')
+  const l = await ligneJcj(jcj)
+  assert.equal(l.statut, 'termine')
+  assert.equal(l.issue, 'a')
+  assert.equal(await elo(A), eloA + 16)
+  assert.equal(await elo(B), eloB - 16)
+  assert.equal(r.gains.credits, 25, 'B, perdant, reçoit 25 crédits')
+  assert.ok(r.profil, 'le profil à jour revient au joueur qui a terminé')
+  const a = (await appel('jeton-A', { action: 'jcj_etat', id: jcj })).corps
+  assert.deepEqual([a.gains.elo, a.gains.credits], [16, 120])
+  assert.equal((await appel('jeton-A', { action: 'jcj_jouer', id: jcj, carte: equipeA[4] })).corps.statut, 'termine', 'plus rien ne se joue')
+})
+await test("abandonner donne la victoire à l'adversaire", async () => {
+  await appel('jeton-A', { action: 'jcj_file' })
+  const id = (await appel('jeton-B', { action: 'jcj_file' })).corps.duel.id
+  const r = await appel('jeton-B', { action: 'jcj_abandonner', id })
+  assert.equal(r.corps.etat.fin.issue, 'a')
+  assert.equal(r.corps.etat.fin.abandon, 'b')
+  assert.equal((await ligneJcj(id)).statut, 'termine')
+})
+await test('défi amical entre amis : sans Elo', async () => {
+  await admin(`insert into prive.amities (de, vers, statut) values ('${A}', '${B}', 'ami')`)
+  assert.equal((await appel('jeton-A', { action: 'jcj_defier', pseudo: 'Charlie' })).statut, 409, 'pas ami avec Charlie')
+  const { id } = (await appel('jeton-A', { action: 'jcj_defier', pseudo: 'Bravo' })).corps
+  const r = await appel('jeton-B', { action: 'jcj_repondre_defi', id, accepter: true })
+  assert.equal(r.statut, 200, r.texte)
+  assert.equal(r.corps.duel.classe, false)
+  const [eloA, eloB] = [await elo(A), await elo(B)]
+  let fin
+  for (let i = 0; i < 5 && !fin?.etat.fin; i++) fin = await mancheJcj(id, true, false)
+  assert.equal(fin.etat.phase, 'fin')
+  assert.deepEqual([await elo(A), await elo(B)], [eloA, eloB])
+  assert.deepEqual([fin.gains.credits, fin.gains.elo, fin.gains.xp], [0, 0, 15])
+})
+await test('défi refusé : annulé', async () => {
+  const { id } = (await appel('jeton-A', { action: 'jcj_defier', pseudo: 'Bravo' })).corps
+  assert.equal((await appel('jeton-B', { action: 'jcj_repondre_defi', id, accepter: false })).corps.refuse, true)
+  assert.equal((await ligneJcj(id)).statut, 'annule')
+})
+await test('quitter la file', async () => {
+  await appel('jeton-A', { action: 'jcj_file' })
+  assert.equal((await appel('jeton-A', { action: 'jcj_quitter' })).corps.ok, true)
+  assert.equal((await admin('select count(*)::int as n from prive.file_jcj')).rows[0].n, 0)
 })
 
 console.log(`\n${reussis} tests réussis${process.exitCode ? ', des échecs' : ''}.`)

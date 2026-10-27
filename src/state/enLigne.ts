@@ -58,6 +58,11 @@ function majCompte(c: Compte) {
   abonnes.forEach((a) => a())
 }
 
+/** Identifiant du joueur connecté (pour filtrer le direct : ses duels, ses invitations). */
+export function idUtilisateur(): string | null {
+  return utilisateur
+}
+
 export function useCompte(): Compte {
   return useSyncExternalStore(
     (a) => {
@@ -150,7 +155,7 @@ export async function appeler<T>(fonction: string, params?: Record<string, unkno
 }
 
 /** Appelle la fonction Edge « duel » (duels arbitrés par le serveur) ; en cas d'erreur, prévient le joueur et renvoie null. */
-export async function appelerDuel<T>(action: 'debuter' | 'jouer' | 'repondre', params: Record<string, unknown>): Promise<T | null> {
+export async function appelerDuel<T>(action: string, params: Record<string, unknown> = {}): Promise<T | null> {
   if (!supabase) return null
   const { data, error } = await supabase.functions.invoke('duel', { body: { action, ...params } })
   if (error) {

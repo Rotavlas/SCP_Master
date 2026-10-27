@@ -483,6 +483,245 @@ await test('supprimer son compte rend les mises reçues et libère les offres fa
   assert.equal((await admin('select count(*)::int as n from public.exemplaires where bloque_par = $1', [offreC])).rows[0].n, 0)
 })
 
+console.log('Amis et blocages')
+const E = '00000000-0000-0000-0000-00000000000e'
+const F = '00000000-0000-0000-0000-00000000000f'
+const G = '00000000-0000-0000-0000-000000000010'
+await db.exec(`insert into auth.users (id) values ('${E}'), ('${F}'), ('${G}')`)
+await admin(`update public.profils set pseudo = 'Echo', credits = 5000 where id = '${E}'`)
+await admin(`update public.profils set pseudo = 'Foxtrot', credits = 500 where id = '${F}'`)
+await admin(`update public.profils set pseudo = 'Golf', credits = 100 where id = '${G}'`)
+const EQUIPE = ['scp-173', 'scp-096', 'scp-682', 'scp-049', 'scp-106']
+for (const j of [E, F, G]) {
+  for (const c of EQUIPE) await donner(j, c)
+  await admin('update public.profils set equipe = $1 where id = $2', [EQUIPE, j])
+}
+
+await test("une demande d'ami réciproque devient une amitié", async () => {
+  assert.equal(await valeur(E, "select public.demander_ami('foxtrot')"), 'demande')
+  const f = await valeur(F, 'select public.mes_amis()')
+  assert.deepEqual(f.recues, ['Echo'])
+  assert.equal(await valeur(F, "select public.demander_ami('Echo')"), 'ami')
+  const e = await valeur(E, 'select public.mes_amis()')
+  assert.deepEqual(e.amis.map((a) => a.pseudo), ['Foxtrot'])
+  assert.deepEqual(e.envoyees, [])
+})
+await test("on ne peut pas s'ajouter soi-même ni ajouter un agent inconnu", async () => {
+  await echoue(en(E, "select public.demander_ami('Echo')"), /soi-même/)
+  await echoue(en(E, "select public.demander_ami('Personne')"), /introuvable/)
+})
+await test('bloquer retire l\'amitié et empêche de redemander', async () => {
+  await valeur(G, "select public.demander_ami('Echo')")
+  await valeur(E, "select public.bloquer('Golf')")
+  assert.deepEqual((await valeur(E, 'select public.mes_amis()')).recues, [])
+  await echoue(en(G, "select public.demander_ami('Echo')"), /Impossible/)
+  await valeur(E, "select public.debloquer('Golf')")
+  assert.equal(await valeur(G, "select public.demander_ami('Echo')"), 'demande')
+  await valeur(E, "select public.repondre_ami('Golf', false)")
+})
+
+console.log('Clans')
+await test('fonder un clan coûte 2 000 crédits', async () => {
+  await echoue(en(F, "select public.creer_clan('Les Pauvres', 'PAU', '', true)"), /2 000 crédits/)
+  assert.equal(await valeur(E, "select public.creer_clan('Site-19', 'S19', 'Le clan du site', false)"), 'S19')
+  assert.equal(await credits(E), 3000)
+  const c = await valeur(E, "select public.fiche_clan('')")
+  assert.equal(c.monRole, 'chef')
+})
+await test('nom ou tag déjà pris, ou mal formés : refusés', async () => {
+  await admin(`update public.profils set credits = 5000 where id = '${G}'`)
+  await echoue(en(G, "select public.creer_clan('Site-19', 'AUT', '', true)"), /déjà pris/)
+  await echoue(en(G, "select public.creer_clan('Autre', 'TROPLONG', '', true)"), /invalide/)
+  assert.equal(await credits(G), 5000, 'rien débité')
+})
+await test('clan fermé : candidature, acceptée par le chef', async () => {
+  assert.equal(await valeur(F, "select public.rejoindre_clan('s19')"), 'candidature')
+  const c = await valeur(E, "select public.fiche_clan('')")
+  assert.deepEqual(c.candidatures.map((x) => x.pseudo), ['Foxtrot'])
+  await echoue(en(F, "select public.gerer_membre('Foxtrot', 'accepter')"), /chef et aux officiers/)
+  await valeur(E, "select public.gerer_membre('Foxtrot', 'accepter')")
+  assert.equal((await valeur(F, "select public.fiche_clan('')")).monRole, 'membre')
+})
+await test('les candidatures ne sont visibles que du chef et des officiers', async () => {
+  assert.equal((await valeur(F, "select public.fiche_clan('')")).candidatures, null)
+})
+await test('un officier ne peut pas exclure un autre officier ni promouvoir', async () => {
+  await valeur(E, "select public.gerer_membre('Foxtrot', 'promouvoir')")
+  await valeur(E, "select public.modifier_clan('Ouvert à tous', true, 'scp-173')")
+  assert.equal(await valeur(G, "select public.rejoindre_clan('S19')"), 'membre')
+  await echoue(en(F, "select public.gerer_membre('Golf', 'promouvoir')"), /Réservé au chef/)
+  await valeur(E, "select public.gerer_membre('Golf', 'promouvoir')")
+  await echoue(en(F, "select public.gerer_membre('Golf', 'exclure')"), /Seul le chef/)
+  await valeur(E, "select public.gerer_membre('Golf', 'retrograder')")
+  await valeur(F, "select public.gerer_membre('Golf', 'exclure')")
+  assert.equal(await valeur(G, "select public.fiche_clan('')").then((c) => c.monRole ?? null), null)
+})
+await test('quand le chef part, le plus ancien officier prend la tête', async () => {
+  await valeur(E, 'select public.quitter_clan()')
+  assert.equal((await valeur(F, "select public.fiche_clan('')")).monRole, 'chef')
+  await valeur(E, "select public.rejoindre_clan('S19')")
+})
+await test('on ne peut être que dans un seul clan', async () => {
+  await admin(`update public.profils set credits = 5000 where id = '${G}'`)
+  await valeur(G, "select public.creer_clan('Insurrection', 'CI', '', true)")
+  await echoue(en(E, "select public.rejoindre_clan('CI')"), /Quittez d'abord/)
+})
+await test('la liste des clans indique membres et score', async () => {
+  const l = await valeur(E, "select public.liste_clans('')")
+  assert.deepEqual(l.map((c) => [c.tag, c.membres]).sort(), [['CI', 1], ['S19', 2]])
+})
+
+console.log('Messagerie')
+await test('le salon du clan est lisible par ses membres seulement', async () => {
+  const m = await valeur(E, "select public.envoyer_message('clan', null, '  Bonjour le site\u0007  ')")
+  assert.equal(m.texte, 'Bonjour le site', 'espaces et caractères de contrôle retirés')
+  const vu = await valeur(F, "select public.messages_salon('clan', null, null)")
+  assert.deepEqual(vu.messages.map((x) => x.texte), ['Bonjour le site'])
+  // Lecture directe de la table (ce que fait le direct) : réservée aux membres
+  assert.equal((await en(F, 'select count(*)::int as n from public.messages')).rows[0].n, 1)
+  assert.equal((await en(G, 'select count(*)::int as n from public.messages')).rows[0].n, 0)
+})
+await test('messages privés réservés aux amis', async () => {
+  await valeur(E, "select public.envoyer_message('mp', 'Foxtrot', 'Salut Foxtrot')")
+  await echoue(en(E, "select public.envoyer_message('mp', 'Golf', 'Salut')"), /réservés à vos amis/)
+  assert.equal((await en(G, "select count(*)::int as n from public.messages where salon like 'mp:%'")).rows[0].n, 0)
+  const conv = await valeur(F, 'select public.conversations()')
+  const mp = conv.find((c) => c.type === 'mp' && c.cible === 'Echo')
+  assert.equal(mp.nonLus, 1)
+  await valeur(F, "select public.messages_salon('mp', 'Echo', null)")
+  assert.equal((await valeur(F, 'select public.conversations()')).find((c) => c.cible === 'Echo').nonLus, 0)
+})
+await test('message vide, trop long ou envoyé en rafale : refusé', async () => {
+  await echoue(en(E, "select public.envoyer_message('clan', null, '   ')"), /vide/)
+  await echoue(en(E, `select public.envoyer_message('clan', null, '${'x'.repeat(501)}')`), /trop long/)
+  for (let i = 0; i < 3; i++) await valeur(E, `select public.envoyer_message('clan', null, 'message ${i}')`)
+  await echoue(en(E, "select public.envoyer_message('clan', null, 'un de trop')"), /Doucement/)
+})
+await test("impossible d'écrire directement dans la table des messages", async () => {
+  await echoue(en(E, `insert into public.messages (salon, auteur, pseudo, texte) values ('clan:x', '${E}', 'Echo', 'triche')`), /permission denied/)
+})
+await test('un message signalé est conservé pour la modération', async () => {
+  const id = (await admin("select id from public.messages where texte = 'Bonjour le site'")).rows[0].id
+  await valeur(F, 'select public.signaler_message($1, $2)', [id, 'test'])
+  assert.equal((await admin('select count(*)::int as n from prive.signalements')).rows[0].n, 1)
+  await echoue(en(G, 'select public.signaler_message($1, $2)', [id, 'test']), /introuvable/)
+})
+
+console.log('Classements et profils')
+await test('classement de la richesse, avec sa propre place', async () => {
+  const r = await valeur(F, "select public.classement('richesse')")
+  assert.ok(r.lignes.length >= 3)
+  assert.ok(r.lignes.every((l, i) => i === 0 || Number(l.valeur) <= Number(r.lignes[i - 1].valeur)), 'trié')
+  assert.equal(r.moi.valeur, await credits(F))
+  await echoue(en(F, "select public.classement('nimporte')"), /inconnu/)
+})
+await test('classement de la collection : cartes différentes possédées', async () => {
+  const r = await valeur(E, "select public.classement('collection')")
+  assert.equal(r.lignes.find((l) => l.pseudo === 'Echo').valeur, 5)
+  assert.equal(r.lignes.find((l) => l.pseudo === 'Echo').clan, 'S19')
+})
+await test('profil public : vitrine, clan, relation', async () => {
+  await valeur(E, "select public.maj_vitrine(array['scp-173', 'scp-682'])")
+  await echoue(en(E, "select public.maj_vitrine(array['scp-999'])"), /possédées/)
+  const p = await valeur(F, "select public.profil_public('echo')")
+  assert.deepEqual(p.vitrine.map((v) => v.carte), ['scp-173', 'scp-682'])
+  assert.equal(p.clan.tag, 'S19')
+  assert.equal(p.relation, 'ami')
+  assert.equal((await valeur(G, "select public.profil_public('Echo')")).relation, 'aucune')
+})
+await test('les classements et profils sont réservés aux joueurs connectés', async () => {
+  await echoue(en(null, "select public.classement('elo')"), /permission denied/)
+  await echoue(en(null, "select public.profil_public('Echo')"), /permission denied/)
+})
+
+console.log('Duels entre joueurs (règles SQL)')
+const service = (sql, params) =>
+  db.transaction(async (tx) => {
+    await tx.exec('set local role service_role')
+    return Object.values((await tx.query(sql, params)).rows[0])[0]
+  })
+await test('les fonctions jcj_* sont réservées à la clé de service', async () => {
+  await echoue(en(E, `select public.jcj_entrer_file('${E}')`), /permission denied/)
+  await echoue(en(E, `select public.jcj_clore('${E}', 0, '{}', 'a')`), /permission denied/)
+})
+let duelClasse
+await test('la file apparie deux joueurs proches en Elo', async () => {
+  assert.equal((await service(`select public.jcj_entrer_file('${E}')`)).attente, true)
+  const r = await service(`select public.jcj_entrer_file('${F}')`)
+  duelClasse = r.preparer.id
+  assert.equal(r.preparer.joueurA, E, 'le premier arrivé est le joueur A')
+  assert.deepEqual(r.preparer.equipeA, EQUIPE)
+  assert.equal(r.preparer.classe, true)
+  assert.equal((await service(`select public.jcj_entrer_file('${E}')`)).enCours, duelClasse, 'pas de deuxième duel')
+})
+await test('trop loin en Elo : pas d\'appariement immédiat', async () => {
+  await admin(`update public.profils set elo = 1600 where id = '${G}'`)
+  await admin(`insert into prive.file_jcj (joueur, elo) values ('${G}', 1600)`)
+  const H = '00000000-0000-0000-0000-000000000011'
+  await db.exec(`insert into auth.users (id) values ('${H}')`)
+  await admin(`update public.profils set pseudo = 'Hotel' where id = '${H}'`)
+  for (const c of EQUIPE) await donner(H, c)
+  await admin('update public.profils set equipe = $1 where id = $2', [EQUIPE, H])
+  assert.equal((await service(`select public.jcj_entrer_file('${H}')`)).attente, true)
+  await service(`select public.jcj_quitter_file('${G}')`)
+  await service(`select public.jcj_quitter_file('${H}')`)
+})
+await test("l'état public du duel n'est lisible que par ses deux joueurs", async () => {
+  await service(`select public.jcj_ecrire('${duelClasse}', 0, '{"phase":"choix"}', '{"bonne":2}')`)
+  assert.equal((await en(E, 'select count(*)::int as n from public.duels_jcj')).rows[0].n, 1)
+  assert.equal((await en(G, 'select count(*)::int as n from public.duels_jcj')).rows[0].n, 0)
+  await echoue(en(E, 'select * from prive.duels_jcj_secret'), /permission denied/)
+})
+await test('une écriture sur une version périmée est refusée', async () => {
+  assert.equal(await service(`select public.jcj_ecrire('${duelClasse}', 0, '{}', '{}')`), false)
+})
+await test('victoire classée : Elo transféré, crédits et XP', async () => {
+  const [eloE, eloF, crE] = [1000, 1000, await credits(E)]
+  const gains = await service(`select public.jcj_clore('${duelClasse}', 1, '{"phase":"fin"}', 'a')`)
+  assert.equal(gains.a.elo, 16)
+  assert.equal(gains.b.elo, -16)
+  assert.equal(gains.a.credits, 120)
+  assert.equal(gains.b.credits, 25)
+  const p = (await admin(`select elo, jcj from public.profils where id = '${E}'`)).rows[0]
+  assert.equal(p.elo, eloE + 16)
+  assert.equal(p.jcj.victoires, 1)
+  assert.equal((await admin(`select elo from public.profils where id = '${F}'`)).rows[0].elo, eloF - 16)
+  assert.equal(await credits(E), crE + 120)
+  await echoue(service(`select public.jcj_clore('${duelClasse}', 2, '{}', 'a')`), /déjà terminé/)
+})
+await test('défi amical : entre amis seulement, sans Elo ni crédits', async () => {
+  await echoue(service(`select public.jcj_defier('${E}', 'Golf')`), /ses amis/)
+  const { id } = await service(`select public.jcj_defier('${E}', 'Foxtrot')`)
+  await echoue(service(`select public.jcj_repondre_defi('${E}', '${id}', true)`), /expiré/)
+  const r = await service(`select public.jcj_repondre_defi('${F}', '${id}', true)`)
+  assert.equal(r.preparer.classe, false)
+  await service(`select public.jcj_ecrire('${id}', 0, '{}', '{}')`)
+  const elo = (await admin(`select elo from public.profils where id = '${E}'`)).rows[0].elo
+  const gains = await service(`select public.jcj_clore('${id}', 1, '{}', 'a')`)
+  assert.deepEqual([gains.a.elo, gains.a.credits, gains.a.xp], [0, 0, 15])
+  assert.equal((await admin(`select elo from public.profils where id = '${E}'`)).rows[0].elo, elo)
+})
+await test('au-delà de 3 duels classés par jour contre le même adversaire, plus de crédits', async () => {
+  for (let i = 0; i < 3; i++) {
+    await service(`select public.jcj_entrer_file('${E}')`)
+    const id = (await service(`select public.jcj_entrer_file('${F}')`)).preparer.id
+    await service(`select public.jcj_ecrire('${id}', 0, '{}', '{}')`)
+    const gains = await service(`select public.jcj_clore('${id}', 1, '{}', 'b')`)
+    assert.equal(gains.b.credits, i < 2 ? 120 : 0, `duel ${i + 2} du jour contre Echo`)
+  }
+})
+await test('un défi non accepté expire au bout d\'une minute', async () => {
+  const { id } = await service(`select public.jcj_defier('${E}', 'Foxtrot')`)
+  await admin(`update public.duels_jcj set cree_le = now() - interval '2 minutes' where id = $1`, [id])
+  await echoue(service(`select public.jcj_repondre_defi('${F}', '${id}', true)`), /expiré/)
+})
+await test('tableau des duels : Elo, rang, duels restants contre l\'IA', async () => {
+  const t = await valeur(E, 'select public.tableau_duels()')
+  assert.equal(t.iaRestants, 10)
+  assert.equal(t.rang >= 1, true)
+  assert.equal(typeof t.enLigne, 'number')
+})
+
 console.log('Effacement du compte')
 await test('supprimer son compte efface profil et cartes', async () => {
   await en(B, 'select public.supprimer_mon_compte()')

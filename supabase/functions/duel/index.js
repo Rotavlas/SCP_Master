@@ -1,4 +1,126 @@
-// Généré par outils/construire_duel.mjs : ne pas modifier à la main.
+const ADVERSAIRES = [
+	{
+		niveau: 1,
+		nom: "D-9341",
+		titre: "Personnel de Classe D",
+		precision: .45,
+		poids: [
+			.8,
+			.2,
+			0,
+			0,
+			0
+		],
+		vitesse: [8, 18],
+		gain: 40,
+		xp: 40,
+		accreditation: 0
+	},
+	{
+		niveau: 2,
+		nom: "Agent Lambert",
+		titre: "Force d'intervention mobile Epsilon-11",
+		precision: .6,
+		poids: [
+			.45,
+			.4,
+			.15,
+			0,
+			0
+		],
+		vitesse: [6, 15],
+		gain: 60,
+		xp: 60,
+		accreditation: 1
+	},
+	{
+		niveau: 3,
+		nom: "Dr Valois",
+		titre: "Chercheur principal, Site-19",
+		precision: .72,
+		poids: [
+			.15,
+			.45,
+			.3,
+			.1,
+			0
+		],
+		vitesse: [5, 13],
+		gain: 85,
+		xp: 90,
+		accreditation: 2
+	},
+	{
+		niveau: 4,
+		nom: "Directrice Okafor",
+		titre: "Directrice du Site-17",
+		precision: .82,
+		poids: [
+			0,
+			.3,
+			.4,
+			.25,
+			.05
+		],
+		vitesse: [4, 11],
+		gain: 120,
+		xp: 130,
+		accreditation: 3
+	},
+	{
+		niveau: 5,
+		nom: "O5-█",
+		titre: "Conseil O5",
+		precision: .9,
+		poids: [
+			0,
+			0,
+			.35,
+			.45,
+			.2
+		],
+		vitesse: [3, 9],
+		gain: 180,
+		xp: 200,
+		accreditation: 4
+	}
+];
+function deckAdversaire(base, adversaire) {
+	const deck = [];
+	while (deck.length < 5) {
+		let x = Math.random();
+		let rarete = 0;
+		while (rarete < 4 && (x -= adversaire.poids[rarete]) >= 0) rarete++;
+		const carte = base.auHasard(rarete);
+		if (!deck.some((c) => c.id === carte.id)) deck.push(carte);
+	}
+	return deck;
+}
+/** Réponse simulée de l'adversaire : index choisi et temps mis. */
+function reponseAdversaire(adversaire, question) {
+	const precision = Math.max(.2, adversaire.precision - question.difficulte * .08);
+	const [min, max] = adversaire.vitesse;
+	const temps = Math.min(19.5, min + Math.random() * (max - min));
+	if (Math.random() < precision) return {
+		choix: question.bonne,
+		temps
+	};
+	const mauvaises = question.options.map((_, i) => i).filter((i) => i !== question.bonne);
+	return {
+		choix: mauvaises[Math.floor(Math.random() * mauvaises.length)],
+		temps
+	};
+}
+/**
+* Dégâts infligés quand on répond juste : la Menace de sa carte contre le Confinement
+* de la carte adverse, avec un bonus si l'on répond vite ou plus vite que l'adversaire.
+*/
+function degats(attaquant, defenseur, temps, plusRapide) {
+	const base = attaquant.atk * .8 - defenseur.def * .32;
+	const vitesse = temps < 20 / 3 ? 1.25 : 1;
+	const course = plusRapide ? 1.15 : 1;
+	return Math.max(8, Math.round(base * vitesse * course));
+}
 // src/data/catalogue.ts
 const CLASSES = {
 	safe: {
@@ -179,129 +301,6 @@ var Base = class Base {
 		return new Base(this.catalogue, traductions ?? void 0);
 	}
 };
-const ADVERSAIRES = [
-	{
-		niveau: 1,
-		nom: "D-9341",
-		titre: "Personnel de Classe D",
-		precision: .45,
-		poids: [
-			.8,
-			.2,
-			0,
-			0,
-			0
-		],
-		vitesse: [8, 18],
-		gain: 40,
-		xp: 40,
-		accreditation: 0
-	},
-	{
-		niveau: 2,
-		nom: "Agent Lambert",
-		titre: "Force d'intervention mobile Epsilon-11",
-		precision: .6,
-		poids: [
-			.45,
-			.4,
-			.15,
-			0,
-			0
-		],
-		vitesse: [6, 15],
-		gain: 60,
-		xp: 60,
-		accreditation: 1
-	},
-	{
-		niveau: 3,
-		nom: "Dr Valois",
-		titre: "Chercheur principal, Site-19",
-		precision: .72,
-		poids: [
-			.15,
-			.45,
-			.3,
-			.1,
-			0
-		],
-		vitesse: [5, 13],
-		gain: 85,
-		xp: 90,
-		accreditation: 2
-	},
-	{
-		niveau: 4,
-		nom: "Directrice Okafor",
-		titre: "Directrice du Site-17",
-		precision: .82,
-		poids: [
-			0,
-			.3,
-			.4,
-			.25,
-			.05
-		],
-		vitesse: [4, 11],
-		gain: 120,
-		xp: 130,
-		accreditation: 3
-	},
-	{
-		niveau: 5,
-		nom: "O5-█",
-		titre: "Conseil O5",
-		precision: .9,
-		poids: [
-			0,
-			0,
-			.35,
-			.45,
-			.2
-		],
-		vitesse: [3, 9],
-		gain: 180,
-		xp: 200,
-		accreditation: 4
-	}
-];
-function deckAdversaire(base, adversaire) {
-	const deck = [];
-	while (deck.length < 5) {
-		let x = Math.random();
-		let rarete = 0;
-		while (rarete < 4 && (x -= adversaire.poids[rarete]) >= 0) rarete++;
-		const carte = base.auHasard(rarete);
-		if (!deck.some((c) => c.id === carte.id)) deck.push(carte);
-	}
-	return deck;
-}
-/** Réponse simulée de l'adversaire : index choisi et temps mis. */
-function reponseAdversaire(adversaire, question) {
-	const precision = Math.max(.2, adversaire.precision - question.difficulte * .08);
-	const [min, max] = adversaire.vitesse;
-	const temps = Math.min(19.5, min + Math.random() * (max - min));
-	if (Math.random() < precision) return {
-		choix: question.bonne,
-		temps
-	};
-	const mauvaises = question.options.map((_, i) => i).filter((i) => i !== question.bonne);
-	return {
-		choix: mauvaises[Math.floor(Math.random() * mauvaises.length)],
-		temps
-	};
-}
-/**
-* Dégâts infligés quand on répond juste : la Menace de sa carte contre le Confinement
-* de la carte adverse, avec un bonus si l'on répond vite ou plus vite que l'adversaire.
-*/
-function degats(attaquant, defenseur, temps, plusRapide) {
-	const base = attaquant.atk * .8 - defenseur.def * .32;
-	const vitesse = temps < 20 / 3 ? 1.25 : 1;
-	const course = plusRapide ? 1.15 : 1;
-	return Math.max(8, Math.round(base * vitesse * course));
-}
 // src/engine/quiz.ts
 const EXPURGE = "████";
 const CLASSES_STANDARD = [
@@ -333,7 +332,7 @@ function melanger(liste) {
 	}
 	return copie;
 }
-function choisir(liste) {
+function choisir$1(liste) {
 	return liste[Math.floor(Math.random() * liste.length)];
 }
 const echapper = (texte) => texte.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -372,7 +371,7 @@ function voisines(base, carte, nombre, exclure = [], filtre) {
 	const ids = /* @__PURE__ */ new Set([carte.id, ...exclure.map((c) => c.id)]);
 	for (let essai = 0; choisies.length < nombre && essai < 300; essai++) {
 		const rarete = Math.min(4, carte.ra + (Math.random() < .5 ? 0 : 1));
-		const c = choisir(parRarete[rarete].length > 4 ? parRarete[rarete] : parRarete.flat());
+		const c = choisir$1(parRarete[rarete].length > 4 ? parRarete[rarete] : parRarete.flat());
 		if (!ids.has(c.id) && !SURNOM_INCONNU.test(c.nm) && (!filtre || filtre(c))) {
 			ids.add(c.id);
 			choisies.push(c);
@@ -441,10 +440,10 @@ const GENERATEURS = [
 			const propres = new Set(s.t);
 			const leurres = [];
 			for (let essai = 0; leurres.length < 3 && essai < 100; essai++) {
-				const t = choisir(choisir(b.parType.get(s.k).flat()).t ?? []);
+				const t = choisir$1(choisir$1(b.parType.get(s.k).flat()).t ?? []);
 				if (t && valide(t) && !propres.has(t) && !leurres.includes(t)) leurres.push(t);
 			}
-			return construire(s, `Lequel de ces tags du wiki est associé à ${designation(s)} ?`, choisir(tags), leurres, 1);
+			return construire(s, `Lequel de ces tags du wiki est associé à ${designation(s)} ?`, choisir$1(tags), leurres, 1);
 		}
 	},
 	{
@@ -465,7 +464,7 @@ const GENERATEURS = [
 			if (s.k !== "f" || !s.lie?.length) return null;
 			const lie = s.lie;
 			const leurres = voisines(b, b.auHasard(s.ra, ["s"]), 6, [], (c) => !lie.includes(c.num ?? "")).map((c) => c.num ?? "");
-			return construire(s, `Au confinement de quelle anomalie l'équipe ${s.num} a-t-elle participé ?`, choisir(lie), leurres, 2);
+			return construire(s, `Au confinement de quelle anomalie l'équipe ${s.num} a-t-elle participé ?`, choisir$1(lie), leurres, 2);
 		}
 	},
 	{
@@ -508,6 +507,11 @@ function genererQuestion(base, sujet, autre, cachee) {
 	}
 	return construire(sujet, `Quelle est la rareté de ${designation(sujet)} ?`, RARETES_TEXTE[sujet.ra], RARETES_TEXTE, 0);
 }
+// serveur/commun.ts
+/**
+* Outils communs aux duels arbitrés par le serveur (contre l'IA et entre joueurs) : catalogue des cartes,
+* identité du joueur, appels aux fonctions SQL avec la clé de service.
+*/
 var Erreur = class extends Error {
 	statut;
 	constructor(statut, message) {
@@ -581,6 +585,381 @@ async function rpc(env, fonction, params) {
 	}
 	return corps ? JSON.parse(corps) : null;
 }
+const texte = (v) => typeof v === "string" ? v : "";
+const autre = (c) => c === "a" ? "b" : "a";
+const COTES = ["a", "b"];
+function etatInitial(prep, maintenant) {
+	return {
+		etat: {
+			manche: 1,
+			phase: "choix",
+			echeance: maintenant + 2e4,
+			maintenant,
+			pv: {
+				a: 100,
+				b: 100
+			},
+			jouees: {
+				a: [],
+				b: []
+			},
+			choisi: {
+				a: false,
+				b: false
+			},
+			repondu: {
+				a: false,
+				b: false
+			}
+		},
+		secret: {
+			langue: prep.langue,
+			mains: {
+				a: prep.equipeA,
+				b: prep.equipeB
+			},
+			carte: {},
+			reponses: {}
+		}
+	};
+}
+const restantes = (etat, secret, cote) => secret.mains[cote].filter((id) => !etat.jouees[cote].includes(id));
+/** Les deux cartes sont choisies : même question pour les deux joueurs, sur l'une des deux cartes. */
+function lancerQuestion(etat, secret, b, maintenant) {
+	const carte = {
+		a: b.parId.get(secret.carte.a),
+		b: b.parId.get(secret.carte.b)
+	};
+	const surCarteDe = Math.random() < .5 ? "a" : "b";
+	const q = genererQuestion(b, carte[surCarteDe], carte[autre(surCarteDe)], false);
+	etat.phase = "question";
+	etat.question = {
+		intitule: q.intitule,
+		document: q.document,
+		options: q.options,
+		surCarteDe
+	};
+	etat.repondu = {
+		a: false,
+		b: false
+	};
+	etat.echeance = maintenant + 2e4;
+	secret.question = { bonne: q.bonne };
+	secret.debut = maintenant;
+	secret.reponses = {};
+}
+/** Fin de manche : dégâts, cartes jouées, puis manche suivante ou fin du duel. */
+function resoudre(etat, secret, b, maintenant) {
+	const q = etat.question;
+	const bonne = secret.question.bonne;
+	const rep = {
+		a: secret.reponses.a,
+		b: secret.reponses.b
+	};
+	const carte = {
+		a: b.parId.get(secret.carte.a),
+		b: b.parId.get(secret.carte.b)
+	};
+	const ok = {
+		a: rep.a.choix === bonne,
+		b: rep.b.choix === bonne
+	};
+	const tousDeux = ok.a && ok.b;
+	const inflige = {
+		a: ok.a ? degats(carte.a, carte.b, rep.a.temps, tousDeux && rep.a.temps < rep.b.temps) : 0,
+		b: ok.b ? degats(carte.b, carte.a, rep.b.temps, tousDeux && rep.b.temps < rep.a.temps) : 0
+	};
+	etat.pv = {
+		a: etat.pv.a - inflige.b,
+		b: etat.pv.b - inflige.a
+	};
+	etat.jouees = {
+		a: [...etat.jouees.a, carte.a.id],
+		b: [...etat.jouees.b, carte.b.id]
+	};
+	etat.dernier = {
+		manche: etat.manche,
+		intitule: q.intitule,
+		options: q.options,
+		bonne,
+		choix: {
+			a: rep.a.choix,
+			b: rep.b.choix
+		},
+		temps: {
+			a: rep.a.temps,
+			b: rep.b.temps
+		},
+		degats: {
+			a: inflige.b,
+			b: inflige.a
+		},
+		cartes: {
+			a: carte.a.id,
+			b: carte.b.id
+		}
+	};
+	etat.question = void 0;
+	secret.question = void 0;
+	secret.debut = void 0;
+	secret.carte = {};
+	secret.reponses = {};
+	if (etat.manche >= 5 || etat.pv.a <= 0 || etat.pv.b <= 0) {
+		etat.phase = "fin";
+		etat.fin = { issue: etat.pv.a > etat.pv.b ? "a" : etat.pv.a < etat.pv.b ? "b" : "nul" };
+		return;
+	}
+	etat.manche++;
+	etat.phase = "choix";
+	etat.choisi = {
+		a: false,
+		b: false
+	};
+	etat.repondu = {
+		a: false,
+		b: false
+	};
+	etat.echeance = maintenant + 24e3;
+}
+function choisir(etat, secret, cote, idCarte, b, maintenant) {
+	if (etat.phase !== "choix") throw new Erreur(409, "Ce n'est pas le moment de choisir une carte");
+	if (etat.choisi[cote]) throw new Erreur(409, "Carte déjà choisie pour cette manche");
+	if (!restantes(etat, secret, cote).includes(idCarte)) throw new Erreur(400, "Cette carte n'est plus dans votre main");
+	secret.carte[cote] = idCarte;
+	etat.choisi[cote] = true;
+	if (etat.choisi.a && etat.choisi.b) lancerQuestion(etat, secret, b, maintenant);
+}
+function repondre$1(etat, secret, cote, choix, b, maintenant) {
+	if (etat.phase !== "question" || !etat.question || secret.debut === void 0) throw new Erreur(409, "Aucune question en cours");
+	if (etat.repondu[cote]) throw new Erreur(409, "Vous avez déjà répondu");
+	const ecoule = (maintenant - secret.debut) / 1e3;
+	const valide = typeof choix === "number" && Number.isInteger(choix) && choix >= 0 && choix < etat.question.options.length && ecoule <= 23;
+	secret.reponses[cote] = {
+		choix: valide ? choix : null,
+		temps: Math.min(20, ecoule)
+	};
+	etat.repondu[cote] = true;
+	if (etat.repondu.a && etat.repondu.b) resoudre(etat, secret, b, maintenant);
+}
+/** Applique les délais dépassés : carte jouée d'office, question sans réponse. Renvoie true si l'état a changé. */
+function appliquerDelais(etat, secret, b, maintenant) {
+	if (etat.phase === "choix" && maintenant > etat.echeance) {
+		for (const c of COTES) if (!etat.choisi[c]) {
+			secret.carte[c] = restantes(etat, secret, c)[0];
+			etat.choisi[c] = true;
+		}
+		lancerQuestion(etat, secret, b, maintenant);
+		return true;
+	}
+	if (etat.phase === "question" && maintenant > etat.echeance + 3e3) {
+		for (const c of COTES) if (!etat.repondu[c]) {
+			secret.reponses[c] = {
+				choix: null,
+				temps: 20
+			};
+			etat.repondu[c] = true;
+		}
+		resoudre(etat, secret, b, maintenant);
+		return true;
+	}
+	return false;
+}
+async function lire$1(env, idDuel, idJoueur) {
+	const lu = await rpc(env, "jcj_lire", {
+		p_duel: idDuel,
+		p_joueur: idJoueur
+	});
+	if (!lu) throw new Erreur(404, "Duel introuvable");
+	return {
+		...lu,
+		cote: lu.joueurA === idJoueur ? "a" : "b"
+	};
+}
+async function initialiser(env, prep, maintenant) {
+	const b = await base(env, prep.langue);
+	if ([...prep.equipeA, ...prep.equipeB].some((id) => !b.parId.has(id))) throw new Erreur(409, "Nouvelles fiches disponibles : rechargez la page");
+	const { etat, secret } = etatInitial(prep, maintenant);
+	if (!await rpc(env, "jcj_ecrire", {
+		p_duel: prep.id,
+		p_version: 0,
+		p_etat: etat,
+		p_secret: secret
+	})) throw new Erreur(409, "Le duel a changé entre-temps : réessayez");
+}
+/** Ce que voit un joueur : l'état public, sa propre main restante, et ses gains si le duel est fini. */
+function vue(lu, id) {
+	const etat = lu.etat;
+	const moi = lu.cote;
+	return {
+		id,
+		cote: moi,
+		classe: lu.classe,
+		statut: lu.statut,
+		moi: {
+			pseudo: moi === "a" ? lu.pseudoA : lu.pseudoB,
+			elo: moi === "a" ? lu.eloA : lu.eloB
+		},
+		adversaire: {
+			pseudo: moi === "a" ? lu.pseudoB : lu.pseudoA,
+			elo: moi === "a" ? lu.eloB : lu.eloA
+		},
+		etat,
+		main: lu.secret && etat.jouees ? lu.secret.mains[moi].filter((c) => !etat.jouees[moi].includes(c)) : [],
+		maCarte: lu.secret?.carte[moi] ?? null,
+		gains: lu.resultat?.[moi] ?? null
+	};
+}
+/**
+* Lit le duel, applique les délais dépassés puis la modification demandée, et écrit. Si l'autre joueur a écrit
+* entre-temps (version changée), on relit et on recommence. Un duel qui se termine est clos ici : Elo et gains.
+*/
+async function modifier(env, idDuel, idJoueur, maintenant, action) {
+	for (let essai = 0; essai < 4; essai++) {
+		const lu = await lire$1(env, idDuel, idJoueur);
+		if (lu.statut !== "en_cours" || !lu.secret) return {
+			lu,
+			profil: null
+		};
+		const etat = structuredClone(lu.etat);
+		const secret = structuredClone(lu.secret);
+		const b = await base(env, secret.langue);
+		let change = appliquerDelais(etat, secret, b, maintenant);
+		if (action && etat.phase !== "fin") change = action(etat, secret, lu.cote, b) !== false || change;
+		if (!change) return {
+			lu,
+			profil: null
+		};
+		etat.maintenant = maintenant;
+		if (etat.phase === "fin") try {
+			const gains = await rpc(env, "jcj_clore", {
+				p_duel: idDuel,
+				p_version: lu.version,
+				p_etat: etat,
+				p_issue: etat.fin.issue
+			});
+			return {
+				lu: await lire$1(env, idDuel, idJoueur),
+				profil: gains[lu.cote].profil
+			};
+		} catch (e) {
+			if (essai < 3 && e instanceof Erreur && /déjà terminé/.test(e.message)) continue;
+			throw e;
+		}
+		if (await rpc(env, "jcj_ecrire", {
+			p_duel: idDuel,
+			p_version: lu.version,
+			p_etat: etat,
+			p_secret: secret
+		})) return {
+			lu: {
+				...lu,
+				etat,
+				secret,
+				version: lu.version + 1
+			},
+			profil: null
+		};
+	}
+	throw new Erreur(409, "Le duel a changé entre-temps : réessayez");
+}
+const ACTIONS_JCJ = /* @__PURE__ */ new Set([
+	"jcj_file",
+	"jcj_quitter",
+	"jcj_defier",
+	"jcj_repondre_defi",
+	"jcj_etat",
+	"jcj_jouer",
+	"jcj_repondre",
+	"jcj_abandonner"
+]);
+async function etatDuel(env, idDuel, idJoueur, maintenant) {
+	let lu = await lire$1(env, idDuel, idJoueur);
+	if (lu.statut === "preparation" && lu.version === 0) {
+		await initialiser(env, await rpc(env, "jcj_preparer", {
+			p_duel: idDuel,
+			p_joueur: idJoueur
+		}), maintenant);
+		lu = await lire$1(env, idDuel, idJoueur);
+	}
+	const { lu: apres, profil } = await modifier(env, idDuel, idJoueur, maintenant);
+	return {
+		...vue(apres, idDuel),
+		profil
+	};
+}
+async function traiterJcj(env, idJoueur, action, corps, maintenant) {
+	const idDuel = texte(corps.id);
+	switch (action) {
+		case "jcj_file": {
+			const r = await rpc(env, "jcj_entrer_file", { p_joueur: idJoueur });
+			if (r.preparer) {
+				await initialiser(env, r.preparer, maintenant);
+				return { duel: await etatDuel(env, r.preparer.id, idJoueur, maintenant) };
+			}
+			if (r.enCours) return { duel: await etatDuel(env, r.enCours, idJoueur, maintenant) };
+			return {
+				attente: true,
+				enFile: r.enFile ?? 1
+			};
+		}
+		case "jcj_quitter":
+			await rpc(env, "jcj_quitter_file", { p_joueur: idJoueur });
+			return { ok: true };
+		case "jcj_defier": return rpc(env, "jcj_defier", {
+			p_joueur: idJoueur,
+			p_pseudo: texte(corps.pseudo)
+		});
+		case "jcj_repondre_defi": {
+			const r = await rpc(env, "jcj_repondre_defi", {
+				p_joueur: idJoueur,
+				p_duel: idDuel,
+				p_accepter: corps.accepter === true
+			});
+			if (!r.preparer) return { refuse: true };
+			await initialiser(env, r.preparer, maintenant);
+			return { duel: await etatDuel(env, idDuel, idJoueur, maintenant) };
+		}
+		case "jcj_etat": return etatDuel(env, idDuel, idJoueur, maintenant);
+		case "jcj_jouer": {
+			const idCarte = texte(corps.carte);
+			const { lu, profil } = await modifier(env, idDuel, idJoueur, maintenant, (etat, secret, cote, b) => choisir(etat, secret, cote, idCarte, b, maintenant));
+			return {
+				...vue(lu, idDuel),
+				profil
+			};
+		}
+		case "jcj_repondre": {
+			const { lu, profil } = await modifier(env, idDuel, idJoueur, maintenant, (etat, secret, cote, b) => repondre$1(etat, secret, cote, corps.choix, b, maintenant));
+			return {
+				...vue(lu, idDuel),
+				profil
+			};
+		}
+		case "jcj_abandonner": {
+			const { lu, profil } = await modifier(env, idDuel, idJoueur, maintenant, (etat, _secret, cote) => {
+				etat.phase = "fin";
+				etat.fin = {
+					issue: autre(cote),
+					abandon: cote
+				};
+			});
+			return {
+				...vue(lu, idDuel),
+				profil
+			};
+		}
+	}
+	throw new Erreur(400, "Action inconnue");
+}
+// serveur/duel.ts
+/**
+* Duels contre l'IA, arbitrés par le serveur (fonction Edge « duel ») ; les duels entre joueurs passent par
+* la même fonction (serveur/jcj.ts).
+* Le navigateur ne reçoit jamais la bonne réponse avant d'avoir répondu : c'est ici que se tirent le deck
+* de l'IA et les questions, que se chronomètrent les réponses, que l'IA répond et que se calculent les
+* dégâts et l'issue. Les règles sont celles de src/engine, partagées avec l'affichage.
+* L'état de la partie est enregistré dans prive.duels_ia par les fonctions SQL duel_* (clé de service).
+*/
 async function lire(env, idDuel, idJoueur) {
 	const r = await rpc(env, "duel_lire", {
 		p_duel: idDuel,
@@ -601,7 +980,6 @@ async function ecrire(env, idDuel, idJoueur, version, etat) {
 	})) throw new Erreur(409, "Le duel a changé entre-temps : rechargez la page");
 }
 const terminee = (e) => e.manche >= 5 || e.pv <= 0 || e.pvIA <= 0;
-const texte = (v) => typeof v === "string" ? v : "";
 async function debuter(env, idJoueur, corps) {
 	const adversaire = ADVERSAIRES.find((a) => a.niveau === corps.niveau);
 	if (!adversaire) throw new Erreur(400, "Adversaire inconnu");
@@ -777,7 +1155,9 @@ async function traiter(req, env) {
 			case "debuter": return repondreJson(200, await debuter(env, idJoueur, corps));
 			case "jouer": return repondreJson(200, await jouer(env, idJoueur, corps, maintenant));
 			case "repondre": return repondreJson(200, await repondre(env, idJoueur, corps, maintenant));
-			default: throw new Erreur(400, "Action inconnue");
+			default:
+				if (typeof corps.action === "string" && ACTIONS_JCJ.has(corps.action)) return repondreJson(200, await traiterJcj(env, idJoueur, corps.action, corps, maintenant));
+				throw new Erreur(400, "Action inconnue");
 		}
 	} catch (e) {
 		if (e instanceof Erreur) return repondreJson(e.statut, { message: e.message });

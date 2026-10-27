@@ -1,11 +1,24 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Base } from '../data/catalogue'
 import { ADVERSAIRES, INTEGRITE_MAX, MANCHES, type Adversaire } from '../engine/duel'
 import { debuterDuel, jouerCarte, repondreDuel, type Issue, type QuestionDuel, type ResultatManche } from '../state/actions'
+import {
+  defier,
+  entrerFile,
+  marquerConnu,
+  oublierInvitation,
+  quitterFile,
+  repondreDefi,
+  tableauDuels,
+  useDuelDemarre,
+  useInvitations,
+  type TableauDuels,
+} from '../state/jcj'
 import { TAILLE_DECK, accreditation, modifier, useSauvegarde, varianteAffichee } from '../state/sauvegarde'
 import type { Carte as TCarte, Ecran } from '../types'
 import { Carte } from './Carte'
 import { meilleureEquipe } from './Collection'
+import { DuelJcj } from './DuelJcj'
 
 /**
  * Le serveur arbitre le duel (supabase/functions/duel) : il tire le deck de l'IA et les questions,
@@ -34,9 +47,22 @@ interface Partie {
 
 const LETTRES = ['A', 'B', 'C', 'D']
 
-export function Duel({ base, aller }: { base: Base; aller: (e: Ecran) => void }) {
+export function Duel({ base, aller, ouvrirProfil }: { base: Base; aller: (e: Ecran) => void; ouvrirProfil: (pseudo: string) => void }) {
   const s = useSauvegarde()
   const [partie, setPartie] = useState<Partie | null>(null)
+  // Duel contre un autre joueur, affiché à la place du hall
+  const [duelJcj, setDuelJcj] = useState<string | null>(null)
+  const [duelDemarre, oublierDemarre] = useDuelDemarre()
+  useEffect(() => {
+    if (duelDemarre) {
+      setDuelJcj(duelDemarre)
+      oublierDemarre()
+    }
+  }, [duelDemarre, oublierDemarre])
+  const ouvrirJcj = useCallback((id: string) => {
+    marquerConnu(id)
+    setDuelJcj(id)
+  }, [])
   const [ecoule, setEcoule] = useState(0)
   // Un échange avec le serveur est en cours : pas de second clic
   const [attente, setAttente] = useState(false)
@@ -125,6 +151,8 @@ export function Duel({ base, aller }: { base: Base; aller: (e: Ecran) => void })
     else setPartie({ ...partie, manche: partie.manche + 1, phase: 'choix', carte: undefined, question: undefined, resultat: undefined })
   }
 
+  if (duelJcj) return <DuelJcj id={duelJcj} base={base} ouvrirProfil={ouvrirProfil} onQuitter={() => setDuelJcj(null)} />
+
   if (!partie) {
     return (
       <section className="duel-lobby">
@@ -157,7 +185,10 @@ export function Duel({ base, aller }: { base: Base; aller: (e: Ecran) => void })
           </div>
         </div>
 
-        <h2>Choisir un adversaire</h2>
+        <HallJcj pret={equipe.length === TAILLE_DECK} ouvrir={ouvrirJcj} ouvrirProfil={ouvrirProfil} />
+
+        <h2 className="titre-entrainement">Entraînement contre l'IA</h2>
+        <p className="discret">10 duels récompensés par jour contre l'IA : l'essentiel des gains se joue désormais entre agents.</p>
         {equipe.length < TAILLE_DECK && (
           <p className="alerte">
             Il vous faut {TAILLE_DECK} cartes dans l'équipe pour lancer une confrontation
@@ -312,6 +343,201 @@ function Integrite({ nom, pv, adverse }: { nom: string; pv: number; adverse?: bo
       </span>
       <div className="jauge">
         <div style={{ width: `${part * 100}%` }} className={part < 0.3 ? 'urgent' : ''} />
+      </div>
+    </div>
+  )
+}
+
+/**
+ * Les duels entre joueurs, mis en avant : file classée (Elo), amis en ligne à défier, défis reçus, duel en cours.
+ */
+function HallJcj({ pret, ouvrir, ouvrirProfil }: { pret: boolean; ouvrir: (id: string) => void; ouvrirProfil: (p: string) => void }) {
+  const [tableau, setTableau] = useState<TableauDuels | null>(null)
+  const [enFile, setEnFile] = useState<number | null>(null)
+  const [debutFile, setDebutFile] = useState(0)
+  const [maintenant, setMaintenant] = useState(Date.now())
+  const [defiEnvoye, setDefiEnvoye] = useState<string | null>(null)
+  const invitations = useInvitations()
+  const fileActive = useRef(false)
+  const enAttente = enFile !== null
+
+  const charger = useCallback(() => void tableauDuels().then(setTableau), [])
+  useEffect(() => {
+    charger()
+    const t = setInterval(charger, 15_000)
+    return () => clearInterval(t)
+  }, [charger])
+
+  // En file : on se représente toutes les 4 s (la fourchette d'Elo s'élargit avec l'attente)
+  useEffect(() => {
+    if (!enAttente) return
+    const t = setInterval(async () => {
+      if (!fileActive.current) return
+      const r = await entrerFile()
+      if (r?.duel && fileActive.current) {
+        fileActive.current = false
+        setEnFile(null)
+        ouvrir(r.duel.id)
+      } else if (r?.enFile) setEnFile(r.enFile)
+    }, 4000)
+    const horloge = setInterval(() => setMaintenant(Date.now()), 1000)
+    return () => {
+      clearInterval(t)
+      clearInterval(horloge)
+    }
+  }, [enAttente, ouvrir])
+
+  // Quitter l'écran en pleine attente : on sort de la file
+  useEffect(
+    () => () => {
+      if (fileActive.current) void quitterFile()
+    },
+    [],
+  )
+
+  async function chercher() {
+    fileActive.current = true
+    setDebutFile(Date.now())
+    setMaintenant(Date.now())
+    setEnFile(1)
+    const r = await entrerFile()
+    if (r?.duel) {
+      fileActive.current = false
+      setEnFile(null)
+      ouvrir(r.duel.id)
+    } else if (!r) {
+      fileActive.current = false
+      setEnFile(null)
+    } else setEnFile(r.enFile ?? 1)
+  }
+
+  async function annuler() {
+    fileActive.current = false
+    setEnFile(null)
+    await quitterFile()
+  }
+
+  const attente = Math.max(0, Math.floor((maintenant - debutFile) / 1000))
+  const bilan = tableau?.jcj
+
+  return (
+    <div className="hall-jcj">
+      <div className="hall-principal">
+        <p className="dossier-entete">Confrontation entre agents</p>
+        <h2>Duel classé</h2>
+        <p className="discret">
+          Même question pour les deux agents, au même moment : le plus juste et le plus rapide frappe. Chaque duel classé fait gagner ou perdre de
+          l'Elo, et rapporte des crédits (120 ₵ la victoire).
+        </p>
+        <div className="stats-jcj">
+          <div>
+            <strong>{tableau?.elo ?? '—'}</strong>
+            <span>Elo {tableau && `· #${tableau.rang}`}</span>
+          </div>
+          <div>
+            <strong>{bilan ? `${bilan.victoires}/${bilan.defaites}/${bilan.nuls}` : '—'}</strong>
+            <span>V / D / N</span>
+          </div>
+          <div>
+            <strong>{tableau?.enLigne ?? '—'}</strong>
+            <span>agents en ligne</span>
+          </div>
+          <div>
+            <strong>{tableau?.jcjRestants ?? '—'}</strong>
+            <span>duels récompensés restants</span>
+          </div>
+        </div>
+        {tableau?.enCours ? (
+          <button className="btn btn-principal btn-geant" onClick={() => ouvrir(tableau.enCours!)}>
+            Reprendre le duel en cours
+          </button>
+        ) : !enAttente ? (
+          <button className="btn btn-principal btn-geant" disabled={!pret} onClick={() => void chercher()}>
+            Trouver un adversaire
+          </button>
+        ) : (
+          <div className="file-attente">
+            <span className="radar" aria-hidden="true" />
+            <div>
+              <strong>Recherche d'un adversaire…</strong>
+              <p className="discret">
+                {attente} s · {enFile} agent{enFile > 1 ? 's' : ''} en file · la fourchette d'Elo s'élargit avec l'attente
+              </p>
+            </div>
+            <button className="btn" onClick={() => void annuler()}>
+              Annuler
+            </button>
+          </div>
+        )}
+        {!pret && <p className="alerte">Composez d'abord une équipe de 5 cartes.</p>}
+      </div>
+
+      <div className="hall-amis">
+        {invitations.length > 0 && (
+          <>
+            <h3>Défis reçus</h3>
+            <ul className="liste-simple">
+              {invitations.map((i) => (
+                <li key={i.id}>
+                  <button className="btn-lien" onClick={() => ouvrirProfil(i.pseudo)}>
+                    {i.pseudo}
+                  </button>
+                  <span className="discret">{i.elo}</span>
+                  <span className="actions-ligne">
+                    <button
+                      className="btn btn-principal"
+                      disabled={!pret}
+                      onClick={async () => {
+                        oublierInvitation(i.id)
+                        const r = await repondreDefi(i.id, true)
+                        if (r?.duel) ouvrir(r.duel.id)
+                      }}
+                    >
+                      Accepter
+                    </button>
+                    <button
+                      className="btn"
+                      onClick={() => {
+                        oublierInvitation(i.id)
+                        void repondreDefi(i.id, false)
+                      }}
+                    >
+                      Refuser
+                    </button>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </>
+        )}
+        <h3>Défier un ami</h3>
+        <p className="discret">Duel amical : sans Elo ni crédits, pour le plaisir (et 15 XP).</p>
+        {!tableau ? (
+          <p className="discret">Chargement…</p>
+        ) : tableau.amisEnLigne.length === 0 ? (
+          <p className="discret">Aucun ami en ligne pour l'instant.</p>
+        ) : (
+          <ul className="liste-amis">
+            {tableau.amisEnLigne.map((a) => (
+              <li key={a.pseudo}>
+                <span className="point-presence en-ligne" />
+                <button className="btn-lien nom" onClick={() => ouvrirProfil(a.pseudo)}>
+                  {a.pseudo}
+                </button>
+                <span className="discret">{a.elo}</span>
+                <button
+                  className="btn"
+                  disabled={!pret || a.occupe || defiEnvoye === a.pseudo}
+                  onClick={async () => {
+                    if (await defier(a.pseudo)) setDefiEnvoye(a.pseudo)
+                  }}
+                >
+                  {a.occupe ? 'En duel' : defiEnvoye === a.pseudo ? 'Défi envoyé…' : 'Défier'}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   )

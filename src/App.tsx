@@ -4,14 +4,19 @@ import { Accueil } from './components/Accueil'
 import { Booster, type Tirage } from './components/Booster'
 import { Boutique } from './components/Boutique'
 import { CarteDetail } from './components/CarteDetail'
+import { Classement } from './components/Classement'
 import { BoutonCompte, Portail } from './components/Compte'
 import { Collection } from './components/Collection'
 import { Duel } from './components/Duel'
 import { Logo } from './components/Logo'
 import { Marche } from './components/Marche'
+import { Profil } from './components/Profil'
 import { Repertoire } from './components/Repertoire'
+import { Social, type OngletSocial } from './components/Social'
 import { chargerBase, chargerTraductions, type Base } from './data/catalogue'
 import { useCompte } from './state/enLigne'
+import { oublierInvitation, repondreDefi, useDuelDemarre, useDuelsEntrants, useInvitations } from './state/jcj'
+import { totalNonLus, useConversations, useMessagesEntrants, usePresence, type Destinataire } from './state/social'
 import { modifier, notifier, useNotifications, useSauvegarde } from './state/sauvegarde'
 import type { Ecran, Traductions } from './types'
 
@@ -22,6 +27,8 @@ const ONGLETS: { id: Ecran; nom: string }[] = [
   { id: 'repertoire', nom: 'Répertoire' },
   { id: 'duel', nom: 'Confrontation' },
   { id: 'marche', nom: 'Marché' },
+  { id: 'social', nom: 'Social' },
+  { id: 'classement', nom: 'Classements' },
   { id: 'boutique', nom: 'Intendance' },
 ]
 
@@ -36,6 +43,15 @@ export default function App() {
   const [rechercheMarche, setRechercheMarche] = useState('')
   const s = useSauvegarde()
   const compte = useCompte()
+  const [profilOuvert, setProfilOuvert] = useState<string | null>(null)
+  const [ongletSocial, setOngletSocial] = useState<OngletSocial>('amis')
+  const [conversation, setConversation] = useState<Destinataire | null>(null)
+  const connecte = compte.statut === 'connecte' && !!s.agent
+  usePresence(connecte)
+  useMessagesEntrants(connecte)
+  useDuelsEntrants(connecte)
+  const nonLus = totalNonLus(useConversations())
+  const [duelDemarre] = useDuelDemarre()
 
   useEffect(() => {
     chargerBase().then(setBaseVO, (e: Error) => setErreur(e.message))
@@ -60,6 +76,24 @@ export default function App() {
     window.scrollTo({ top: 0 })
   }, [])
   const fermer = useCallback(() => setCarteOuverte(null), [])
+  const fermerProfil = useCallback(() => setProfilOuvert(null), [])
+  const ecrire = useCallback(
+    (pseudo: string) => {
+      setProfilOuvert(null)
+      setConversation({ type: 'mp', cible: pseudo })
+      setOngletSocial('messages')
+      aller('social')
+    },
+    [aller],
+  )
+
+  // Un duel démarre (appariement, défi accepté) pendant qu'on est ailleurs : on y va
+  useEffect(() => {
+    if (duelDemarre && ecran !== 'duel') {
+      notifier('Duel trouvé : en position !', 'succes')
+      aller('duel')
+    }
+  }, [duelDemarre]) // seulement quand un nouveau duel démarre
 
   if (compte.statut === 'indisponible') {
     return (
@@ -118,6 +152,7 @@ export default function App() {
                 {o.nom}
                 {o.id === 'booster' && s.boosters > 0 && <span className="compteur">{s.boosters}</span>}
                 {o.id === 'marche' && s.offresRecues > 0 && <span className="compteur compteur-alerte" title="Offres d'échange reçues">{s.offresRecues}</span>}
+                {o.id === 'social' && nonLus > 0 && <span className="compteur compteur-alerte" title="Messages non lus">{nonLus}</span>}
               </button>
             ))}
           </nav>
@@ -147,7 +182,18 @@ export default function App() {
         {ecran === 'booster' && <Booster base={base} tirage={tirage} setTirage={setTirage} aller={aller} ouvrirCarte={setCarteOuverte} />}
         {ecran === 'collection' && <Collection base={base} ouvrirCarte={setCarteOuverte} />}
         {ecran === 'repertoire' && <Repertoire base={base} ouvrirCarte={setCarteOuverte} />}
-        {ecran === 'duel' && <Duel base={base} aller={aller} />}
+        {ecran === 'duel' && <Duel base={base} aller={aller} ouvrirProfil={setProfilOuvert} />}
+        {ecran === 'social' && (
+          <Social
+            base={base}
+            ouvrirProfil={setProfilOuvert}
+            onglet={ongletSocial}
+            setOnglet={setOngletSocial}
+            conversation={conversation}
+            setConversation={setConversation}
+          />
+        )}
+        {ecran === 'classement' && <Classement base={base} ouvrirProfil={setProfilOuvert} />}
         {ecran === 'marche' && <Marche key={rechercheMarche} base={base} ouvrirCarte={setCarteOuverte} recherche={rechercheMarche} />}
         {ecran === 'boutique' && (
           <Boutique
@@ -174,6 +220,9 @@ export default function App() {
           }}
         />
       )}
+
+      {profilOuvert && <Profil pseudo={profilOuvert} base={base} onFermer={fermerProfil} ouvrirCarte={setCarteOuverte} ecrire={ecrire} />}
+      {ecran !== 'duel' && <BandeauDefis aller={aller} />}
 
       <Notifications />
       {/* Statistiques de visite sans cookie : le jeu ne change pas d'adresse, chaque écran compte comme une page */}
@@ -218,6 +267,38 @@ function Notifications() {
           {n.texte}
         </div>
       ))}
+    </div>
+  )
+}
+
+/** Un ami vous défie : on peut accepter depuis n'importe quel écran. */
+function BandeauDefis({ aller }: { aller: (e: Ecran) => void }) {
+  const invitations = useInvitations()
+  const i = invitations[0]
+  if (!i) return null
+  return (
+    <div className="bandeau-defi" role="alert">
+      <span>
+        <strong>{i.pseudo}</strong> ({i.elo}) vous défie en duel amical
+      </span>
+      <button
+        className="btn btn-principal"
+        onClick={async () => {
+          oublierInvitation(i.id)
+          if ((await repondreDefi(i.id, true))?.duel) aller('duel')
+        }}
+      >
+        Accepter
+      </button>
+      <button
+        className="btn"
+        onClick={() => {
+          oublierInvitation(i.id)
+          void repondreDefi(i.id, false)
+        }}
+      >
+        Refuser
+      </button>
     </div>
   )
 }

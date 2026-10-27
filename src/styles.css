@@ -3447,3 +3447,676 @@ select:focus {
     transition: none !important;
   }
 }
+
+/* ---------- Social, classements, profils, duels entre joueurs ---------- */
+.point-presence {
+  display: inline-block;
+  flex-shrink: 0;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--bord);
+  margin-right: 0.4rem;
+  vertical-align: middle;
+}
+
+.point-presence.en-ligne {
+  background: var(--vert);
+  box-shadow: 0 0 6px var(--vert);
+}
+
+.tag-clan {
+  display: inline-block;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  padding: 0 0.35rem;
+  border: 1px solid var(--ambre);
+  border-radius: 3px;
+  color: var(--ambre);
+  vertical-align: middle;
+}
+
+.grille-social {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.grille-social .encart {
+  margin: 0;
+}
+
+.grille-social h4 {
+  margin: 1rem 0 0.4rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--discret);
+}
+
+.encart label {
+  display: grid;
+  gap: 0.3rem;
+  margin-bottom: 0.7rem;
+  font-size: 0.9rem;
+}
+
+.encart label.case {
+  display: flex;
+}
+
+.encart textarea {
+  background: var(--panneau-2);
+  border: 1px solid var(--bord);
+  border-radius: 6px;
+  color: var(--texte);
+  font: inherit;
+  padding: 0.5rem 0.6rem;
+  resize: vertical;
+}
+
+.ligne-formulaire {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.ligne-formulaire input {
+  flex: 1;
+  min-width: 0;
+}
+
+.liste-simple,
+.liste-amis,
+.liste-clans,
+.liste-duels {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.35rem;
+}
+
+.liste-simple li,
+.liste-amis li {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.45rem 0.6rem;
+  background: var(--panneau-2);
+  border-radius: 8px;
+}
+
+.liste-amis .nom {
+  flex: 1;
+  min-width: 6rem;
+  text-align: left;
+}
+
+.actions-ligne {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-left: auto;
+}
+
+.actions-ligne .btn,
+.liste-amis .btn {
+  padding: 0.3rem 0.65rem;
+  font-size: 0.82rem;
+}
+
+.liste-clans li {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  padding: 0.6rem;
+  background: var(--panneau-2);
+  border-radius: 8px;
+}
+
+.liste-clans li > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.liste-clans p {
+  margin: 0.2rem 0 0;
+}
+
+.description-clan {
+  font-size: 0.9rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* Une carte réduite sert d'emblème au clan */
+.mini-embleme,
+.embleme-clan {
+  flex-shrink: 0;
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: middle;
+}
+
+.mini-embleme {
+  width: 34px;
+  height: 48px;
+  margin-right: 0.4rem;
+}
+
+.mini-embleme .carte,
+.embleme-clan .carte {
+  transform-origin: top left;
+  pointer-events: none;
+}
+
+.mini-embleme .carte {
+  transform: scale(0.21);
+}
+
+.embleme-clan {
+  width: 80px;
+  height: 112px;
+}
+
+.embleme-clan .carte {
+  transform: scale(0.5);
+}
+
+.entete-clan {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.entete-clan h2 {
+  margin: 0 0 0.3rem;
+}
+
+.role-clan {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  color: var(--discret);
+}
+
+.role-clan.role-chef {
+  color: var(--ambre);
+}
+
+.role-clan.role-officier {
+  color: var(--texte);
+}
+
+.reglages-clan {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--bord);
+}
+
+.reglages-clan select {
+  max-width: 100%;
+}
+
+/* Messagerie */
+.messagerie {
+  display: grid;
+  grid-template-columns: minmax(200px, 280px) 1fr;
+  gap: 1rem;
+  align-items: start;
+}
+
+.liste-conversations {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.liste-conversations button {
+  width: 100%;
+  display: grid;
+  gap: 0.2rem;
+  text-align: left;
+  padding: 0.6rem 0.7rem;
+  background: var(--panneau);
+  border: 1px solid var(--bord);
+  border-radius: 8px;
+  color: var(--texte);
+  font: inherit;
+  cursor: pointer;
+}
+
+.liste-conversations button.actif {
+  border-color: var(--ambre);
+}
+
+.titre-conversation {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
+.titre-conversation .compteur {
+  margin-left: auto;
+}
+
+.apercu {
+  font-size: 0.8rem;
+  color: var(--discret);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.encart-chat {
+  display: flex;
+  flex-direction: column;
+}
+
+.encart-chat h3 {
+  margin-top: 0;
+}
+
+.chat {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.fil-messages {
+  height: min(55vh, 460px);
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem;
+  background: var(--fond);
+  border: 1px solid var(--bord);
+  border-radius: 8px;
+}
+
+.charger-plus {
+  align-self: center;
+  font-size: 0.82rem;
+}
+
+.bulle {
+  max-width: 80%;
+  align-self: flex-start;
+  padding: 0.35rem 0.6rem;
+  background: var(--panneau-2);
+  border-radius: 10px 10px 10px 3px;
+}
+
+.bulle.suite {
+  margin-top: -0.1rem;
+}
+
+.bulle.moi {
+  align-self: flex-end;
+  background: color-mix(in srgb, var(--ambre) 18%, var(--panneau-2));
+  border-radius: 10px 10px 3px 10px;
+}
+
+.bulle .auteur {
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.bulle p {
+  margin: 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.bulle .heure {
+  display: flex;
+  gap: 0.3rem;
+  justify-content: flex-end;
+  font-size: 0.68rem;
+  color: var(--discret);
+}
+
+.bulle .signaler {
+  background: none;
+  border: 0;
+  padding: 0;
+  color: var(--discret);
+  cursor: pointer;
+  opacity: 0;
+}
+
+.bulle:hover .signaler,
+.bulle .signaler:focus-visible {
+  opacity: 1;
+}
+
+.saisie-message {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.saisie-message input {
+  flex: 1;
+  min-width: 0;
+}
+
+/* Classements */
+.ma-place {
+  margin: 0 0 1rem;
+  padding: 0.6rem 0.9rem;
+  border-left: 3px solid var(--ambre);
+  background: var(--panneau);
+  border-radius: 4px;
+}
+
+.table-classement {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.table-classement li {
+  display: grid;
+  grid-template-columns: 3.5rem 1fr auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0.8rem;
+  background: var(--panneau);
+  border: 1px solid transparent;
+  border-radius: 8px;
+}
+
+.table-classement li.podium {
+  background: color-mix(in srgb, var(--ambre) 8%, var(--panneau));
+}
+
+.table-classement li.moi {
+  border-color: var(--ambre);
+}
+
+.table-classement .rang {
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 1.05rem;
+}
+
+.table-classement .nom {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  text-align: left;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.table-classement .valeur {
+  font-family: var(--mono);
+  color: var(--ambre);
+  white-space: nowrap;
+}
+
+/* Profil public */
+.modale.profil {
+  width: min(680px, 100%);
+  display: block;
+}
+
+.profil-nom {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.2rem 0 0.2rem;
+  font-family: var(--machine);
+  font-weight: 400;
+  font-size: 1.8rem;
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+.profil h3 {
+  margin: 1.2rem 0 0.5rem;
+}
+
+.profil-fiche dd small {
+  color: var(--discret);
+}
+
+.vitrine-profil {
+  gap: 0.6rem;
+}
+
+.liste-duels li {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: baseline;
+  padding: 0.35rem 0.6rem;
+  border-left: 3px solid var(--bord);
+  background: var(--panneau-2);
+  border-radius: 4px;
+}
+
+.liste-duels .issue-victoire {
+  border-left-color: var(--vert);
+}
+
+.liste-duels .issue-defaite {
+  border-left-color: var(--rouge);
+}
+
+.liste-duels .discret {
+  margin-left: auto;
+}
+
+/* Hall des confrontations : les duels entre joueurs d'abord */
+.hall-jcj {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  gap: 1rem;
+  margin: 1.5rem 0 2rem;
+}
+
+.hall-principal,
+.hall-amis {
+  padding: 1.3rem;
+  background: var(--panneau);
+  border: 1px solid var(--bord);
+  border-radius: 12px;
+}
+
+.hall-principal {
+  border-color: color-mix(in srgb, var(--rouge) 60%, var(--bord));
+  background:
+    radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--rouge) 18%, transparent), transparent 55%),
+    var(--panneau);
+}
+
+.hall-principal h2 {
+  font-family: var(--machine);
+  font-weight: 400;
+  font-size: 2rem;
+  margin: 0.2rem 0 0.5rem;
+  text-transform: none;
+}
+
+.hall-amis h3 {
+  margin-top: 0;
+}
+
+.stats-jcj {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  gap: 0.6rem;
+  margin: 1rem 0 1.2rem;
+}
+
+.stats-jcj div {
+  display: grid;
+  padding: 0.6rem 0.7rem;
+  background: var(--panneau-2);
+  border-radius: 8px;
+}
+
+.stats-jcj strong {
+  font-family: var(--mono);
+  font-size: 1.3rem;
+}
+
+.stats-jcj span {
+  font-size: 0.78rem;
+  color: var(--discret);
+}
+
+.btn-geant {
+  width: 100%;
+  padding: 1rem;
+  font-size: 1.1rem;
+  letter-spacing: 0.04em;
+}
+
+.file-attente {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--ambre);
+  border-radius: 10px;
+}
+
+.file-attente div {
+  flex: 1;
+}
+
+.file-attente p {
+  margin: 0.2rem 0 0;
+}
+
+.radar {
+  flex-shrink: 0;
+  width: 2.4rem;
+  height: 2.4rem;
+  border-radius: 50%;
+  border: 2px solid var(--ambre);
+  background: conic-gradient(from 0deg, color-mix(in srgb, var(--ambre) 70%, transparent), transparent 30%);
+  animation: radar 1.4s linear infinite;
+}
+
+@keyframes radar {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.titre-entrainement {
+  margin-top: 0.5rem;
+}
+
+/* Duel entre joueurs */
+.badge-mode {
+  display: inline-block;
+  margin-right: 0.5rem;
+  padding: 0.05rem 0.45rem;
+  border-radius: 4px;
+  font-size: 0.72rem;
+  background: var(--bord);
+  color: var(--texte);
+}
+
+.badge-mode.classe {
+  background: var(--rouge);
+}
+
+.manche-precedente {
+  margin-bottom: 1rem;
+  padding: 0.8rem 1rem;
+  background: var(--panneau);
+  border: 1px solid var(--bord);
+  border-radius: 10px;
+  animation: entree-ecran 0.4s ease-out;
+}
+
+.manche-cartes {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 1rem;
+  align-items: center;
+}
+
+.manche-cartes p {
+  margin: 0.2rem 0;
+}
+
+.manche-cartes .intitule {
+  font-weight: 600;
+}
+
+.duel-camp.mini .carte {
+  --w: 96px;
+}
+
+.duel-camp.mini .carte-cachee {
+  width: 96px;
+  height: 134px;
+}
+
+.attente-adversaire {
+  padding: 1.5rem;
+  text-align: center;
+  font-family: var(--mono);
+}
+
+/* Défi reçu, visible sur tous les écrans */
+.bandeau-defi {
+  position: fixed;
+  left: 50%;
+  bottom: 1rem;
+  z-index: 60;
+  transform: translateX(-50%);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem;
+  max-width: calc(100vw - 2rem);
+  padding: 0.8rem 1rem;
+  background: var(--panneau-2);
+  border: 1px solid var(--rouge);
+  border-radius: 12px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+  animation: entree-ecran 0.3s ease-out;
+}
+
+@media (max-width: 760px) {
+  .hall-jcj,
+  .messagerie {
+    grid-template-columns: 1fr;
+  }
+
+  .manche-cartes {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .manche-cartes > div:not(.duel-camp) {
+    grid-column: 1 / -1;
+    grid-row: 1;
+  }
+
+  .table-classement li {
+    grid-template-columns: 2.8rem 1fr auto;
+    padding: 0.45rem 0.6rem;
+  }
+
+  .entete-clan {
+    flex-direction: column;
+  }
+}
