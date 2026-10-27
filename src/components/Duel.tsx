@@ -52,6 +52,7 @@ export function Duel({ base, aller, ouvrirProfil }: { base: Base; aller: (e: Ecr
   const [partie, setPartie] = useState<Partie | null>(null)
   // Duel contre un autre joueur, affiché à la place du hall
   const [duelJcj, setDuelJcj] = useState<string | null>(null)
+  const [restantsIA, setRestantsIA] = useState<number | null>(null)
   const [duelDemarre, oublierDemarre] = useDuelDemarre()
   useEffect(() => {
     if (duelDemarre) {
@@ -185,10 +186,13 @@ export function Duel({ base, aller, ouvrirProfil }: { base: Base; aller: (e: Ecr
           </div>
         </div>
 
-        <HallJcj pret={equipe.length === TAILLE_DECK} ouvrir={ouvrirJcj} ouvrirProfil={ouvrirProfil} />
+        <HallJcj pret={equipe.length === TAILLE_DECK} ouvrir={ouvrirJcj} ouvrirProfil={ouvrirProfil} surTableau={(t) => setRestantsIA(t.iaRestants)} />
 
         <h2 className="titre-entrainement">Entraînement contre l'IA</h2>
-        <p className="discret">10 duels récompensés par jour contre l'IA : l'essentiel des gains se joue désormais entre agents.</p>
+        <p className="discret">
+          {restantsIA === null ? '10' : `${restantsIA}/10`} duels récompensés {restantsIA === null ? 'par jour' : "restants aujourd'hui"} contre l'IA : l'essentiel
+          des gains se joue désormais entre agents.
+        </p>
         {equipe.length < TAILLE_DECK && (
           <p className="alerte">
             Il vous faut {TAILLE_DECK} cartes dans l'équipe pour lancer une confrontation
@@ -351,7 +355,17 @@ function Integrite({ nom, pv, adverse }: { nom: string; pv: number; adverse?: bo
 /**
  * Les duels entre joueurs, mis en avant : file classée (Elo), amis en ligne à défier, défis reçus, duel en cours.
  */
-function HallJcj({ pret, ouvrir, ouvrirProfil }: { pret: boolean; ouvrir: (id: string) => void; ouvrirProfil: (p: string) => void }) {
+function HallJcj({
+  pret,
+  ouvrir,
+  ouvrirProfil,
+  surTableau,
+}: {
+  pret: boolean
+  ouvrir: (id: string) => void
+  ouvrirProfil: (p: string) => void
+  surTableau: (t: TableauDuels) => void
+}) {
   const [tableau, setTableau] = useState<TableauDuels | null>(null)
   const [enFile, setEnFile] = useState<number | null>(null)
   const [debutFile, setDebutFile] = useState(0)
@@ -361,7 +375,16 @@ function HallJcj({ pret, ouvrir, ouvrirProfil }: { pret: boolean; ouvrir: (id: s
   const fileActive = useRef(false)
   const enAttente = enFile !== null
 
-  const charger = useCallback(() => void tableauDuels().then(setTableau), [])
+  const rappel = useRef(surTableau)
+  rappel.current = surTableau
+  const charger = useCallback(
+    () =>
+      void tableauDuels().then((t) => {
+        setTableau(t)
+        if (t) rappel.current(t)
+      }),
+    [],
+  )
   useEffect(() => {
     charger()
     const t = setInterval(charger, 15_000)

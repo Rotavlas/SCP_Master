@@ -1,6 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { RARETES, type Base } from '../data/catalogue'
 import { definirAgent } from '../state/actions'
+import { tableauDuels, type TableauDuels } from '../state/jcj'
 import { ACCREDITATIONS, accreditation, useSauvegarde, varianteAffichee } from '../state/sauvegarde'
 import type { Ecran } from '../types'
 import { Carte } from './Carte'
@@ -17,6 +18,11 @@ export function Accueil({ base, aller, ouvrirCarte }: Props) {
   const s = useSauvegarde()
   const [nom, setNom] = useState('')
   const [occupe, setOccupe] = useState(false)
+  // Elo, rang et agents en ligne pour la tuile des confrontations
+  const [duels, setDuels] = useState<TableauDuels | null>(null)
+  useEffect(() => {
+    if (s.agent) void tableauDuels().then(setDuels)
+  }, [s.agent])
   const acc = accreditation(s.xp)
   const possedees = Object.keys(s.collection)
   const parRarete = [0, 0, 0, 0, 0]
@@ -101,10 +107,12 @@ export function Accueil({ base, aller, ouvrirCarte }: Props) {
             en stock · <CompteARebours />
           </span>
         </button>
-        <button className="tuile" onClick={() => aller('duel')}>
+        <button className="tuile tuile-jcj" onClick={() => aller('duel')}>
           <span className="tuile-titre">Confrontation</span>
-          <span className="tuile-valeur">{s.stats.victoires}</span>
-          <span className="tuile-sous">victoire{s.stats.victoires > 1 ? 's' : ''} sur {s.stats.duels} duels</span>
+          <span className="tuile-valeur">{duels ? `${duels.elo} Elo` : '—'}</span>
+          <span className="tuile-sous">
+            {duels ? `#${duels.rang} · ${duels.jcj.victoires} victoire${duels.jcj.victoires > 1 ? 's' : ''} entre agents · ${duels.enLigne} en ligne` : 'duels entre agents'}
+          </span>
         </button>
         <button className="tuile" onClick={() => aller('collection')}>
           <span className="tuile-titre">Archives</span>
@@ -157,7 +165,13 @@ export function Accueil({ base, aller, ouvrirCarte }: Props) {
             En confrontation, chaque manche pose une question sur l'une des deux cartes en jeu. Bonne réponse : votre carte
             frappe. Répondez vite pour frapper plus fort.
           </li>
-          <li>Les victoires rapportent crédits et XP. L'accréditation débloque des adversaires plus coriaces.</li>
+          <li>
+            Les duels <strong>entre agents</strong> sont le cœur du jeu : le duel classé fait gagner ou perdre de l'Elo et rapporte
+            des crédits, le défi amical se lance à un ami en ligne. Contre l'IA, 10 duels récompensés par jour pour s'entraîner.
+          </li>
+          <li>Le Marché permet d'enchérir, de vendre et d'échanger des cartes avec les autres agents.</li>
+          <li>L'onglet Social réunit amis, clans et messages ; les Classements comparent Elo, collection, fortune et clans.</li>
+          <li>Les victoires rapportent crédits et XP. L'accréditation débloque des adversaires IA plus coriaces.</li>
           <li>Paliers : {ACCREDITATIONS.map((a) => `N${a.niveau} à ${a.xp} XP`).join(', ')}.</li>
         </ul>
       </details>

@@ -235,9 +235,9 @@ async function initialiser(env: Environnement, prep: Preparation, maintenant: nu
   const b = await base(env, prep.langue)
   if ([...prep.equipeA, ...prep.equipeB].some((id) => !b.parId.has(id))) throw new Erreur(409, 'Nouvelles fiches disponibles : rechargez la page')
   const { etat, secret } = etatInitial(prep, maintenant)
-  if (!(await rpc<boolean>(env, 'jcj_ecrire', { p_duel: prep.id, p_version: 0, p_etat: etat, p_secret: secret }))) {
-    throw new Erreur(409, 'Le duel a changé entre-temps : réessayez')
-  }
+  // Écriture refusée : l'autre joueur l'a initialisé au même instant (défi accepté pendant que le lanceur
+  // ouvrait le duel). Son état fait foi, la relecture qui suit le récupère.
+  await rpc<boolean>(env, 'jcj_ecrire', { p_duel: prep.id, p_version: 0, p_etat: etat, p_secret: secret })
 }
 
 /** Ce que voit un joueur : l'état public, sa propre main restante, et ses gains si le duel est fini. */
@@ -304,7 +304,12 @@ async function etatDuel(env: Environnement, idDuel: string, idJoueur: string, ma
   let lu = await lire(env, idDuel, idJoueur)
   // Duel resté en préparation (initialisation interrompue) : on le reprend
   if (lu.statut === 'preparation' && lu.version === 0) {
-    await initialiser(env, await rpc<Preparation>(env, 'jcj_preparer', { p_duel: idDuel, p_joueur: idJoueur }), maintenant)
+    try {
+      await initialiser(env, await rpc<Preparation>(env, 'jcj_preparer', { p_duel: idDuel, p_joueur: idJoueur }), maintenant)
+    } catch (e) {
+      // Préparé par l'autre joueur entre notre lecture et la reprise : on relit simplement
+      if (!(e instanceof Erreur && e.statut === 409)) throw e
+    }
     lu = await lire(env, idDuel, idJoueur)
   }
   const { lu: apres, profil } = await modifier(env, idDuel, idJoueur, maintenant)

@@ -79,6 +79,9 @@ export function DuelJcj({ id, base, onQuitter, ouvrirProfil }: { id: string; bas
     )
   }
 
+  // Duel accepté à l'instant : le serveur finit de le préparer, le direct apporte la suite
+  if (vue.statut === 'preparation' || !vue.etat?.phase) return <p className="discret">Préparation du duel…</p>
+
   const e = vue.etat
   const moi: Cote = vue.cote
   const lui: Cote = moi === 'a' ? 'b' : 'a'

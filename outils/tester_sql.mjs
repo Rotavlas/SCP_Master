@@ -715,6 +715,20 @@ await test('un défi non accepté expire au bout d\'une minute', async () => {
   await admin(`update public.duels_jcj set cree_le = now() - interval '2 minutes' where id = $1`, [id])
   await echoue(service(`select public.jcj_repondre_defi('${F}', '${id}', true)`), /expiré/)
 })
+await test("accepter un défi est refusé si l'un des deux est déjà en duel", async () => {
+  const H = '00000000-0000-0000-0000-000000000011'
+  const { id } = await service(`select public.jcj_defier('${E}', 'Foxtrot')`)
+  // Entre-temps, Echo est apparié dans la file classée
+  await service(`select public.jcj_entrer_file('${E}')`)
+  const autre = (await service(`select public.jcj_entrer_file('${H}')`)).preparer.id
+  await echoue(service(`select public.jcj_repondre_defi('${F}', '${id}', true)`), /déjà en duel/)
+  await admin("update public.duels_jcj set statut = 'annule' where id in ($1, $2)", [id, autre])
+})
+await test("un visiteur non connecté ne peut lire ni profils, ni cartes, ni mouvements", async () => {
+  for (const t of ['profils', 'exemplaires', 'mouvements_credits', 'messages', 'duels_jcj']) {
+    await echoue(en(null, `select * from public.${t}`), /permission denied/)
+  }
+})
 await test('tableau des duels : Elo, rang, duels restants contre l\'IA', async () => {
   const t = await valeur(E, 'select public.tableau_duels()')
   assert.equal(t.iaRestants, 10)
@@ -727,6 +741,13 @@ await test('supprimer son compte efface profil et cartes', async () => {
   await en(B, 'select public.supprimer_mon_compte()')
   assert.equal((await admin(`select count(*)::int as n from public.profils where id = '${B}'`)).rows[0].n, 0)
   assert.equal((await admin(`select count(*)::int as n from public.exemplaires where proprietaire = '${B}'`)).rows[0].n, 0)
+})
+await test('supprimer son compte anonymise ses messages et libère sa place de clan', async () => {
+  await en(E, 'select public.supprimer_mon_compte()')
+  const m = (await admin("select distinct pseudo, auteur from public.messages where texte = 'Bonjour le site'")).rows
+  assert.deepEqual(m, [{ pseudo: 'Agent disparu', auteur: null }])
+  assert.equal((await admin(`select count(*)::int as n from prive.membres_clan where joueur = '${E}'`)).rows[0].n, 0)
+  assert.equal((await admin(`select count(*)::int as n from prive.amities where '${E}' in (de, vers)`)).rows[0].n, 0)
 })
 
 console.log(`\n${reussis} tests réussis${process.exitCode ? ', des échecs' : ''}.`)

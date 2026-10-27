@@ -4,7 +4,7 @@
  */
 import { useEffect, useRef, useSyncExternalStore } from 'react'
 import { appeler, appelerDuel, appliquerProfil, idUtilisateur, supabase, type ProfilServeur } from './enLigne'
-import { modifier } from './sauvegarde'
+import { modifier, notifier } from './sauvegarde'
 
 export type Cote = 'a' | 'b'
 type ParCote<T> = Record<Cote, T>
@@ -74,7 +74,11 @@ export async function entrerFile() {
   return r
 }
 export const quitterFile = () => appelerDuel<{ ok: boolean }>('jcj_quitter')
-export const defier = (pseudo: string) => appelerDuel<{ id: string }>('jcj_defier', { pseudo })
+export async function defier(pseudo: string) {
+  const r = await appelerDuel<{ id: string }>('jcj_defier', { pseudo })
+  if (r) notifier(`Défi envoyé à ${pseudo} : le duel s'ouvrira dès qu'il acceptera (1 minute)`, 'succes')
+  return r
+}
 export async function repondreDefi(id: string, accepter: boolean) {
   const r = await appelerDuel<{ refuse?: boolean; duel?: VueDuel }>('jcj_repondre_defi', { id, accepter })
   if (r?.duel) appliquer(r.duel)

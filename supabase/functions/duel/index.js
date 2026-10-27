@@ -785,12 +785,12 @@ async function initialiser(env, prep, maintenant) {
 	const b = await base(env, prep.langue);
 	if ([...prep.equipeA, ...prep.equipeB].some((id) => !b.parId.has(id))) throw new Erreur(409, "Nouvelles fiches disponibles : rechargez la page");
 	const { etat, secret } = etatInitial(prep, maintenant);
-	if (!await rpc(env, "jcj_ecrire", {
+	await rpc(env, "jcj_ecrire", {
 		p_duel: prep.id,
 		p_version: 0,
 		p_etat: etat,
 		p_secret: secret
-	})) throw new Erreur(409, "Le duel a changé entre-temps : réessayez");
+	});
 }
 /** Ce que voit un joueur : l'état public, sa propre main restante, et ses gains si le duel est fini. */
 function vue(lu, id) {
@@ -881,10 +881,14 @@ const ACTIONS_JCJ = /* @__PURE__ */ new Set([
 async function etatDuel(env, idDuel, idJoueur, maintenant) {
 	let lu = await lire$1(env, idDuel, idJoueur);
 	if (lu.statut === "preparation" && lu.version === 0) {
-		await initialiser(env, await rpc(env, "jcj_preparer", {
-			p_duel: idDuel,
-			p_joueur: idJoueur
-		}), maintenant);
+		try {
+			await initialiser(env, await rpc(env, "jcj_preparer", {
+				p_duel: idDuel,
+				p_joueur: idJoueur
+			}), maintenant);
+		} catch (e) {
+			if (!(e instanceof Erreur && e.statut === 409)) throw e;
+		}
 		lu = await lire$1(env, idDuel, idJoueur);
 	}
 	const { lu: apres, profil } = await modifier(env, idDuel, idJoueur, maintenant);

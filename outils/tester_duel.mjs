@@ -431,6 +431,16 @@ await test('les questions portent tour à tour sur la carte de chaque joueur', a
   assert.deepEqual(sujets, sujets[0] === 'a' ? ['a', 'b', 'a', 'b', 'a'] : ['b', 'a', 'b', 'a', 'b'])
   await appel('jeton-A', { action: 'jcj_etat', id })
 })
+await test("deux joueurs qui ouvrent le même duel en préparation au même instant : aucune erreur", async () => {
+  const id = (await admin(`insert into public.duels_jcj (joueur_a, joueur_b, classe, statut) values ($1, $2, false, 'preparation') returning id`, [A, B])).rows[0].id
+  const [a, b] = await Promise.all([appel('jeton-A', { action: 'jcj_etat', id }), appel('jeton-B', { action: 'jcj_etat', id })])
+  assert.equal(a.statut, 200, a.texte)
+  assert.equal(b.statut, 200, b.texte)
+  assert.equal(a.corps.etat.phase, 'choix')
+  assert.equal(b.corps.etat.phase, 'choix')
+  assert.deepEqual(a.corps.etat.pv, b.corps.etat.pv)
+  await appel('jeton-A', { action: 'jcj_abandonner', id })
+})
 await test('quitter la file', async () => {
   await appel('jeton-A', { action: 'jcj_file' })
   assert.equal((await appel('jeton-A', { action: 'jcj_quitter' })).corps.ok, true)
