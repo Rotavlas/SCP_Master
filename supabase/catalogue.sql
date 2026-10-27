@@ -1,4 +1,4 @@
--- Généré par outils/catalogue_sql.mjs (17423 cartes). Ne pas modifier à la main.
+-- Généré par outils/catalogue_sql.mjs (17517 cartes). Ne pas modifier à la main.
 
 insert into public.cartes (id, k, ra)
 select id, 's', 4 from unnest(array['qntm-s-proposal','jonathan-ball-s-proposal','dr-gears-s-proposal','dr-manns-proposal','mackenzie-s-proposal','sandrewswann-s-proposal','scantron-s-proposal','djoric-dmatix-proposal','ouroboros','kate-mctiriss-s-proposal','wrong-proposal','shaggydredlocks-proposal','spikebrennan-s-proposal','wjs-proposal','billiths-proposal','tanhony-s-proposal','lily-s-proposal','tuftos-proposal','liz-the-gm-s-proposal','i-h-p-proposal','scp-001-ex','wmdd-s-proposal','psul-001','captain-kirby-s-proposal','pedantique-s-proposal','not-a-seagull-proposal','jack-ike-s-proposal-i','jack-ike-s-proposal-ii','tanhony-s-proposal-ii','swelling-of-the-worlds','mcdoctorate-s-proposal','rounderhouse-proposal','manymeats-proposal','keter-duty','pickman-blank-proposal','rounderhouse-gold-proposal','ralliston-s-proposal','nagiros-proposal','rounderhouse-jade-proposal','plague-s-proposal','jack-ike-s-proposal-iv','dyfscp0012','nico-proposal','dr-cimmerian-s-proposal','oris-proposal','dyfscp0013','nicos-proposal-ii','dr-frueh-s-proposal','rounderhouse-bone-proposal','metaphysician-karpin-proposal','yoshihides-proposal','calibold-harryblank-nico-proposal','etc-proposal','poufys-proposal','dyfscp0014','queerious-proposal','lulus-proposal','the-communitys-proposal','001-blank-i','bleep-s-onyx-proposal','nico-queer-001','billiths-proposal-ii','scp-002','scp-008','scp-033','scp-035','scp-048','scp-049','scp-055','scp-073','scp-076','scp-079','scp-085','scp-087','scp-089','scp-093','scp-096','scp-105','scp-106','scp-140','scp-166','scp-169','scp-173','scp-184','scp-217','scp-231','scp-239','scp-294','scp-343','scp-354','scp-426','scp-500','scp-507','scp-529','scp-610','scp-682','scp-701','scp-882','scp-895','scp-914','scp-990','scp-993','scp-999','scp-1000','scp-1048','scp-1233','scp-1313','scp-1322','scp-1360','scp-1425','scp-1437','scp-1471','scp-1730','scp-1733','scp-1762','scp-1867','scp-1981','scp-2000','scp-2006','scp-2030','scp-2264','scp-2316','scp-2317','scp-2399','scp-2419','scp-2521','scp-2571','scp-2599','scp-2639','scp-2662','scp-2718','scp-2719','scp-2747','scp-2935','scp-2950','scp-3000','scp-3001','scp-3002','scp-3008','scp-3034','scp-3043','scp-3125','scp-3143','scp-3241','scp-3309','scp-3393','scp-3930','scp-3999','taboo','scp-4205','scp-4666','scp-4999','scp-5000','scp-5031','scp-5999','scp-6000','scp-6001','scp-6500','scp-6820','scp-7000','scp-7179']) as id
@@ -29,7 +29,7 @@ select id, 'f', 5 from unnest(array['fim:alpha-1']) as id
 on conflict (id) do update set k = excluded.k, ra = excluded.ra;
 
 insert into public.cartes (id, k, ra)
-select id, 'f', 2 from unnest(array['fim:alpha-4','fim:eta-10','fim:eta-11','fim:gamma-13','fim:gamma-4','fim:gamma-4-2','fim:gamma-6','fim:lambda-12','fim:lambda-12-2','fim:lambda-5','fim:mu-13','fim:mu-3','fim:psi-7','fim:sigma-10','fim:tau-5','fim:theta-4']) as id
+select id, 'f', 2 from unnest(array['fim:alpha-4','fim:eta-10','fim:eta-11','fim:gamma-13','fim:gamma-4','fim:gamma-4-2','fim:gamma-6','fim:lambda-12','fim:lambda-12-2','fim:mu-13','fim:mu-3','fim:psi-7','fim:sigma-10','fim:theta-4']) as id
 on conflict (id) do update set k = excluded.k, ra = excluded.ra;
 
 insert into public.cartes (id, k, ra)
@@ -37,15 +37,15 @@ select id, 'f', 0 from unnest(array['fim:alpha-45','fim:alpha-5','fim:beta-10','
 on conflict (id) do update set k = excluded.k, ra = excluded.ra;
 
 insert into public.cartes (id, k, ra)
-select id, 'f', 4 from unnest(array['fim:alpha-9','fim:epsilon-11','fim:nu-7','fim:r-sh-1','fim:sigma-9','fim:zeta-9']) as id
+select id, 'f', 4 from unnest(array['fim:alpha-9','fim:beta-1','fim:epsilon-11','fim:nu-7','fim:omega-1','fim:r-sh-1','fim:sigma-9','fim:zeta-9']) as id
 on conflict (id) do update set k = excluded.k, ra = excluded.ra;
 
 insert into public.cartes (id, k, ra)
-select id, 'f', 1 from unnest(array['fim:beta-1','fim:beta-2','fim:beta-4','fim:beta-777','fim:delta-3','fim:delta-4','fim:delta-5','fim:epsilon-9','fim:eta-5','fim:eta-77','fim:kappa-10','fim:kappa-43','fim:lambda-14','fim:lambda-4','fim:omega-1','fim:omega-12','fim:omicron-rho','fim:phi-2','fim:psi-13','fim:psi-8','fim:rho-1','fim:rho-9','fim:sigma-3','fim:sigma-5','fim:tau-51','fim:tau-9','fim:theta-5','fim:theta-90','fim:upsilon-4','fim:xi-13']) as id
+select id, 'f', 1 from unnest(array['fim:beta-2','fim:beta-4','fim:beta-777','fim:delta-3','fim:delta-4','fim:delta-5','fim:epsilon-9','fim:eta-5','fim:eta-77','fim:kappa-10','fim:kappa-43','fim:lambda-14','fim:lambda-4','fim:omega-12','fim:omicron-rho','fim:phi-2','fim:psi-13','fim:psi-8','fim:rho-1','fim:rho-9','fim:sigma-3','fim:sigma-5','fim:tau-51','fim:tau-9','fim:theta-5','fim:theta-90','fim:upsilon-4','fim:xi-13']) as id
 on conflict (id) do update set k = excluded.k, ra = excluded.ra;
 
 insert into public.cartes (id, k, ra)
-select id, 'f', 3 from unnest(array['fim:beta-7','fim:epsilon-6','fim:gamma-5','fim:iota-10','fim:mu-4','fim:omega-7','fim:pi-1']) as id
+select id, 'f', 3 from unnest(array['fim:beta-7','fim:epsilon-6','fim:gamma-5','fim:iota-10','fim:lambda-5','fim:mu-4','fim:omega-7','fim:pi-1','fim:tau-5']) as id
 on conflict (id) do update set k = excluded.k, ra = excluded.ra;
 
 insert into public.cartes (id, k, ra)
@@ -90,6 +90,26 @@ on conflict (id) do update set k = excluded.k, ra = excluded.ra;
 
 insert into public.cartes (id, k, ra)
 select id, 'e', 4 from unnest(array['dept:ethics-committee']) as id
+on conflict (id) do update set k = excluded.k, ra = excluded.ra;
+
+insert into public.cartes (id, k, ra)
+select id, 'l', 0 from unnest(array['site:area-02','site:area-09','site:area-21','site:area-314','site:area-34','site:facility-90','site:site-0','site:site-06-3','site:site-101','site:site-104','site:site-106','site:site-107','site:site-119','site:site-138','site:site-169','site:site-188','site:site-201','site:site-222','site:site-225','site:site-228','site:site-234','site:site-246','site:site-247','site:site-300','site:site-333','site:site-38','site:site-387','site:site-400','site:site-418','site:site-433','site:site-5','site:site-50','site:site-512','site:site-62','site:site-65','site:site-69','site:site-80','site:site-84','site:site-898','site:site-95','site:site-anvil','site:site-command']) as id
+on conflict (id) do update set k = excluded.k, ra = excluded.ra;
+
+insert into public.cartes (id, k, ra)
+select id, 'l', 2 from unnest(array['site:area-12','site:site-11','site:site-12','site:site-22','site:site-23','site:site-37','site:site-42','site:site-45','site:site-45-2','site:site-55','site:site-59','site:site-73','site:site-76','site:site-88']) as id
+on conflict (id) do update set k = excluded.k, ra = excluded.ra;
+
+insert into public.cartes (id, k, ra)
+select id, 'l', 1 from unnest(array['site:area-14','site:area-179','site:area-32','site:site-103','site:site-118','site:site-13','site:site-14','site:site-18','site:site-184','site:site-28','site:site-322','site:site-34','site:site-36','site:site-41','site:site-44','site:site-54','site:site-56','site:site-58','site:site-66','site:site-666','site:site-7','site:site-78','site:site-79','site:site-83','site:site-98','site:site-theta']) as id
+on conflict (id) do update set k = excluded.k, ra = excluded.ra;
+
+insert into public.cartes (id, k, ra)
+select id, 'l', 3 from unnest(array['site:area-27','site:site-120','site:site-15','site:site-64','site:site-77','site:site-81','site:site-87','site:site-91']) as id
+on conflict (id) do update set k = excluded.k, ra = excluded.ra;
+
+insert into public.cartes (id, k, ra)
+select id, 'l', 4 from unnest(array['site:site-01','site:site-17','site:site-19','site:site-43']) as id
 on conflict (id) do update set k = excluded.k, ra = excluded.ra;
 
 insert into public.cartes (id, k, ra)

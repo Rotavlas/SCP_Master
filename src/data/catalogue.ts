@@ -27,13 +27,14 @@ export const TYPES: Record<TypeFiche, { nom: string; pluriel: string; court: str
   f: { nom: 'Équipe FIM', pluriel: 'Équipes FIM', court: 'FIM', couleur: '#2e7d6b', article: 'quelle équipe FIM' },
   p: { nom: 'Personnel', pluriel: 'Personnel', court: 'Personnel', couleur: '#4b5d7a', article: 'qui' },
   e: { nom: 'Département', pluriel: 'Départements', court: 'Dépt', couleur: '#5b6b3a', article: 'quel département' },
+  l: { nom: 'Site', pluriel: 'Sites', court: 'Site', couleur: '#3a5f73', article: 'quel site' },
   g: { nom: "Groupe d'intérêt", pluriel: "Groupes d'intérêt", court: 'GdI', couleur: '#7a4f9a', article: "quel Groupe d'intérêt" },
   n: { nom: 'Canon', pluriel: 'Canons', court: 'Canon', couleur: '#a0522d', article: 'quel canon' },
   d: { nom: 'Document de GdI', pluriel: 'Documents de GdI', court: 'Doc. GdI', couleur: '#4f6f9a', article: 'quel document' },
   c: { nom: 'Conte', pluriel: 'Contes', court: 'Conte', couleur: '#8a6d3b', article: 'quel conte' },
 }
 
-export const ORDRE_TYPES: TypeFiche[] = ['s', 'f', 'p', 'e', 'g', 'n', 'd', 'c']
+export const ORDRE_TYPES: TypeFiche[] = ['s', 'f', 'p', 'e', 'l', 'g', 'n', 'd', 'c']
 
 export function nomClasse(carte: Carte): string {
   return carte.ce ?? (carte.c ? CLASSES[carte.c].nom : '')

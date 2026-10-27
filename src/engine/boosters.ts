@@ -27,7 +27,7 @@ export interface TypeBooster {
   couleur: string
 }
 
-const MELANGE: Partial<Record<TypeFiche, number>> = { s: 0.64, c: 0.14, d: 0.05, p: 0.06, f: 0.04, g: 0.03, n: 0.02, e: 0.02 }
+const MELANGE: Partial<Record<TypeFiche, number>> = { s: 0.62, c: 0.14, d: 0.05, p: 0.06, f: 0.04, g: 0.03, n: 0.02, e: 0.02, l: 0.02 }
 const COMMUN = [0.66, 0.24, 0.075, 0.02, 0.005]
 const COMMUN_DERNIERE = [0, 0.7, 0.22, 0.065, 0.015]
 
@@ -71,9 +71,9 @@ export const BOOSTERS: TypeBooster[] = [
   {
     id: 'personnel',
     nom: 'Dossiers du personnel',
-    description: '5 fiches : personnel, Conseil O5, équipes FIM, départements, Groupes d\'intérêt et canons.',
+    description: '5 fiches : personnel, Conseil O5, équipes FIM, départements, sites, Groupes d\'intérêt et canons.',
     prix: 160,
-    types: { p: 0.4, f: 0.27, g: 0.13, n: 0.1, e: 0.1 },
+    types: { p: 0.37, f: 0.24, g: 0.12, n: 0.09, e: 0.09, l: 0.09 },
     poids: COMMUN,
     poidsDerniere: COMMUN_DERNIERE,
     bonusVariante: 1.5,

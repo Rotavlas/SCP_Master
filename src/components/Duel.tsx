@@ -19,6 +19,7 @@ import type { Carte as TCarte, Ecran } from '../types'
 import { Carte } from './Carte'
 import { meilleureEquipe } from './Collection'
 import { DuelJcj } from './DuelJcj'
+import { Pseudo } from './Badges'
 
 /**
  * Le serveur arbitre le duel (supabase/functions/duel) : il tire le deck de l'IA et les questions,
@@ -502,9 +503,7 @@ function HallJcj({
             <ul className="liste-simple">
               {invitations.map((i) => (
                 <li key={i.id}>
-                  <button className="btn-lien" onClick={() => ouvrirProfil(i.pseudo)}>
-                    {i.pseudo}
-                  </button>
+                  <Pseudo pseudo={i.pseudo} onClick={() => ouvrirProfil(i.pseudo)} />
                   <span className="discret">{i.elo}</span>
                   <span className="actions-ligne">
                     <button
@@ -544,9 +543,7 @@ function HallJcj({
             {tableau.amisEnLigne.map((a) => (
               <li key={a.pseudo}>
                 <span className="point-presence en-ligne" />
-                <button className="btn-lien nom" onClick={() => ouvrirProfil(a.pseudo)}>
-                  {a.pseudo}
-                </button>
+                <Pseudo className="nom" pseudo={a.pseudo} onClick={() => ouvrirProfil(a.pseudo)} />
                 <span className="discret">{a.elo}</span>
                 <button
                   className="btn"

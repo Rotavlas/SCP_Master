@@ -82,7 +82,57 @@ export const classement = (tableau: Tableau) => appeler<Classement>('classement'
 export const classementClans = () => appeler<LigneClan[]>('classement_clans')
 export const profilPublic = (pseudo: string) => appeler<ProfilPublic>('profil_public', { p_pseudo: pseudo })
 export const majVitrine = (cartes: string[]) => appeler<string[]>('maj_vitrine', { p_cartes: cartes })
-export const choisirBadges = (badges: string[]) => appeler<string[]>('choisir_badges', { p_badges: badges })
+export async function choisirBadges(badges: string[]): Promise<string[] | null> {
+  const r = await appeler<string[]>('choisir_badges', { p_badges: badges })
+  if (r) oublierBadges()
+  return r
+}
+
+// ---------- Badges affichés à côté des pseudos ----------
+// Un seul appel pour tous les pseudos visibles à l'écran, regroupés pendant 60 ms, gardés 5 minutes.
+
+const DUREE_BADGES = 5 * 60_000
+let badgesConnus = new Map<string, { ids: string[]; le: number }>()
+const badgesDemandes = new Set<string>()
+const abonnesBadges = new Set<() => void>()
+let minuterieBadges: ReturnType<typeof setTimeout> | undefined
+const AUCUN: string[] = []
+
+function demanderBadges(pseudo: string) {
+  badgesDemandes.add(pseudo)
+  clearTimeout(minuterieBadges)
+  minuterieBadges = setTimeout(async () => {
+    const pseudos = [...badgesDemandes]
+    badgesDemandes.clear()
+    const r = await appeler<Record<string, string[]>>('badges_affiches_de', { p_pseudos: pseudos })
+    if (!r) return
+    const le = Date.now()
+    badgesConnus = new Map(badgesConnus)
+    for (const p of pseudos) badgesConnus.set(p, { ids: r[p] ?? AUCUN, le })
+    abonnesBadges.forEach((a) => a())
+  }, 60)
+}
+
+/** Après un changement de ses propres badges : tout est relu. */
+function oublierBadges() {
+  badgesConnus = new Map()
+  abonnesBadges.forEach((a) => a())
+}
+
+/** Les badges (3 au plus) qu'un agent affiche à côté de son pseudo. */
+export function useBadgesDe(pseudo: string | null | undefined): string[] {
+  const connu = useSyncExternalStore(
+    (a) => {
+      abonnesBadges.add(a)
+      return () => abonnesBadges.delete(a)
+    },
+    () => (pseudo ? badgesConnus.get(pseudo) : undefined),
+  )
+  useEffect(() => {
+    if (pseudo && (!connu || Date.now() - connu.le > DUREE_BADGES) && !badgesDemandes.has(pseudo)) demanderBadges(pseudo)
+  }, [pseudo, connu])
+  return connu?.ids ?? AUCUN
+}
 
 // ---------- Amis ----------
 

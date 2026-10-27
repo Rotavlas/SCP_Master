@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
-import { RARETES, designation, type Base } from '../data/catalogue'
+import { RARETES, designation, nomClasse, type Base } from '../data/catalogue'
+import { signature } from '../data/mythiques'
 import { BOOSTERS, type CarteTiree, type TypeBooster } from '../engine/boosters'
 import { PAR_ID, PRESTIGE } from '../engine/variantes'
 import { tirerBooster } from '../state/actions'
@@ -8,6 +9,7 @@ import type { Carte as TCarte, Ecran } from '../types'
 import { Carte } from './Carte'
 import { CompteARebours } from './CompteARebours'
 import { Logo } from './Logo'
+import { SceneMythique } from './ScenesMythiques'
 
 export interface Tirage {
   id: number
@@ -22,21 +24,14 @@ export interface Tirage {
 
 const valeur = (t: CarteTiree) => t.carte.ra * 10 + (5 - PRESTIGE.indexOf(t.variante))
 
-/** Couleur et dernière ligne du protocole de chaque Mythique */
-const SIGNATURES: Record<string, { couleur: string; ligne: string }> = {
-  'perso:aaron-siegel': { couleur: '#7fc8ff', ligne: 'Cornell, 1891 : un physicien disparaît des registres' },
-  'perso:the-administrator': { couleur: '#f2f2f2', ligne: "Identité de l'Administrateur : [EXPURGÉ]" },
-  'perso:o5-1': { couleur: '#e6e6e6', ligne: 'Siège n° 1 du Conseil O5 : présence confirmée' },
-  'entite:scarlet-king': { couleur: '#d0102f', ligne: "Le Roi écarlate s'éveille" },
-  'fim:alpha-1': { couleur: '#e0262b', ligne: "La Main droite rouge ne répond qu'au Conseil" },
-  'dr-clef-s-proposal': { couleur: '#ffcf5a', ligne: 'Quatre ailes de flammes au-dessus du Site 0' },
-  'perso:les-auteurs': { couleur: '#b48cff', ligne: 'Strate narrative supérieure : lecture seule' },
-}
-const signature = (carte: TCarte) => SIGNATURES[carte.id] ?? { couleur: RARETES[5].couleur, ligne: 'Dossier de niveau 5 déclassifié' }
-/** Durée du protocole d'une Mythique avant la révélation (ms), en phase avec les animations .pm-* */
-const DUREE_PROTOCOLE = 5400
-/** Version courte pour une Légendaire (.protocole-legendaire) */
-const DUREE_PROTOCOLE_LEGENDAIRE = 2700
+/** Niveau d'accréditation inscrit sur chaque dossier scellé */
+const NIVEAUX_DOSSIER: Record<string, number> = { standard: 1, scp: 2, contes: 2, personnel: 3, keter: 4, o5: 5 }
+
+/** Durées des cinématiques (ms), en phase avec les animations .pm-* de styles.css */
+const DUREE_PROTOCOLE = 9400
+const DUREE_PROTOCOLE_LEGENDAIRE = 4600
+/** Moment où la scène d'une Mythique remplace le terminal */
+const DEBUT_SCENE = 3300
 
 let tirageEnCours = false
 
@@ -112,6 +107,8 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
   const [suspense, setSuspense] = useState(false)
   const [sortie, setSortie] = useState(false)
   const [protocole, setProtocole] = useState(false)
+  // Avant cet instant, les clics sur la pile sont ignorés
+  const verrou = useRef(0)
   const glisse = useRef<{ x: number; largeur: number } | null>(null)
   const courante = tirage.cartes[index]
 
@@ -152,6 +149,8 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
 
   const reveler = useCallback(() => {
     const t = tirage.cartes[index]
+    // La carte retournée reste au moins le temps de ses effets : un clic trop rapide ne les saute pas
+    verrou.current = Date.now() + (t.carte.ra === 5 ? 2600 : t.carte.ra === 4 || t.variante !== 'std' ? 1500 : t.carte.ra === 3 ? 1100 : 650)
     setSuspense(false)
     setProtocole(false)
     setRevelee(true)
@@ -162,6 +161,9 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
 
   const avancer = useCallback(() => {
     if (etape !== 'pile' || suspense || sortie || protocole) return
+    // Deux clics dans la même image arrivent avant le nouvel état : le verrou, lui, est immédiat
+    if (Date.now() < verrou.current) return
+    verrou.current = Date.now() + 450
     if (!revelee) {
       const t = tirage.cartes[index]
       const spectaculaire = t.carte.ra >= 3 || t.variante !== 'std'
@@ -200,22 +202,46 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
       <section className="booster-ouverture">
         <p className="dossier-entete">{tirage.type.nom}</p>
         <div
-          className={`paquet paquet-scelle ${etape === 'dechire' ? 'paquet-ouvert' : ''}`}
+          className={`paquet paquet-scelle dossier-scelle dossier-${tirage.type.id} ${etape === 'dechire' ? 'paquet-ouvert' : ''}`}
           style={{ ['--paquet' as string]: tirage.type.couleur, ['--dechirure' as string]: dechirure } as CSSProperties}
           onPointerDown={debutGlisse}
           onPointerMove={glisser}
           onPointerUp={finGlisse}
           onPointerCancel={finGlisse}
         >
+          <span className="dossier-onglet">SCP · {NIVEAUX_DOSSIER[tirage.type.id]}</span>
           <div className="paquet-rabat">
-            <span className="paquet-bande">CONFIDENTIEL</span>
+            <span className="dossier-devise">Sécuriser · Contenir · Protéger</span>
           </div>
           <div className="paquet-ligne" aria-hidden="true">
             <span />
+            <i className="dossier-ciseaux">✂</i>
+          </div>
+          <div className="dossier-sceau" aria-hidden="true">
+            <Logo taille={30} />
           </div>
           <div className="paquet-corps">
-            <Logo taille={80} />
+            <span className="dossier-tampon">Confidentiel</span>
+            <Logo taille={58} />
             <span className="paquet-titre">{tirage.type.nom}</span>
+            <dl className="dossier-champs">
+              <div>
+                <dt>Accréditation</dt>
+                <dd>Niveau {NIVEAUX_DOSSIER[tirage.type.id]}</dd>
+              </div>
+              <div>
+                <dt>Contenu</dt>
+                <dd>5 fiches</dd>
+              </div>
+              <div>
+                <dt>Destinataire</dt>
+                <dd>{s.agent || 'Agent'}</dd>
+              </div>
+            </dl>
+          </div>
+          <div className="dossier-pied" aria-hidden="true">
+            <span className="dossier-code-barres" />
+            <span>N° {String(Math.floor(tirage.id) % 1_000_000).padStart(6, '0')}</span>
           </div>
           <div className="paquet-eclat" aria-hidden="true" />
         </div>
@@ -316,35 +342,59 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
   )
 }
 
+/** Ce qu'une Légendaire laisse deviner avant d'être retournée : sa nature, jamais son nom. */
+function indiceLegendaire(c: TCarte): string {
+  switch (c.k) {
+    case 's':
+      return c.s === 0 ? 'une proposition pour SCP-001' : `anomalie de classe ${nomClasse(c)}`
+    case 'f':
+      return "force d'intervention mobile"
+    case 'p':
+      return c.cat === 'Conseil O5' ? 'un siège du Conseil O5' : c.cat === 'Entité pluripotente' ? 'entité pluripotente' : 'dossier du personnel'
+    case 'e':
+      return 'département de la Fondation'
+    case 'l':
+      return 'installation de la Fondation'
+    case 'g':
+      return "Groupe d'intérêt"
+    case 'n':
+      return 'un canon tout entier'
+    case 'd':
+      return "document saisi chez un Groupe d'intérêt"
+    default:
+      return 'récit des archives'
+  }
+}
+
 /**
- * Le protocole d'une Légendaire ou d'une Mythique : l'écran s'éteint, la sirène tourne, le terminal
- * demande l'autorisation et tamponne le dossier. Une Légendaire a droit à la version courte et dorée.
- * Un clic l'abrège une fois la première ligne affichée.
+ * La cinématique d'une Légendaire ou d'une Mythique. L'écran s'éteint, la sirène tourne, le terminal
+ * demande l'autorisation et donne un indice, sans jamais nommer la carte. Pour une Mythique, sa scène
+ * se construit ensuite plein écran (chaînes du Roi écarlate, ailes du Gardien…), puis vient le tampon.
+ * Un clic ne l'abrège qu'une fois l'essentiel vu.
  */
 function Protocole({ carte, onFini }: { carte: TCarte; onFini: () => void }) {
   const debut = useRef(Date.now())
   const mythique = carte.ra === 5
-  const sig = mythique ? signature(carte) : { couleur: RARETES[4].couleur, ligne: '' }
+  const sig = mythique ? signature(carte) : { couleur: RARETES[4].couleur, indice: '' }
+  const [scene, setScene] = useState(false)
   useEffect(() => {
-    const t = setTimeout(onFini, mythique ? DUREE_PROTOCOLE : DUREE_PROTOCOLE_LEGENDAIRE)
-    return () => clearTimeout(t)
+    const fin = setTimeout(onFini, mythique ? DUREE_PROTOCOLE : DUREE_PROTOCOLE_LEGENDAIRE)
+    const t = mythique ? setTimeout(() => setScene(true), DEBUT_SCENE) : undefined
+    return () => {
+      clearTimeout(fin)
+      clearTimeout(t)
+    }
   }, [onFini, mythique])
   const lignes = mythique
-    ? [
-        '> ALERTE : dossier de niveau 5 détecté',
-        "> Vérification de l'accréditation… O5",
-        '> Autorisation du Conseil : ACCORDÉE',
-        `> Déclassification : ${designation(carte)}`,
-        `> ${sig.ligne}`,
-      ]
-    : ['> Dossier de niveau 4 : accès restreint', `> Déclassification : ${designation(carte)}`]
+    ? ['> ALERTE : signal de niveau 5', "> Accréditation O5 requise… ACCORDÉE", '> Levée du confinement en cours', `> ${sig.indice}`]
+    : ['> Dossier de niveau 4 : accès restreint', `> Nature : ${indiceLegendaire(carte)}`, '> Ouverture du dossier…']
   return (
     <div
-      className={`protocole-mythique ${mythique ? '' : 'protocole-legendaire'}`}
+      className={`protocole-mythique ${mythique ? '' : 'protocole-legendaire'} ${scene ? 'avec-scene' : ''}`}
       style={{ ['--sig' as string]: sig.couleur }}
-      onClick={() => Date.now() - debut.current > (mythique ? 1200 : 600) && onFini()}
+      onClick={() => Date.now() - debut.current > (mythique ? 6000 : 2500) && onFini()}
       role="alert"
-      aria-label={`Carte ${mythique ? 'mythique' : 'légendaire'} : ${designation(carte)}`}
+      aria-label={`Carte ${mythique ? 'mythique' : 'légendaire'}`}
     >
       <div className="pm-sirene" aria-hidden="true" />
       <div className="pm-bandeau" aria-hidden="true">
@@ -357,6 +407,11 @@ function Protocole({ carte, onFini }: { carte: TCarte; onFini: () => void }) {
           </p>
         ))}
       </div>
+      {scene && (
+        <div className="pm-scene">
+          <SceneMythique id={carte.id} anime />
+        </div>
+      )}
       <div className="pm-tampon">{mythique ? 'Mythique' : 'Légendaire'}</div>
       <div className="pm-flash" aria-hidden="true" />
     </div>

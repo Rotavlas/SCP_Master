@@ -219,6 +219,13 @@ const TYPES = {
 		couleur: "#5b6b3a",
 		article: "quel département"
 	},
+	l: {
+		nom: "Site",
+		pluriel: "Sites",
+		court: "Site",
+		couleur: "#3a5f73",
+		article: "quel site"
+	},
 	g: {
 		nom: "Groupe d'intérêt",
 		pluriel: "Groupes d'intérêt",
@@ -253,6 +260,7 @@ const ORDRE_TYPES = [
 	"f",
 	"p",
 	"e",
+	"l",
 	"g",
 	"n",
 	"d",
@@ -487,7 +495,7 @@ const GENERATEURS = [
 			if (!s.lie?.length) return null;
 			const lie = s.lie;
 			const leurres = voisines(b, b.auHasard(Math.min(s.ra, 4), ["s"]), 6, [], (c) => !lie.includes(c.num ?? "")).map((c) => c.num ?? "");
-			return construire(s, s.k === "f" ? `Au confinement de quelle anomalie l'équipe ${s.num} a-t-elle participé ?` : s.k === "e" ? `Quel dossier implique ${designation(s)} ?` : `À quelle anomalie ${designation(s)} est-il lié ?`, choisir$1(lie), leurres, 2);
+			return construire(s, s.k === "f" ? `Au confinement de quelle anomalie l'équipe ${s.num} a-t-elle participé ?` : s.k === "e" ? `Quel dossier implique ${designation(s)} ?` : s.k === "l" ? `Quelle anomalie est confinée au ${s.num} ?` : `À quelle anomalie ${designation(s)} est-il lié ?`, choisir$1(lie), leurres, 2);
 		}
 	},
 	{

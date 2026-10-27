@@ -1,6 +1,8 @@
 import { useState } from 'react'
 import { connexionEmail, connexionFournisseur, deconnexion, useCompte, useFournisseurs, verifierCode } from '../state/enLigne'
 import { useSauvegarde } from '../state/sauvegarde'
+import { useBadgesDe } from '../state/social'
+import { BadgesAffiches } from './Badges'
 import { Logo } from './Logo'
 
 const NOMS_FOURNISSEURS = { discord: 'Discord', google: 'Google', github: 'GitHub' } as const
@@ -21,6 +23,7 @@ export function LogoDiscord({ taille = 18 }: { taille?: number }) {
 export function BoutonCompte({ ouvrirProfil }: { ouvrirProfil: (pseudo: string) => void }) {
   const compte = useCompte()
   const s = useSauvegarde()
+  const badges = useBadgesDe(s.agent || null)
   const [menu, setMenu] = useState(false)
   if (compte.statut !== 'connecte') return null
   return (
@@ -28,6 +31,7 @@ export function BoutonCompte({ ouvrirProfil }: { ouvrirProfil: (pseudo: string) 
       <button className="btn btn-compte connecte" onClick={() => setMenu(!menu)} aria-expanded={menu} title="Ton profil">
         <span className="pastille-en-ligne" aria-hidden="true" />
         {s.agent || 'Ton profil'}
+        <BadgesAffiches ids={badges} />
       </button>
       {menu && (
         <div className="compte-deroulant" role="menu">

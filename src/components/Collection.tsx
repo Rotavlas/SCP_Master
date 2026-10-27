@@ -67,8 +67,8 @@ export function Collection({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id
       if (r) {
         const num = (c.num ?? '').toLowerCase()
         if (/^\d+$/.test(chiffres)) return c.k === 's' && (String(c.n).startsWith(chiffres.replace(/^0+(?=\d)/, '')) || num.includes(r))
-        // Le nom des cartes non possédées reste secret, sauf pour les fiches sans désignation
-        const visible = q || !c.num ? `${c.nm} ${c.cat ?? ''} ${(c.t ?? []).join(' ')}` : ''
+        // Le nom des cartes non possédées reste secret, comme dans la fiche détaillée et le répertoire
+        const visible = q ? `${c.nm} ${c.cat ?? ''} ${(c.t ?? []).join(' ')}` : ''
         return num.includes(r) || visible.toLowerCase().includes(r)
       }
       return true

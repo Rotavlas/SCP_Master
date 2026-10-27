@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import type { Base } from '../data/catalogue'
 import { classement, classementClans, type Classement as TClassement, type LigneClan, type Tableau } from '../state/social'
 import { Carte } from './Carte'
+import { Pseudo } from './Badges'
 
 const TABLEAUX: { id: Tableau | 'clans'; nom: string; unite: (v: number) => string }[] = [
   { id: 'elo', nom: 'Elo', unite: (v) => `${v}` },
@@ -85,9 +86,9 @@ export function Classement({ base, ouvrirProfil }: { base: Base; ouvrirProfil: (
           {joueurs.lignes.map((l) => (
             <li key={l.pseudo} className={`${l.moi ? 'moi' : ''} ${l.rang <= 3 ? 'podium' : ''}`}>
               <span className="rang">{MEDAILLES[l.rang - 1] ?? `#${l.rang}`}</span>
-              <button className="nom btn-lien" onClick={() => ouvrirProfil(l.pseudo)}>
-                {l.clan && <span className="tag-clan">{l.clan}</span>} {l.pseudo}
-              </button>
+              <span className="nom">
+                {l.clan && <span className="tag-clan">{l.clan}</span>} <Pseudo pseudo={l.pseudo} onClick={() => ouvrirProfil(l.pseudo)} />
+              </span>
               <span className="valeur">{t.unite(Number(l.valeur))}</span>
             </li>
           ))}

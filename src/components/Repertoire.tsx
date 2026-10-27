@@ -34,7 +34,8 @@ export function Repertoire({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id
       if (possession === 'manquantes' && q) return false
       if (possession === 'souhaits' && !souhaits.has(c.id)) return false
       if (possession === 'variantes' && !s.variantes[c.id]) return false
-      if (r && !`${c.num ?? ''} ${c.nm} ${c.cat ?? ''}`.toLowerCase().includes(r)) return false
+      // Comme dans la fiche détaillée, le nom d'un dossier non acquis reste caviardé : on ne le cherche pas
+      if (r && !`${c.num ?? ''} ${q ? c.nm : ''} ${c.cat ?? ''}`.toLowerCase().includes(r)) return false
       return true
     })
     if (tri === 'rarete') return [...liste].sort((a, b) => b.ra - a.ra || a.p - b.p)
@@ -179,8 +180,8 @@ function Ligne({ carte, haut, ouvrir }: { carte: Carte; haut: number; ouvrir: ()
         <i className="puce-type" style={{ background: TYPES[carte.k].couleur }} title={TYPES[carte.k].nom} />
         {carte.num ?? TYPES[carte.k].court}
       </span>
-      <span role="cell" className="col-nom" title={carte.nm}>
-        {carte.nm}
+      <span role="cell" className={`col-nom ${q ? '' : 'caviarde'}`} title={q ? carte.nm : 'Dossier non acquis'}>
+        {q ? carte.nm : '████████'}
       </span>
       <span role="cell" className="col-cat">
         <span className="etiquette" style={{ background: p.couleur }}>

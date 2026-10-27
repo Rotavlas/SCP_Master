@@ -686,6 +686,11 @@ await test('badges : calculés par le serveur, 3 au plus affichés, le badge du 
   // Un badge perdu disparaît de l'affichage
   assert.deepEqual((await valeur(F, "select public.profil_public('Echo')")).badgesAffiches, [])
 })
+await test('badges de plusieurs agents en un appel, sans ceux qui n’en affichent pas', async () => {
+  await valeur(E, "select public.choisir_badges(array['premiere-heure'])")
+  assert.deepEqual(await valeur(F, "select public.badges_affiches_de(array['Echo', 'Personne'])"), { Echo: ['premiere-heure'] })
+  await echoue(en(null, "select public.badges_affiches_de(array['Echo'])"), /permission denied/)
+})
 await test('les classements et profils sont réservés aux joueurs connectés', async () => {
   await echoue(en(null, "select public.classement('elo')"), /permission denied/)
   await echoue(en(null, "select public.profil_public('Echo')"), /permission denied/)

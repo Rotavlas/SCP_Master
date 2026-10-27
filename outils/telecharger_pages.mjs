@@ -1,4 +1,4 @@
-// Télécharge les pages du wiki absentes de l'export scp-data : la liste des tags (départements, entités)
+// Télécharge les pages du wiki absentes de l'export scp-data : la liste des tags (départements, entités), les Sites
 // et les propositions SCP-001 (titres complets dans la page du tag 001-proposal).
 // Usage : node outils/telecharger_pages.mjs C:\chemin\scpdata
 // (appelé par outils/telecharger_donnees.ps1 ; relançable, les propositions déjà présentes sont gardées)
@@ -27,6 +27,7 @@ async function telecharger(page, fichier, forcer = false) {
 // Pages qui changent : toujours rechargées
 await telecharger('tag-list', join(pages, 'tag-list.html'), true)
 await telecharger('scp-001', join(pages, 'scp-001.html'), true)
+await telecharger('secure-facilities-locations', join(pages, 'secure-facilities-locations.html'), true)
 await telecharger('system:page-tags/tag/001-proposal', join(pages, 'tags', '001-proposal.html'), true)
 // Les propositions du hub SCP-001 (le tag couvre aussi les branches internationales et les pages -J)
 const hub = readFileSync(join(pages, 'scp-001.html'), 'utf8')

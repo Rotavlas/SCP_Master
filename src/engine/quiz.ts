@@ -176,6 +176,8 @@ const GENERATEURS: { poids: number; identification?: boolean; f: Generateur }[] 
           ? `Au confinement de quelle anomalie l'équipe ${s.num} a-t-elle participé ?`
           : s.k === 'e'
             ? `Quel dossier implique ${designation(s)} ?`
+            : s.k === 'l'
+              ? `Quelle anomalie est confinée au ${s.num} ?`
             : `À quelle anomalie ${designation(s)} est-il lié ?`
       return construire(s, intitule, choisir(lie), leurres, 2)
     },

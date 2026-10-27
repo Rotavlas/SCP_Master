@@ -35,6 +35,7 @@ import {
 } from '../state/social'
 import { Carte } from './Carte'
 import { BoutonConfirme, BoutonSaisie } from './Confirmer'
+import { Pseudo } from './Badges'
 
 export type OngletSocial = 'amis' | 'clan' | 'messages'
 
@@ -135,9 +136,7 @@ function Amis({ ouvrirProfil, ecrire }: { ouvrirProfil: (p: string) => void; ecr
             <ul className="liste-simple">
               {amis.recues.map((p) => (
                 <li key={p}>
-                  <button className="btn-lien" onClick={() => ouvrirProfil(p)}>
-                    {p}
-                  </button>
+                  <Pseudo pseudo={p} onClick={() => ouvrirProfil(p)} />
                   <span className="actions-ligne">
                     <button className="btn btn-principal" onClick={() => void agir(() => repondreAmi(p, true))}>
                       Accepter
@@ -194,9 +193,9 @@ function Amis({ ouvrirProfil, ecrire }: { ouvrirProfil: (p: string) => void; ecr
             {amis.amis.map((a) => (
               <li key={a.pseudo}>
                 <span className={`point-presence ${a.enLigne ? 'en-ligne' : ''}`} />
-                <button className="btn-lien nom" onClick={() => ouvrirProfil(a.pseudo)}>
-                  {a.clan && <span className="tag-clan">{a.clan}</span>} {a.pseudo}
-                </button>
+                <span className="nom">
+                  {a.clan && <span className="tag-clan">{a.clan}</span>} <Pseudo pseudo={a.pseudo} onClick={() => ouvrirProfil(a.pseudo)} />
+                </span>
                 <span className="discret">{a.elo}</span>
                 <span className="actions-ligne">
                   <button className="btn" disabled={!a.enLigne} title={a.enLigne ? 'Duel amical, sans Elo' : 'Hors ligne'} onClick={() => void defier(a.pseudo)}>
@@ -361,9 +360,7 @@ function MonClanVue({ base, clan, recharger, ouvrirProfil }: { base: Base; clan:
             <ul className="liste-simple">
               {clan.candidatures.map((c) => (
                 <li key={c.pseudo}>
-                  <button className="btn-lien" onClick={() => ouvrirProfil(c.pseudo)}>
-                    {c.pseudo}
-                  </button>
+                  <Pseudo pseudo={c.pseudo} onClick={() => ouvrirProfil(c.pseudo)} />
                   <span className="discret">{c.elo}</span>
                   <span className="actions-ligne">
                     <button className="btn btn-principal" onClick={() => void gerer(c.pseudo, 'accepter')}>
@@ -384,9 +381,7 @@ function MonClanVue({ base, clan, recharger, ouvrirProfil }: { base: Base; clan:
           {clan.membres.map((m) => (
             <li key={m.pseudo}>
               <span className={`point-presence ${m.enLigne ? 'en-ligne' : ''}`} />
-              <button className="btn-lien nom" onClick={() => ouvrirProfil(m.pseudo)}>
-                {m.pseudo}
-              </button>
+              <Pseudo className="nom" pseudo={m.pseudo} onClick={() => ouvrirProfil(m.pseudo)} />
               <span className={`role-clan role-${m.role}`}>{ROLES[m.role]}</span>
               <span className="discret">
                 {m.elo} · {m.victoires} V
@@ -551,9 +546,7 @@ function Messages({
                   Salon <span className="tag-clan">{active.cible}</span>
                 </>
               ) : (
-                <button className="btn-lien" onClick={() => ouvrirProfil(active.cible)}>
-                  {active.cible}
-                </button>
+                <Pseudo pseudo={active.cible} onClick={() => ouvrirProfil(active.cible)} />
               )}
             </h3>
             <Chat key={`${active.type}:${active.cible}`} destinataire={active} ouvrirProfil={ouvrirProfil} />
@@ -638,9 +631,7 @@ function Chat({ destinataire, ouvrirProfil }: { destinataire: Destinataire; ouvr
           return (
             <div key={m.id} className={`bulle ${m.moi ? 'moi' : ''} ${suite ? 'suite' : ''}`}>
               {!suite && !m.moi && (
-                <button className="btn-lien auteur" onClick={() => ouvrirProfil(m.pseudo)}>
-                  {m.pseudo}
-                </button>
+                <Pseudo className="auteur" pseudo={m.pseudo} onClick={() => ouvrirProfil(m.pseudo)} />
               )}
               <p>{m.texte}</p>
               <span className="heure">

@@ -1,8 +1,10 @@
 import { useRef, useState, type PointerEvent } from 'react'
 import { RARETES, TYPES, entete, pastille, type Base } from '../data/catalogue'
+import { signature } from '../data/mythiques'
 import { PAR_ID, type IdVariante } from '../engine/variantes'
 import type { Carte as TCarte } from '../types'
 import { Logo } from './Logo'
+import { SceneMythique, aUneScene } from './ScenesMythiques'
 
 interface Props {
   carte: TCarte
@@ -53,7 +55,7 @@ function Embleme({ carte, taille }: { carte: TCarte; taille: number }) {
       .join('')
     return <div className="embleme embleme-perso">{initiales || '?'}</div>
   }
-  const glyphes: Partial<Record<TCarte['k'], string>> = { e: '◎', g: '◈', n: '∞', d: '▤', c: '❦' }
+  const glyphes: Partial<Record<TCarte['k'], string>> = { e: '◎', l: '⌖', g: '◈', n: '∞', d: '▤', c: '❦' }
   if (glyphes[carte.k]) return <div className={`embleme embleme-${carte.k}`}>{glyphes[carte.k]}</div>
   return <Logo taille={taille} />
 }
@@ -112,6 +114,52 @@ export function Carte({ carte, base, taille = 'm', variante = 'std', quantite, n
   }
 
   const extrait = carte.x && variante === 'exp' ? expurger(carte.x) : carte.x
+
+  // Une Mythique a son propre cadre : sa scène en pleine page, le nom et les statistiques posés dessus
+  if (carte.ra === 5 && aUneScene(carte.id)) {
+    return (
+      <div
+        ref={ref}
+        className={`carte carte-${taille} type-${carte.k} rarete-5 carte-mythique${caviardee ? ' caviardee' : ''}`}
+        style={{ ['--rarete' as string]: rarete.couleur, ['--sig' as string]: signature(carte).couleur }}
+        onPointerMove={suivre}
+        onPointerLeave={relacher}
+        onClick={onClick}
+        role={onClick ? 'button' : undefined}
+        tabIndex={onClick ? 0 : undefined}
+        onKeyDown={(e) => onClick && (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onClick())}
+        aria-label={`${carte.num ?? TYPES[carte.k].nom}, ${caviardee ? 'nom caviardé' : carte.nm}, ${rarete.nom}`}
+      >
+        <div className="cm-cadre">
+          <SceneMythique id={carte.id} />
+          <div className="cm-voile" aria-hidden="true" />
+          <header className="cm-haut">
+            <span>{caviardee && !carte.num ? '██████' : entete(carte)}</span>
+            <span className="cm-omega" title="Mythique · niveau 5">Ω</span>
+          </header>
+          <div className="cm-bas">
+            <span className="cm-rang">Mythique · niveau 5</span>
+            <h3 className="carte-nom cm-nom" title={caviardee ? undefined : carte.nm}>
+              {caviardee ? <span className="caviarde">██████ ████</span> : carte.nm}
+            </h3>
+            {taille !== 'p' && extrait && !caviardee && <p className="cm-extrait">{extrait}</p>}
+            <footer className="cm-stats">
+              <span title="Menace (attaque)">
+                <small>MEN</small> {carte.atk}
+              </span>
+              <span title="Confinement (défense)">
+                <small>CONF</small> {carte.def}
+              </span>
+            </footer>
+          </div>
+        </div>
+        <div className="carte-holo" aria-hidden="true" />
+        {nouvelle && <span className="pastille pastille-nouvelle">Nouveau</span>}
+        {quantite !== undefined && quantite > 1 && <span className="pastille pastille-quantite">×{quantite}</span>}
+        {favori && <span className="pastille pastille-favori" aria-label="Favori">★</span>}
+      </div>
+    )
+  }
 
   return (
     <div

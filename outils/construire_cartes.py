@@ -50,8 +50,10 @@ SEUILS_RARETE = [0.01, 0.05, 0.15, 0.40]
 SEUILS_REFERENCE = [0.04, 0.12, 0.27, 0.55]
 # Icônes de la Fondation, légendaires d'office : leur notoriété vient surtout d'en dehors du wiki
 # (jeux SCP: Containment Breach et Secret Laboratory), que les mentions dans le wiki ne mesurent pas.
-# Rēsh-1 : choix du créateur du jeu
-ICONES = {"fim:epsilon-11", "gdi:the-chaos-insurgency", "fim:r-sh-1"}
+# Rēsh-1, Omega-1 et Beta-1 : choix du créateur du jeu
+ICONES = {"fim:epsilon-11", "gdi:the-chaos-insurgency", "fim:r-sh-1", "fim:omega-1", "fim:beta-1"}
+# Épiques d'office (choix du créateur du jeu)
+EPIQUES = {"fim:lambda-5", "fim:tau-5"}
 # Rareté Mythique (5), au-dessus de Légendaire : choisies à la main, hors du classement par popularité
 MYTHIQUES = {"perso:aaron-siegel", "perso:the-administrator", "perso:o5-1", "entite:scarlet-king",
              "fim:alpha-1", "dr-clef-s-proposal", "perso:les-auteurs"}
@@ -458,6 +460,40 @@ def fondateurs(dossier, entrees):
     ]
 
 
+def sites(dossier):
+    """Sites et Zones de la Fondation, d'après la page Foundation Facilities (une fiche par installation)."""
+    f = dossier / "pages" / "secure-facilities-locations.html"
+    if not f.exists():
+        return []
+    sortie = []
+    for bloc in contenu_principal(f.read_text(encoding="utf-8", errors="replace")).split('<div class="s-wrapper">')[1:]:
+        titre = re.search(r"<h1[^>]*>(.*?)</h1>", bloc, re.S)
+        if not titre:
+            continue
+        nom = html.unescape(re.sub(r"<[^>]+>", "", titre.group(1))).strip()
+        designation = re.search(r"(Site|Area|Facility)[- ]?\S+$", nom)
+        if not designation:
+            continue
+        corps = bloc[titre.end():]
+        lieu = re.search(r"<strong>Location:</strong>\s*(.*?)</p>", corps, re.S)
+        lieu = html.unescape(re.sub(r"<[^>]+>", "", lieu.group(1))).strip() if lieu else ""
+        # Paragraphes de description, avant la liste repliée des objets confinés et les liens de dossier
+        description = texte_paragraphes(re.split(r'<div class="(?:collapsible-block|doc-link)"', corps)[0])
+        description = re.sub(r"^Location:\s*" + re.escape(lieu) + r"\s*", "", description).strip()
+        pages, tags = liens_internes(corps)
+        images = [html.unescape(i) for i in re.findall(r'<img[^>]+src="([^"]+)"', bloc)]
+        # Site-θ et Site-⌘ : des symboles que slug() effacerait
+        ident = designation.group(0).replace("θ", "theta").replace("⌘", "command")
+        sortie.append({"k": "l", "id": "site:" + slug(ident), "num": designation.group(0).replace("Facility ", "Facility-"),
+                       "nm": nom, "cat": "Zone" if designation.group(1) == "Area" else "Site",
+                       "u": "secure-facilities-locations",
+                       "x": extrait(f"{description} (Location: {lieu})" if lieu else description, 300),
+                       "img": image_relative(images), "_pages": pages, "_tags": tags,
+                       "_mots": len(description.split()),
+                       "_scp": sorted(p for p in pages if re.fullmatch(r"scp-\d+", p))})
+    return sortie
+
+
 def propositions_001(dossier):
     """Les propositions du hub SCP-001, téléchargées par outils/telecharger_pages.mjs."""
     titres = dict(re.findall(r'<li[^>]*><a href="/([^"]+)">([^<]+)</a>',
@@ -503,6 +539,7 @@ def charger_contenus(dossier, motif):
 GRECQUES = "Alpha|Beta|Gamma|Delta|Epsilon|Zeta|Eta|Theta|Iota|Kappa|Lambda|Mu|Nu|Xi|Omicron|Pi|Rho|Sigma|Tau|Upsilon|Phi|Chi|Psi|Omega"
 RE_MTF = re.compile(rf"\b({GRECQUES})[- ](\d+)(?!\d)")
 RE_O5 = re.compile(r"\bO5-(\d+)(?!\d)")
+RE_SITE = re.compile(r"\b(Site|Area)-([0-9A-Za-zθ⌘]+)\b")
 RE_TITRE = re.compile(r"\b(?:Dr\.?|Doctor|Agent|Director|Researcher|Professor)\s+([A-Z][A-Za-z'’-]+)")
 RE_MOTS = re.compile(r"[A-Z][A-Za-z'’&-]+")
 # Noms trop courants pour être comptés seuls dans un texte
@@ -537,6 +574,11 @@ def cles_mention(c):
         cles.append(("phrase", re.sub(r"^The ", "", c["nm"])))
     elif c["k"] == "e":
         cles.append(("phrase", re.sub(r"^The ", "", c["nm"])))
+    elif c["k"] == "l":
+        m = re.fullmatch(r"(Site|Area)-(\S+)", c["num"])
+        if m:
+            # « Site-01 » s'écrit aussi « Site-1 »
+            cles += [("site", (m.group(1), m.group(2))), ("site", (m.group(1), m.group(2).lstrip("0") or "0"))]
     elif c["k"] == "p":
         if re.fullmatch(r"O5-\d+", c["nm"]):
             return [("o5", c["nm"][3:])]
@@ -581,7 +623,8 @@ def mentions_wiki(reference, sources):
             texte = re.sub(r"<[^>]+>", " ", page.get("raw_content") or "")
             mots = set(RE_MOTS.findall(texte))
             trouves = ({("mtf", m) for m in RE_MTF.findall(texte)} | {("o5", m) for m in RE_O5.findall(texte)}
-                       | {("titre", m) for m in RE_TITRE.findall(texte)} | {("mot", m) for m in mots})
+                       | {("titre", m) for m in RE_TITRE.findall(texte)} | {("mot", m) for m in mots}
+                       | {("site", m) for m in RE_SITE.findall(texte)})
             for t in trouves:
                 for cid in index_cles.get(t, ()):
                     mentions.setdefault(cid, set()).add(lien)
@@ -606,6 +649,8 @@ def rarete_et_stats(cartes):
             elif c["id"] in ICONES or (c["k"] == "s" and c.get("s") == 0):
                 # Toutes les propositions SCP-001 sont légendaires
                 c["ra"] = 4
+            elif c["id"] in EPIQUES:
+                c["ra"] = 3
             else:
                 c["ra"] = 4 - next((i for i, s in enumerate(seuils) if rang / total < s), 4)
             c["p"] = rang + 1
@@ -741,7 +786,8 @@ def main():
     # Leur notoriété : les pages qui les citent dans leur texte, portent leur tag ou font partie de leur hub.
     tags_wiki = entrees_tags(dossier)
     reference = (fim(dossier) + personnel(dossier) + conseil_o5(dossier) + gdi + canons(dossier)
-                 + departements(dossier, tags_wiki) + entites(dossier, tags_wiki) + fondateurs(dossier, tags_wiki))
+                 + departements(dossier, tags_wiki) + entites(dossier, tags_wiki) + fondateurs(dossier, tags_wiki)
+                 + sites(dossier))
     mentions = mentions_wiki(reference, ((items, contenus), (contes, contenus_contes), (docs_gdi, contenus_gdi)))
     for c in reference:
         pages = c.pop("_pages")
@@ -778,7 +824,7 @@ def main():
 
     rarete_et_stats(brutes)
 
-    ordre = "sfpegndc"
+    ordre = "sfpelgndc"
     brutes.sort(key=lambda c: (ordre.index(c["k"]), c.get("s") or 0, c.get("n") or 0,
                                (c.get("num") or c["nm"]).lower()))
     cartes = [{k: v for k, v in c.items() if not k.startswith("_") and v not in (None, "", [])} for c in brutes]
