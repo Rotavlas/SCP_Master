@@ -226,6 +226,13 @@ const TYPES = {
 		couleur: "#3a5f73",
 		article: "quel site"
 	},
+	o: {
+		nom: "Protocole",
+		pluriel: "Protocoles",
+		court: "Protocole",
+		couleur: "#8c2f39",
+		article: "quel protocole"
+	},
 	g: {
 		nom: "Groupe d'intérêt",
 		pluriel: "Groupes d'intérêt",
@@ -261,6 +268,7 @@ const ORDRE_TYPES = [
 	"p",
 	"e",
 	"l",
+	"o",
 	"g",
 	"n",
 	"d",

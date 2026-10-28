@@ -1,4 +1,4 @@
--- Généré par outils/catalogue_sql.mjs (17517 cartes). Ne pas modifier à la main.
+-- Généré par outils/catalogue_sql.mjs (17548 cartes). Ne pas modifier à la main.
 
 insert into public.cartes (id, k, ra)
 select id, 's', 4 from unnest(array['qntm-s-proposal','jonathan-ball-s-proposal','dr-gears-s-proposal','dr-manns-proposal','mackenzie-s-proposal','sandrewswann-s-proposal','scantron-s-proposal','djoric-dmatix-proposal','ouroboros','kate-mctiriss-s-proposal','wrong-proposal','shaggydredlocks-proposal','spikebrennan-s-proposal','wjs-proposal','billiths-proposal','tanhony-s-proposal','lily-s-proposal','tuftos-proposal','liz-the-gm-s-proposal','i-h-p-proposal','scp-001-ex','wmdd-s-proposal','psul-001','captain-kirby-s-proposal','pedantique-s-proposal','not-a-seagull-proposal','jack-ike-s-proposal-i','jack-ike-s-proposal-ii','tanhony-s-proposal-ii','swelling-of-the-worlds','mcdoctorate-s-proposal','rounderhouse-proposal','manymeats-proposal','keter-duty','pickman-blank-proposal','rounderhouse-gold-proposal','ralliston-s-proposal','nagiros-proposal','rounderhouse-jade-proposal','plague-s-proposal','jack-ike-s-proposal-iv','dyfscp0012','nico-proposal','dr-cimmerian-s-proposal','oris-proposal','dyfscp0013','nicos-proposal-ii','dr-frueh-s-proposal','rounderhouse-bone-proposal','metaphysician-karpin-proposal','yoshihides-proposal','calibold-harryblank-nico-proposal','etc-proposal','poufys-proposal','dyfscp0014','queerious-proposal','lulus-proposal','the-communitys-proposal','001-blank-i','bleep-s-onyx-proposal','nico-queer-001','billiths-proposal-ii','scp-002','scp-008','scp-033','scp-035','scp-048','scp-049','scp-055','scp-073','scp-076','scp-079','scp-085','scp-087','scp-089','scp-093','scp-096','scp-105','scp-106','scp-140','scp-166','scp-169','scp-184','scp-217','scp-231','scp-239','scp-294','scp-343','scp-354','scp-426','scp-500','scp-507','scp-529','scp-610','scp-682','scp-701','scp-882','scp-895','scp-914','scp-990','scp-993','scp-999','scp-1000','scp-1048','scp-1233','scp-1313','scp-1322','scp-1360','scp-1425','scp-1437','scp-1471','scp-1730','scp-1733','scp-1762','scp-1867','scp-1981','scp-2000','scp-2006','scp-2030','scp-2264','scp-2316','scp-2317','scp-2399','scp-2419','scp-2521','scp-2571','scp-2599','scp-2639','scp-2662','scp-2718','scp-2719','scp-2935','scp-2950','scp-3000','scp-3001','scp-3002','scp-3008','scp-3034','scp-3043','scp-3125','scp-3143','scp-3241','scp-3309','scp-3393','scp-3930','scp-3999','taboo','scp-4205','scp-4666','scp-4999','scp-5000','scp-5031','scp-5999','scp-6000','scp-6001','scp-6500','scp-6820','scp-7000','scp-7179']) as id
@@ -110,6 +110,26 @@ on conflict (id) do update set k = excluded.k, ra = excluded.ra;
 
 insert into public.cartes (id, k, ra)
 select id, 'l', 4 from unnest(array['site:site-01','site:site-17','site:site-19','site:site-43']) as id
+on conflict (id) do update set k = excluded.k, ra = excluded.ra;
+
+insert into public.cartes (id, k, ra)
+select id, 'o', 4 from unnest(array['proto:110-montauk','proto:patmos','proto:xk']) as id
+on conflict (id) do update set k = excluded.k, ra = excluded.ra;
+
+insert into public.cartes (id, k, ra)
+select id, 'o', 2 from unnest(array['proto:bk','proto:code-black','proto:code-gray','proto:code-magenta','proto:code-superblank','proto:ek','proto:ik','proto:ira-3','proto:ira-4','proto:ira-5','proto:ira-6','proto:ira-7','proto:lk','proto:nk','proto:sk']) as id
+on conflict (id) do update set k = excluded.k, ra = excluded.ra;
+
+insert into public.cartes (id, k, ra)
+select id, 'o', 3 from unnest(array['proto:ck','proto:code-coldsilver','proto:hk','proto:ira-1','proto:ira-2','proto:zk']) as id
+on conflict (id) do update set k = excluded.k, ra = excluded.ra;
+
+insert into public.cartes (id, k, ra)
+select id, 'o', 1 from unnest(array['proto:code-amber','proto:code-blank','proto:code-red','proto:code-superblue','proto:code-white']) as id
+on conflict (id) do update set k = excluded.k, ra = excluded.ra;
+
+insert into public.cartes (id, k, ra)
+select id, 'o', 0 from unnest(array['proto:code-blue','proto:code-green']) as id
 on conflict (id) do update set k = excluded.k, ra = excluded.ra;
 
 insert into public.cartes (id, k, ra)

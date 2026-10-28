@@ -375,6 +375,8 @@ function indiceLegendaire(c: TCarte): string {
       return 'département de la Fondation'
     case 'l':
       return 'installation de la Fondation'
+    case 'o':
+      return 'protocole de la Fondation'
     case 'g':
       return "Groupe d'intérêt"
     case 'n':

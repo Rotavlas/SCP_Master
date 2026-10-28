@@ -1,23 +1,27 @@
-import { useEffect, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { RARETES, TYPES, lienWiki, lienWikiFr, nomClasse, type Base } from '../data/catalogue'
 import { VALEUR_RECYCLAGE, boostersPour } from '../engine/boosters'
 import { VARIANTES } from '../engine/variantes'
-import {
-  TAILLE_DECK,
-  doublonsRecyclables,
-  exemplairesStandard,
-  modifier,
-  useSauvegarde,
-  varianteAffichee,
-} from '../state/sauvegarde'
+import { TAILLE_DECK, doublonsRecyclables, exemplairesStandard, modifier, useSauvegarde, varianteAffichee } from '../state/sauvegarde'
 import { recycler } from '../state/actions'
 import { useCarteAffichee } from '../state/traduction'
 import { CREDITS_ILLUSTRATIONS } from '../data/mythiques'
 import type { Carte as TCarte } from '../types'
+import { Protocole } from './Booster'
 import { Carte } from './Carte'
 import { MarcheCarte } from './MarcheCarte'
 
-export function CarteDetail({ carte: source, base, onFermer, voirMarche }: { carte: TCarte; base: Base; onFermer: () => void; voirMarche: (carte: TCarte) => void }) {
+export function CarteDetail({
+  carte: source,
+  base,
+  onFermer,
+  voirMarche,
+}: {
+  carte: TCarte
+  base: Base
+  onFermer: () => void
+  voirMarche: (carte: TCarte) => void
+}) {
   const s = useSauvegarde()
   const carte = useCarteAffichee(source)
   const quantite = s.collection[carte.id] ?? 0
@@ -28,6 +32,8 @@ export function CarteDetail({ carte: source, base, onFermer, voirMarche }: { car
   const variante = varianteAffichee(s, carte.id)
   const possedees = s.variantes[carte.id] ?? {}
   const lienFr = lienWikiFr(carte)
+  // Une Légendaire ou une Mythique obtenue : sa cinématique d'ouverture se revoit à volonté
+  const [cinematique, setCinematique] = useState(false)
 
   useEffect(() => {
     if (s.nouvelles.includes(carte.id)) modifier((x) => ({ ...x, nouvelles: x.nouvelles.filter((id) => id !== carte.id) }))
@@ -71,7 +77,7 @@ export function CarteDetail({ carte: source, base, onFermer, voirMarche }: { car
           {quantite > 0 && (
             <div className="selecteur-variantes" role="radiogroup" aria-label="Variante affichée">
               {VARIANTES.map((v) => {
-                const n = v.id === 'std' ? exemplairesStandard(s, carte.id) : possedees[v.id] ?? 0
+                const n = v.id === 'std' ? exemplairesStandard(s, carte.id) : (possedees[v.id] ?? 0)
                 return (
                   <button
                     key={v.id}
@@ -116,7 +122,7 @@ export function CarteDetail({ carte: source, base, onFermer, voirMarche }: { car
             <>
               {carte.q && (
                 <section>
-                  <h4>Procédures de confinement spéciales</h4>
+                  <h4>{carte.k === 'o' ? 'Consignes' : 'Procédures de confinement spéciales'}</h4>
                   <p lang={carte.vf || carte.auto ? 'fr' : 'en'}>{carte.q}</p>
                 </section>
               )}
@@ -128,7 +134,7 @@ export function CarteDetail({ carte: source, base, onFermer, voirMarche }: { car
               )}
               {carte.lie && carte.lie.length > 0 && (
                 <p className="tags">
-                  <span className="tags-titre">A participé au confinement de</span>
+                  <span className="tags-titre">{carte.k === 'o' ? 'Concerne' : 'A participé au confinement de'}</span>
                   {carte.lie.map((t) => (
                     <span key={t}>{t}</span>
                   ))}
@@ -145,7 +151,10 @@ export function CarteDetail({ carte: source, base, onFermer, voirMarche }: { car
                 <button className={`btn ${dansDeck ? 'btn-actif' : ''}`} onClick={basculerDeck} disabled={!dansDeck && s.deck.length >= TAILLE_DECK}>
                   {dansDeck ? "Retirer de l'équipe" : s.deck.length >= TAILLE_DECK ? 'Équipe complète' : `Ajouter à l'équipe (${s.deck.length}/${TAILLE_DECK})`}
                 </button>
-                <button className="btn" onClick={() => modifier((x) => ({ ...x, favoris: favori ? x.favoris.filter((id) => id !== carte.id) : [...x.favoris, carte.id] }))}>
+                <button
+                  className="btn"
+                  onClick={() => modifier((x) => ({ ...x, favoris: favori ? x.favoris.filter((id) => id !== carte.id) : [...x.favoris, carte.id] }))}
+                >
                   {favori ? '★ Favori' : '☆ Favori'}
                 </button>
                 {doublons > 0 && (
@@ -157,14 +166,29 @@ export function CarteDetail({ carte: source, base, onFermer, voirMarche }: { car
                     Recycler {doublons} doublon{doublons > 1 ? 's' : ''} (+{doublons * VALEUR_RECYCLAGE[carte.ra]} ₵)
                   </button>
                 )}
+                {carte.ra >= 4 && (
+                  <button className="btn btn-cinematique" style={{ ['--r' as string]: RARETES[carte.ra].couleur }} onClick={() => setCinematique(true)}>
+                    ▶ Revoir la cinématique
+                  </button>
+                )}
               </div>
+              {cinematique && <Protocole carte={source} onFini={() => setCinematique(false)} />}
             </>
           ) : (
             <>
               <p className="expurge">Accès refusé. Obtenez ce dossier dans un booster pour lire son contenu.</p>
-              <p className="discret">Obtenable dans : {boostersPour(carte).map((b) => b.nom).join(', ')}.</p>
+              <p className="discret">
+                Obtenable dans :{' '}
+                {boostersPour(carte)
+                  .map((b) => b.nom)
+                  .join(', ')}
+                .
+              </p>
               <div className="actions">
-                <button className={`btn ${souhait ? 'btn-actif' : ''}`} onClick={() => modifier((x) => ({ ...x, souhaits: souhait ? x.souhaits.filter((id) => id !== carte.id) : [...x.souhaits, carte.id] }))}>
+                <button
+                  className={`btn ${souhait ? 'btn-actif' : ''}`}
+                  onClick={() => modifier((x) => ({ ...x, souhaits: souhait ? x.souhaits.filter((id) => id !== carte.id) : [...x.souhaits, carte.id] }))}
+                >
                   {souhait ? '♥ Dans la liste de souhaits' : '♡ Ajouter à la liste de souhaits'}
                 </button>
               </div>

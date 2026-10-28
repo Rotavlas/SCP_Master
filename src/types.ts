@@ -14,10 +14,10 @@ export type Classe =
 export type Rarete = 0 | 1 | 2 | 3 | 4 | 5
 
 /**
- * Type de fiche : s SCP · f équipe FIM · p personnel (dont Conseil O5 et entités) · e département · l site
+ * Type de fiche : s SCP · f équipe FIM · p personnel (dont Conseil O5 et entités) · e département · l site · o protocole
  * · g Groupe d'intérêt · n canon · d document de Groupe d'intérêt · c conte
  */
-export type TypeFiche = 's' | 'f' | 'p' | 'e' | 'l' | 'g' | 'n' | 'd' | 'c'
+export type TypeFiche = 's' | 'f' | 'p' | 'e' | 'l' | 'o' | 'g' | 'n' | 'd' | 'c'
 
 /** Une carte telle que produite par outils/construire_cartes.py (clés courtes pour alléger le JSON). */
 export interface Carte {

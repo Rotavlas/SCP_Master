@@ -25,9 +25,46 @@ interface Props {
 }
 
 const GRECQUES: Record<string, string> = {
-  Alpha: 'Α', Beta: 'Β', Gamma: 'Γ', Delta: 'Δ', Epsilon: 'Ε', Zeta: 'Ζ', Eta: 'Η', Theta: 'Θ', Iota: 'Ι',
-  Kappa: 'Κ', Lambda: 'Λ', Mu: 'Μ', Nu: 'Ν', Xi: 'Ξ', Omicron: 'Ο', Pi: 'Π', Rho: 'Ρ', Sigma: 'Σ', Tau: 'Τ',
-  Upsilon: 'Υ', Phi: 'Φ', Chi: 'Χ', Psi: 'Ψ', Omega: 'Ω',
+  Alpha: 'Α',
+  Beta: 'Β',
+  Gamma: 'Γ',
+  Delta: 'Δ',
+  Epsilon: 'Ε',
+  Zeta: 'Ζ',
+  Eta: 'Η',
+  Theta: 'Θ',
+  Iota: 'Ι',
+  Kappa: 'Κ',
+  Lambda: 'Λ',
+  Mu: 'Μ',
+  Nu: 'Ν',
+  Xi: 'Ξ',
+  Omicron: 'Ο',
+  Pi: 'Π',
+  Rho: 'Ρ',
+  Sigma: 'Σ',
+  Tau: 'Τ',
+  Upsilon: 'Υ',
+  Phi: 'Φ',
+  Chi: 'Χ',
+  Psi: 'Ψ',
+  Omega: 'Ω',
+}
+
+/** Couleur de chaque code de confinement (Lockdown Procedures) */
+const COULEURS_CODES: Record<string, string> = {
+  AMBER: '#e8a200',
+  BLUE: '#2f80ed',
+  SUPERBLUE: '#1b4fd1',
+  GREEN: '#3fa66b',
+  RED: '#d64033',
+  BLACK: '#111111',
+  WHITE: '#e9e9e9',
+  GRAY: '#8a8f94',
+  MAGENTA: '#c2187a',
+  BLANK: '#5a5a5a',
+  SUPERBLANK: '#2c2c2c',
+  COLDSILVER: '#b9c4cc',
 }
 
 /** Visuel de repli quand la page n'a pas d'image : un emblème propre au type de fiche. */
@@ -56,6 +93,15 @@ function Embleme({ carte, taille }: { carte: TCarte; taille: number }) {
       .join('')
     return <div className="embleme embleme-perso">{initiales || '?'}</div>
   }
+  if (carte.k === 'o') {
+    // Un protocole : sa désignation, comme sur un ordre imprimé ; un code de confinement prend sa couleur
+    const code = carte.num?.match(/^CODE (\w+)$/)?.[1]
+    return (
+      <div className="embleme embleme-protocole" style={code ? { ['--code' as string]: COULEURS_CODES[code] } : undefined}>
+        {code ?? carte.num}
+      </div>
+    )
+  }
   const glyphes: Partial<Record<TCarte['k'], string>> = { e: '◎', l: '⌖', g: '◈', n: '∞', d: '▤', c: '❦' }
   if (glyphes[carte.k]) return <div className={`embleme embleme-${carte.k}`}>{glyphes[carte.k]}</div>
   return <Logo taille={taille} />
@@ -69,7 +115,20 @@ function expurger(texte: string): string {
     .join(' ')
 }
 
-export function Carte({ carte: source, base, taille = 'm', variante = 'std', quantite, nouvelle, favori, souhait, scellee, caviardee, inclinable = true, onClick }: Props) {
+export function Carte({
+  carte: source,
+  base,
+  taille = 'm',
+  variante = 'std',
+  quantite,
+  nouvelle,
+  favori,
+  souhait,
+  scellee,
+  caviardee,
+  inclinable = true,
+  onClick,
+}: Props) {
   // En VF, la traduction officielle ou, à défaut, celle du traducteur du navigateur
   const carte = useCarteAffichee(source)
   const ref = useRef<HTMLDivElement>(null)
@@ -138,7 +197,9 @@ export function Carte({ carte: source, base, taille = 'm', variante = 'std', qua
           <div className="cm-voile" aria-hidden="true" />
           <header className="cm-haut">
             <span>{caviardee && !carte.num ? '██████' : entete(carte)}</span>
-            <span className="cm-omega" title="Mythique · niveau 5">Ω</span>
+            <span className="cm-omega" title="Mythique · niveau 5">
+              Ω
+            </span>
           </header>
           <div className="cm-bas">
             <span className="cm-rang">Mythique · niveau 5</span>
@@ -159,7 +220,11 @@ export function Carte({ carte: source, base, taille = 'm', variante = 'std', qua
         <div className="carte-holo" aria-hidden="true" />
         {nouvelle && <span className="pastille pastille-nouvelle">Nouveau</span>}
         {quantite !== undefined && quantite > 1 && <span className="pastille pastille-quantite">×{quantite}</span>}
-        {favori && <span className="pastille pastille-favori" aria-label="Favori">★</span>}
+        {favori && (
+          <span className="pastille pastille-favori" aria-label="Favori">
+            ★
+          </span>
+        )}
       </div>
     )
   }
@@ -182,7 +247,14 @@ export function Carte({ carte: source, base, taille = 'm', variante = 'std', qua
         <div className="cl-cadre">
           <div className="cl-visuel">
             {image ? (
-              <img src={image} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setEchecs({ id: carte.id, n: secours + 1 })} />
+              <img
+                src={image}
+                alt=""
+                loading="lazy"
+                decoding="async"
+                referrerPolicy="no-referrer"
+                onError={() => setEchecs({ id: carte.id, n: secours + 1 })}
+              />
             ) : (
               <div className="carte-visuel-vide">
                 <Embleme carte={carte} taille={taille === 'p' ? 48 : 80} />
@@ -224,7 +296,11 @@ export function Carte({ carte: source, base, taille = 'm', variante = 'std', qua
         {variante !== 'std' && <span className="ruban-variante">{PAR_ID[variante].nom}</span>}
         {nouvelle && <span className="pastille pastille-nouvelle">Nouveau</span>}
         {quantite !== undefined && quantite > 1 && <span className="pastille pastille-quantite">×{quantite}</span>}
-        {favori && <span className="pastille pastille-favori" aria-label="Favori">★</span>}
+        {favori && (
+          <span className="pastille pastille-favori" aria-label="Favori">
+            ★
+          </span>
+        )}
       </div>
     )
   }
@@ -289,7 +365,11 @@ export function Carte({ carte: source, base, taille = 'm', variante = 'std', qua
       {variante !== 'std' && <span className="ruban-variante">{PAR_ID[variante].nom}</span>}
       {nouvelle && <span className="pastille pastille-nouvelle">Nouveau</span>}
       {quantite !== undefined && quantite > 1 && <span className="pastille pastille-quantite">×{quantite}</span>}
-      {favori && <span className="pastille pastille-favori" aria-label="Favori">★</span>}
+      {favori && (
+        <span className="pastille pastille-favori" aria-label="Favori">
+          ★
+        </span>
+      )}
     </div>
   )
 }

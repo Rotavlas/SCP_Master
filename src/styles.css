@@ -1990,6 +1990,27 @@ select:focus {
   text-shadow: 0 0 14px rgba(244, 197, 66, 0.6);
 }
 
+.btn-cinematique {
+  border-color: var(--r);
+  color: var(--r);
+}
+
+.embleme-protocole {
+  --code: #c9a227;
+  padding: 0 6%;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 11cqw;
+  letter-spacing: 0.04em;
+  text-align: center;
+  color: #f1e6cf;
+  background:
+    linear-gradient(var(--code), var(--code)) top / 100% 6% no-repeat,
+    linear-gradient(var(--code), var(--code)) bottom / 100% 6% no-repeat,
+    repeating-linear-gradient(-45deg, #1b1414 0 10px, #241a1a 10px 20px);
+  text-shadow: 0 0 10px color-mix(in srgb, var(--code) 70%, transparent);
+}
+
 .embleme-perso {
   font-size: 22cqw;
   background: radial-gradient(circle at 50% 35%, #4b5d7a, #1a1f27 75%);

@@ -27,7 +27,7 @@ export interface TypeBooster {
   couleur: string
 }
 
-const MELANGE: Partial<Record<TypeFiche, number>> = { s: 0.62, c: 0.14, d: 0.05, p: 0.06, f: 0.04, g: 0.03, n: 0.02, e: 0.02, l: 0.02 }
+const MELANGE: Partial<Record<TypeFiche, number>> = { s: 0.61, c: 0.14, d: 0.05, p: 0.06, f: 0.04, g: 0.03, n: 0.02, e: 0.02, l: 0.02, o: 0.01 }
 const COMMUN = [0.66, 0.24, 0.075, 0.02, 0.005]
 const COMMUN_DERNIERE = [0, 0.7, 0.22, 0.065, 0.015]
 
@@ -46,7 +46,7 @@ export const BOOSTERS: TypeBooster[] = [
   },
   {
     id: 'scp',
-    nom: 'Dossier d\'anomalies',
+    nom: "Dossier d'anomalies",
     description: '5 SCP uniquement.',
     prix: 120,
     types: { s: 1 },
@@ -59,7 +59,7 @@ export const BOOSTERS: TypeBooster[] = [
   {
     id: 'contes',
     nom: 'Archives narratives',
-    description: '5 contes et documents de Groupes d\'intérêt.',
+    description: "5 contes et documents de Groupes d'intérêt.",
     prix: 120,
     types: { c: 0.75, d: 0.25 },
     poids: COMMUN,
@@ -71,9 +71,9 @@ export const BOOSTERS: TypeBooster[] = [
   {
     id: 'personnel',
     nom: 'Dossiers du personnel',
-    description: '5 fiches : personnel, Conseil O5, équipes FIM, départements, sites, Groupes d\'intérêt et canons.',
+    description: "5 fiches : personnel, Conseil O5, équipes FIM, départements, sites, protocoles, Groupes d'intérêt et canons.",
     prix: 160,
-    types: { p: 0.37, f: 0.24, g: 0.12, n: 0.09, e: 0.09, l: 0.09 },
+    types: { p: 0.35, f: 0.22, g: 0.11, n: 0.09, e: 0.09, l: 0.08, o: 0.06 },
     poids: COMMUN,
     poidsDerniere: COMMUN_DERNIERE,
     bonusVariante: 1.5,

@@ -578,6 +578,9 @@ def cles_mention(c):
         cles.append(("phrase", re.sub(r"^The ", "", c["nm"])))
     elif c["k"] == "e":
         cles.append(("phrase", re.sub(r"^The ", "", c["nm"])))
+    elif c["k"] == "o":
+        # Protocoles : écrits à la main, leur rareté est choisie ; on ne cherche pas leurs mentions
+        return []
     elif c["k"] == "l":
         m = re.fullmatch(r"(Site|Area)-(\S+)", c["num"])
         if m:
@@ -607,6 +610,132 @@ def cles_mention(c):
         if sigle:
             cles.append(("mot", sigle.group(1)))
     return cles
+
+
+# Protocoles de la Fondation : fiches écrites à la main (en français) d'après les pages qui les décrivent, car
+# aucune n'a de page à elle. Rareté choisie, comme les icônes. (num, nom, catégorie, rareté, texte, procédure,
+# SCP liés, page source)
+LOCKDOWN = "lockdown-procedures"
+PROTOCOLES = [
+    ("PATMOS", "Ordre d'urgence Patmos", "Ordre d'urgence", 4,
+     "Série d'ordres d'urgence chiffrés, gardés au Site 0 par l'observateur d'O5-14 et transmis seulement si SCP-001 "
+     "quitte son immobilité : ce serait le début d'un scénario de fin du monde de classe XK.",
+     "Le personnel essentiel garde sur lui un symbole béni d'une foi abrahamique, des Écritures et un sac "
+     "d'évacuation, et désigne un remplaçant d'une autre foi, prêt à prendre sa place en cas de ravissement.",
+     ["dr-clef-s-proposal"], "dr-clef-s-proposal"),
+    ("110-MONTAUK", "Procédure 110-Montauk", "Procédure", 4,
+     "La procédure de confinement de SCP-231-7, la plus secrète de la Fondation. Ses détails ne sont connus que de "
+     "ceux qui l'appliquent ; la Fondation reconnaît elle-même qu'elle est indéfendable.",
+     "Elle ne doit jamais être interrompue. Le personnel qui l'exécute est relevé régulièrement et suivi de près : "
+     "ce qu'elle retient serait pire.",
+     ["scp-231"], "scp-231"),
+    # Initiatives de Réponse Automatisée (IRA) : les contre-mesures mécaniques d'un confinement
+    ("IRA-1", "« Safety Pin »", "Initiative de Réponse Automatisée", 3,
+     "Détonation, confirmée à la main, des ogives Alpha installées à la surface d'un site souterrain : toute vie "
+     "au-dessus du site est anéantie, le site protégé par son blindage reste presque intact.",
+     "Réservée aux menaces de priorité B ou plus ; exige l'accord de l'opérateur principal du Commandement O4.",
+     [], LOCKDOWN),
+    ("IRA-2", "« Early Retirement »", "Initiative de Réponse Automatisée", 3,
+     "Contrôle partiel de la détonation autonome des ogives cinétiques Oméga enfouies sous l'installation. Le reste "
+     "du protocole IRA-200 a été effacé par le Comité d'éthique.",
+     "Exige l'autorisation du Comité d'éthique.", [], LOCKDOWN),
+    ("IRA-3", "« Bad Opticians »", "Initiative de Réponse Automatisée", 2,
+     "Stroboscopes et sons suraigus pour désorienter et repousser des assaillants, ou des entités sensibles aux "
+     "sens humains.", "Surtout employée contre les raids de Groupes d'intérêt hostiles.", [], LOCKDOWN),
+    ("IRA-4", "« Big Toaster »", "Initiative de Réponse Automatisée", 2,
+     "Des portes Tesla électrocutent tout ce qui se déplace à une allure qui n'est pas humaine. Elles ont déjà "
+     "frappé des membres du personnel qui marchaient différemment.",
+     "N'est plus activée qu'à partir d'un confinement de degré C ; demandez qu'on coupe une porte active avant de la "
+     "franchir.", [], LOCKDOWN),
+    ("IRA-5", "« Closing Time »", "Initiative de Réponse Automatisée", 2,
+     "Fermeture de toutes les portes, communications, réseaux et ventilations du site, et mise en sommeil des "
+     "banques de données par le Protocole 15-A.",
+     "Activable sur place : l'une des réponses les plus rapides et les plus essentielles de tout site.", [], LOCKDOWN),
+    ("IRA-6", "« Grandma's Asthma »", "Initiative de Réponse Automatisée", 2,
+     "Libération de gaz dans les zones touchées par une brèche : sédatifs, paralysants, vésicants, agents "
+     "neurotoxiques, selon la gravité.",
+     "Peu de sites en sont équipés ; les agents neurotoxiques sur tout un site exigent l'accord du Comité d'éthique.",
+     [], LOCKDOWN),
+    ("IRA-7", "« Sinking Ship »", "Initiative de Réponse Automatisée", 2,
+     "Pilotage des ancres de réalité qui règlent le niveau de Hume d'un site : les entités transdimensionnelles sont "
+     "retenues dans le même espace que les gardes.",
+     "Conçue contre les objets comme SCP-106.", ["scp-106"], LOCKDOWN),
+    # Codes de confinement : la nature d'une brèche, pour les équipes FIM qui arrivent sur un site inconnu
+    ("CODE AMBER", "Menace mémétique", "Code de confinement", 1,
+     "Au moins une menace mémétique, informationnelle ou cognitive s'est échappée et le personnel ne peut la contenir.",
+     "Restez immobile, ne parlez pas, fermez les yeux et bouchez-vous les oreilles ; attendez l'escorte. "
+     "N'approchez pas le personnel atteint.", [], LOCKDOWN),
+    ("CODE BLUE", "Objet mobile", "Code de confinement", 0,
+     "Évasion d'un objet mobile, d'une intelligence inférieure à celle d'un humain.",
+     "Suivez les ordres de la sécurité. Équipe envoyée : Epsilon-11.", [], LOCKDOWN),
+    ("CODE SUPERBLUE", "Objet mobile et pensant", "Code de confinement", 1,
+     "Évasion d'un objet mobile, aussi intelligent qu'un humain ou plus.",
+     "Même évacuation que pour un code BLUE. Équipe envoyée : Epsilon-11.", [], LOCKDOWN),
+    ("CODE GREEN", "Contamination", "Code de confinement", 0,
+     "Menace biologique, infectieuse ou réaction anomale qui s'entretient d'elle-même et s'aggrave si on ne la "
+     "contre pas aussitôt.",
+     "Évitez tout contact avec les sources de contamination ; ne quittez pas le site, attendez-vous à une "
+     "quarantaine.", [], LOCKDOWN),
+    ("CODE RED", "Agresseur de grande taille", "Code de confinement", 1,
+     "Un agresseur de grande taille s'est échappé et menace le site et le secret de la Fondation.",
+     "Réponse de haute priorité : presque toutes les FIM d'assaut disponibles, dont Nu-7. Fréquent, et bien préparé.",
+     ["scp-682", "scp-2059"], LOCKDOWN),
+    ("CODE BLACK", "Menace impossible à neutraliser", "Code de confinement", 2,
+     "Évasion d'une menace qu'aucune équipe ne peut abattre.",
+     "Évitez tout affrontement. Ne tirez que si cela la ralentit vraiment.", ["scp-096"], LOCKDOWN),
+    ("CODE WHITE", "Assaut extérieur", "Code de confinement", 1,
+     "Une force organisée attaque le site et la sécurité ne peut la repousser.",
+     "Évacuez immédiatement ; les SCP sont verrouillés, les données chiffrées. La sécurité protège le personnel, "
+     "elle ne combat pas.", [], LOCKDOWN),
+    ("CODE GRAY", "Ennemi de l'intérieur", "Code de confinement", 2,
+     "Comme un code WHITE, mais l'ennemi est déjà dans le site, souvent sous les traits de faux employés.",
+     "La sécurité est sans doute désorganisée et compromise. Même évacuation que pour un code WHITE.", [], LOCKDOWN),
+    ("CODE MAGENTA", "Menace dimensionnelle", "Code de confinement", 2,
+     "Altération de l'espace ou du temps, erreur de continuité, entité transdimensionnelle ou objet qui enfreint "
+     "les lois de la nature.", "Préparez-vous à une longue attente : les équipes doivent planifier avant d'entrer.",
+     [], LOCKDOWN),
+    ("CODE BLANK", "Menace non décrite", "Code de confinement", 1,
+     "La menace n'a pas été décrite.", "Suivez les ordres de la sécurité.", [], LOCKDOWN),
+    ("CODE SUPERBLANK", "Menace indescriptible", "Code de confinement", 2,
+     "La menace ne peut pas être décrite.", "Suivez les ordres de la sécurité.", [], LOCKDOWN),
+    ("CODE COLDSILVER", "La fin de la Fondation", "Code de confinement", 3,
+     "Un événement a mis, ou va bientôt mettre, fin au fonctionnement de la Fondation. Vous ne le verrez sans doute "
+     "jamais au cours de votre carrière.",
+     "Attendez-vous à la dissolution de votre département, dans un délai imprévisible.", [], LOCKDOWN),
+    # Scénarios de classe K : les fins du monde que la Fondation a classées
+    ("XK", "Fin du monde", "Scénario de classe K", 4,
+     "La fin de l'humanité, ou de toute vie sur Terre. Le scénario que la Fondation existe pour empêcher.",
+     "", ["scp-2000"], "scp-2000"),
+    ("CK", "Restructuration de la réalité", "Scénario de classe K", 3,
+     "La réalité est réécrite : le monde existe encore, mais ce n'est plus le même.", "", ["scp-2000"], "scp-2000"),
+    ("ZK", "Défaillance de la réalité", "Scénario de classe K", 3,
+     "La réalité elle-même cesse de fonctionner.", "", [], "scp-2000"),
+    ("HK", "Asservissement divin", "Scénario de classe K", 3,
+     "Une puissance divine soumet l'humanité.", "", ["scp-2317", "scp-3000"], "scp-2000"),
+    ("SK", "Changement de domination", "Scénario de classe K", 2,
+     "L'humanité cesse d'être l'espèce dominante de la Terre.", "", [], "scp-2000"),
+    ("NK", "« Gelée grise »", "Scénario de classe K", 2,
+     "Une prolifération incontrôlable consume la matière de la planète.", "", [], "scp-2000"),
+    ("LK", "Transmutation de l'espèce", "Scénario de classe K", 2,
+     "L'espèce humaine est transformée en autre chose.", "", [], "scp-2000"),
+    ("EK", "Fin de la conscience humaine", "Scénario de classe K", 2,
+     "Les humains survivent peut-être, mais plus aucun n'est conscient.", "", [], "scp-2000"),
+    ("IK", "Effondrement de la civilisation", "Scénario de classe K", 2,
+     "La civilisation mondiale s'effondre.", "", [], "scp-2000"),
+    ("BK", "Mascarade brisée", "Scénario de classe K", 2,
+     "Le monde découvre l'existence de l'anormal : le secret que la Fondation protège est perdu.", "", [], "scp-2000"),
+]
+
+
+def protocoles():
+    """Les fiches de protocoles (type « o »), avec leur rareté choisie."""
+    sortie = []
+    for num, nom, categorie, rarete, texte, procedure, lies, source in PROTOCOLES:
+        sortie.append({"k": "o", "id": "proto:" + slug(num), "num": num, "nm": nom, "cat": categorie,
+                       "u": source, "x": texte, "q": procedure or None, "_ra": rarete, "vf": True,
+                       "_pages": set(lies), "_tags": set(), "_mots": len((texte + " " + procedure).split()),
+                       "_scp": [p for p in lies if re.fullmatch(r"scp-\d+", p)]})
+    return sortie
 
 
 def mentions_wiki(reference, sources):
@@ -650,6 +779,9 @@ def rarete_et_stats(cartes):
         for rang, c in enumerate(liste):
             if c["id"] in MYTHIQUES:
                 c["ra"] = 5
+            elif "_ra" in c:
+                # Protocoles : rareté choisie à la main
+                c["ra"] = c["_ra"]
             elif c["id"] in ICONES or (c["k"] == "s" and c.get("s") == 0):
                 # Toutes les propositions SCP-001 sont légendaires
                 c["ra"] = 4
@@ -673,7 +805,8 @@ def rarete_et_stats(cartes):
                 menace = mots + 12 + 3 * math.log1p(len(c.get("_scp", [])))
                 confinement = 18 + 6 * math.log1p(c["lp"] * 2)
             # Une Mythique domine toujours le combat, quelle que soit la longueur de sa fiche
-            plancher = 82 if c["ra"] == 5 else 5
+            # Les protocoles, aux fiches courtes, tiennent leur force de leur rareté
+            plancher = 82 if c["ra"] == 5 else 15 + 11 * c["ra"] if c["k"] == "o" else 5
             c["atk"] = borne(max(menace * mult, plancher))
             c["def"] = borne(max(confinement * mult, plancher))
 
@@ -791,7 +924,7 @@ def main():
     tags_wiki = entrees_tags(dossier)
     reference = (fim(dossier) + personnel(dossier) + conseil_o5(dossier) + gdi + canons(dossier)
                  + departements(dossier, tags_wiki) + entites(dossier, tags_wiki) + fondateurs(dossier, tags_wiki)
-                 + sites(dossier))
+                 + sites(dossier) + protocoles())
     mentions = mentions_wiki(reference, ((items, contenus), (contes, contenus_contes), (docs_gdi, contenus_gdi)))
     for c in reference:
         pages = c.pop("_pages")
@@ -828,7 +961,7 @@ def main():
 
     rarete_et_stats(brutes)
 
-    ordre = "sfpelgndc"
+    ordre = "sfpelogndc"
     brutes.sort(key=lambda c: (ordre.index(c["k"]), c.get("s") or 0, c.get("n") or 0,
                                (c.get("num") or c["nm"]).lower()))
     cartes = [{k: v for k, v in c.items() if not k.startswith("_") and v not in (None, "", [])} for c in brutes]
