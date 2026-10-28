@@ -14,26 +14,28 @@ import { CREDITS_ILLUSTRATIONS, SIGNATURES } from './data/mythiques'
 import type { Carte as TCarte } from './types'
 import './styles.css'
 
-// Les originaux de SunnyClockwork (public/sunny/), pour comparer avec la fin de l'animation
+// Les originaux (public/sunny/, public/photos/), pour comparer avec la fin de l'animation
 const ORIGINAUX: Record<string, string> = {
-  'entite:scarlet-king': 'scarlet-king.png',
-  'dr-clef-s-proposal': 'gate-guardian.png',
-  'fim:alpha-1': 'alpha-1.png',
-  'perso:o5-1': 'o5-1.png',
-  'perso:the-administrator': 'administrateur.png',
+  'entite:scarlet-king': 'sunny/scarlet-king.png',
+  'dr-clef-s-proposal': 'sunny/gate-guardian.png',
+  'fim:alpha-1': 'sunny/alpha-1.png',
+  'perso:o5-1': 'sunny/o5-1.png',
+  'perso:the-administrator': 'sunny/administrateur.png',
+  'perso:aaron-siegel': 'photos/aaron-siegel.png',
 }
 
 const LEGENDAIRES = ['scp-173', 'scp-2521', 'site:site-19', 'fim:epsilon-11', 'dept:ethics-committee', 'fim:r-sh-1']
 
-/** atelier.html?voir=<id> : une seule cinématique, en grand, rejouable */
+/** atelier.html?voir=<id> : une seule cinématique, en grand, rejouable ; &t=<s> : arrêtée à cet instant */
 function Voir({ id }: { id: string }) {
   const [n, setN] = useState(0)
+  const t = new URLSearchParams(location.search).get('t')
   return (
     <main className="atelier-voir">
       <div className="atelier-voir-scene">
-        <AnimationMythique key={n} id={id} />
+        <AnimationMythique key={n} id={id} fige={t === null ? undefined : Number(t)} />
       </div>
-      <button className="btn btn-principal" onClick={() => setN(n + 1)}>
+      <button className="btn btn-principal atelier-rejouer" onClick={() => setN(n + 1)}>
         Rejouer
       </button>
     </main>
@@ -64,7 +66,7 @@ function Atelier({ base }: { base: Base }) {
             <div className="atelier-scene">{rejeu[c.id] ? <AnimationMythique key={rejeu[c.id]} id={c.id} /> : <SceneMythique id={c.id} />}</div>
             {ORIGINAUX[c.id] && (
               <figure className="atelier-original">
-                <img src={`/sunny/${ORIGINAUX[c.id]}`} alt={`Original de SunnyClockwork : ${c.nm}`} />
+                <img src={`/${ORIGINAUX[c.id]}`} alt={`Original : ${c.nm}`} />
                 <figcaption>Original</figcaption>
               </figure>
             )}

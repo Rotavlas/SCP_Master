@@ -5776,46 +5776,204 @@ button.pseudo:focus-visible .pseudo-nom {
   }
 }
 
-/* Les Auteurs : la page s'écrit d'elle-même et s'adresse au joueur */
-.am-auteurs {
-  position: relative;
+/* ---------- Cinématiques immersives (Immersion.tsx) : plein écran, puis retour dans la carte ---------- */
+.pm-seul .pm-scene.pm-scene-plein {
+  position: fixed;
+  inset: 0;
+  width: auto;
+  aspect-ratio: auto;
+  transform: none;
+  border: 0;
+  box-shadow: none;
+  animation: am-apparait 0.6s ease-out backwards;
+}
+
+.immersion,
+.im-cadre,
+.im-repli {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+}
+
+.im-repli {
+  display: grid;
+  place-items: center;
+}
+
+.im-repli > .scene-mythique {
+  width: min(82vw, 41vh);
+  height: auto;
+  aspect-ratio: 200 / 280;
+}
+
+.im-toile {
+  display: block;
   width: 100%;
   height: 100%;
+}
+
+.im-dessus {
+  position: absolute;
+  left: 0;
+  top: 0;
+  overflow: visible;
+  transform-origin: 0 0;
+  pointer-events: none;
+}
+
+/* Le cadre de la carte, qui se referme autour de l'illustration */
+.im-bord {
+  position: absolute;
+  border: 2px solid var(--sig, #ff3b5c);
+  border-radius: 10px;
+  box-shadow:
+    0 0 40px color-mix(in srgb, var(--sig, #ff3b5c) 55%, transparent),
+    0 0 120px color-mix(in srgb, var(--sig, #ff3b5c) 25%, transparent);
+  opacity: 0;
+  pointer-events: none;
+}
+
+.im-pulse {
+  animation: im-pulse 1.6s ease-out var(--t) both;
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+@keyframes im-pulse {
+  0% {
+    opacity: 0;
+    transform: scale(0.4);
+  }
+  30% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: scale(2.2);
+  }
+}
+
+.im-eclat {
+  animation: am-eclat 1.2s ease-out var(--t) both;
+}
+
+/* Le moniteur d'O5-1 : plat, il se trace par à-coups, puis s'éteint quand la lumière revient */
+.im-ecg {
+  animation:
+    am-trait 2.4s steps(14) 2s backwards,
+    am-disparait 0.5s ease-in 6.3s forwards;
+  filter: drop-shadow(0 0 6px #2f80ed);
+}
+
+.im-legende {
+  font-family: var(--machine);
+  font-size: 22px;
+  fill: #e9e2d0;
+  animation: am-apparait 0.8s ease-out var(--t) backwards;
+}
+
+/* Alpha-1 : le couloir et ses soldats */
+.im-couloir {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 45%, #2a0906 0%, #0a0202 55%, #000 100%);
+  animation: am-disparait 0.7s ease-in 3.3s forwards;
+  pointer-events: none;
+}
+
+.im-couloir svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* Chaque rang de soldats arrive du fond, grandit et passe de chaque côté */
+.im-rang {
+  opacity: 0;
+  animation: im-rang 2.1s cubic-bezier(0.55, 0, 0.9, 0.6) calc(var(--i) * 0.42s) both;
+}
+
+@keyframes im-rang {
+  0% {
+    opacity: 0;
+    transform: scale(0.12);
+  }
+  20% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 1;
+    transform: scale(3.4);
+  }
+}
+
+.im-visiere {
+  filter: drop-shadow(0 0 4px #ff2a1a);
+  animation: im-visiere 0.9s steps(2) infinite;
+}
+
+@keyframes im-visiere {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.im-gyrophare {
+  position: absolute;
+  inset: -50%;
+  background: conic-gradient(from 0deg, rgba(255, 30, 15, 0.38), transparent 12%, transparent 50%, rgba(255, 30, 15, 0.38) 62%, transparent 74%);
+  animation: im-tourne 1.6s linear infinite;
+  mix-blend-mode: screen;
+}
+
+@keyframes im-tourne {
+  to {
+    transform: rotate(1turn);
+  }
+}
+
+.im-couloir-voile {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, transparent 30%, rgba(0, 0, 0, 0.85) 100%);
+}
+
+/* Les Auteurs : la page s'écrit d'elle-même et s'adresse au joueur */
+.am-auteurs {
+  position: absolute;
+  inset: 0;
   display: grid;
   place-items: center;
   background: #efe6d2;
   color: #1c1630;
   font-family: var(--machine);
   overflow: hidden;
+  clip-path: inset(0 round 0);
+  animation: am-referme 0.8s cubic-bezier(0.6, 0, 0.3, 1) 23.2s forwards;
+}
+
+@keyframes am-referme {
+  to {
+    clip-path: inset(calc(50% - min(82vw, 41.4vh, 420px) * 0.7) calc(50% - min(82vw, 41.4vh, 420px) / 2) round 10px);
+  }
 }
 
 .am-auteurs-page {
-  width: min(88%, 34rem);
-  font-size: clamp(0.85rem, 2.4vw, 1.25rem);
+  width: min(88%, 40rem);
+  font-size: clamp(0.95rem, 2.3vw, 1.35rem);
   line-height: 1.5;
 }
 
 .am-auteurs-page p {
-  margin: 0 0 0.9em;
-}
-
-.am-auteurs-page p span {
-  display: inline;
-  background: linear-gradient(90deg, currentColor, currentColor) no-repeat;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  background-size: 100% 100%;
-  animation: am-ecrit calc(var(--n) * 0.045s) steps(var(--n)) var(--t) backwards;
-}
-
-@keyframes am-ecrit {
-  from {
-    background-size: 0% 100%;
-  }
+  margin: 0 0 0.8em;
+  white-space: pre-wrap;
 }
 
 .am-auteurs-titre {
-  font-size: 1.4em;
+  font-size: 1.5em;
   animation: am-apparait 0.4s ease-out var(--t) backwards;
 }
 
@@ -5844,13 +6002,102 @@ button.pseudo:focus-visible .pseudo-nom {
 }
 
 .am-auteurs-curseur {
-  position: absolute;
-  right: 8%;
-  bottom: 8%;
-  width: 0.6rem;
-  height: 1.3rem;
+  display: inline-block;
+  width: 0.55em;
+  height: 1.1em;
+  margin-left: 0.1em;
+  vertical-align: text-bottom;
   background: #1c1630;
   animation: pm-clignote 0.9s steps(2) infinite;
+}
+
+/* Les notes dans la marge : ils ont vu la souris, le clic */
+.am-auteurs-notes {
+  position: absolute;
+  right: 5%;
+  bottom: 6%;
+  display: grid;
+  gap: 0.4rem;
+  justify-items: end;
+  color: #7b3fe4;
+  font-style: italic;
+  pointer-events: none;
+}
+
+.am-auteurs-notes span {
+  animation: am-apparait 0.6s ease-out backwards;
+  rotate: -3deg;
+}
+
+/* Le faux plantage */
+.am-plante .am-auteurs-page {
+  filter: blur(1px);
+  transform: translateX(-6px) skewX(-4deg);
+}
+
+.am-plantage {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 0.6rem;
+  padding: 10vw;
+  background: #101318;
+  color: #d8dde6;
+  font-family: var(--mono, monospace);
+  font-size: clamp(0.85rem, 2vw, 1.1rem);
+  animation: am-plantage 1.4s steps(1) both;
+}
+
+.am-plantage strong {
+  font-size: 1.5em;
+}
+
+.am-plantage span {
+  opacity: 0.7;
+  animation: pm-clignote 0.5s steps(2) infinite;
+}
+
+@keyframes am-plantage {
+  0% {
+    clip-path: inset(40% 0 45% 0);
+    transform: translateX(12px);
+  }
+  8% {
+    clip-path: inset(0);
+    transform: none;
+  }
+  85% {
+    clip-path: inset(0);
+  }
+  92% {
+    clip-path: inset(10% 0 60% 0);
+    transform: translateX(-18px);
+  }
+}
+
+/* À la fin, l'illustration de la carte apparaît dans le cadre qui se referme */
+.am-auteurs-carte {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(82vw, 41.4vh, 420px);
+  aspect-ratio: 200 / 280;
+  translate: -50% -50%;
+  opacity: 0;
+  animation: am-apparait-reste 0.8s ease-out var(--t) forwards;
+}
+
+@keyframes am-apparait-reste {
+  to {
+    opacity: 1;
+  }
+}
+
+.am-auteurs-carte .scene-mythique {
+  width: 100%;
+  height: 100%;
 }
 
 /* Cinématique d'une Mythique : pas de terminal, la scène prend toute la place */
@@ -5858,11 +6105,6 @@ button.pseudo:focus-visible .pseudo-nom {
   width: min(82vw, 58vh);
 }
 
-.pm-seul .pm-scene-large {
-  width: min(92vw, 46rem);
-  height: min(80vh, 40rem);
-  aspect-ratio: auto;
-}
 
 .atelier-voir {
   min-height: 100vh;
@@ -5878,7 +6120,16 @@ button.pseudo:focus-visible .pseudo-nom {
   aspect-ratio: 200 / 280;
 }
 
-.atelier-voir-scene:has(.am-auteurs) {
+.atelier-voir-scene:has(.immersion, .am-auteurs) {
+  position: fixed;
+  inset: 0;
+  height: auto;
   aspect-ratio: auto;
-  width: min(92vw, 46rem);
+}
+
+.atelier-rejouer {
+  position: fixed;
+  right: 1rem;
+  bottom: 1rem;
+  z-index: 5;
 }

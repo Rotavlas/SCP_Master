@@ -9,7 +9,7 @@ import type { Carte as TCarte, Ecran } from '../types'
 import { Carte } from './Carte'
 import { CompteARebours } from './CompteARebours'
 import { Logo } from './Logo'
-import { AnimationMythique, dureeAnimation } from './AnimationsMythiques'
+import { AnimationMythique, animationPleinEcran, dureeAnimation, prechargerMythique } from './AnimationsMythiques'
 
 export interface Tirage {
   id: number
@@ -265,19 +265,33 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
           {tirage.type.nom} · fiche {index + 1}/{tirage.cartes.length}
         </p>
         {protocole && <Protocole carte={carte} onFini={reveler} />}
-        <div className={`scene ${revelee && carte.ra >= 4 ? 'secousse-ecran' : ''}`} onClick={avancer} role="button" aria-label={revelee ? 'Carte suivante' : 'Révéler la carte'}>
-          {revelee && <div className={`fx fx-${fx}`} style={{ ['--fx' as string]: couleurFx }} aria-hidden="true">
-            <span className="fx-rayons" />
-            {(carte.ra >= 3 || variante !== 'std') &&
-              Array.from({ length: carte.ra === 5 ? 36 : 18 }, (_, i) => (
-                <span key={i} className="fx-particule" style={{ ['--a' as string]: `${i * (carte.ra === 5 ? 10 : 20)}deg`, ['--d' as string]: `${(i % 4) * 0.08}s` }} />
-              ))}
-          </div>}
+        <div
+          className={`scene ${revelee && carte.ra >= 4 ? 'secousse-ecran' : ''}`}
+          onClick={avancer}
+          role="button"
+          aria-label={revelee ? 'Carte suivante' : 'Révéler la carte'}
+        >
+          {revelee && (
+            <div className={`fx fx-${fx}`} style={{ ['--fx' as string]: couleurFx }} aria-hidden="true">
+              <span className="fx-rayons" />
+              {(carte.ra >= 3 || variante !== 'std') &&
+                Array.from({ length: carte.ra === 5 ? 36 : 18 }, (_, i) => (
+                  <span
+                    key={i}
+                    className="fx-particule"
+                    style={{ ['--a' as string]: `${i * (carte.ra === 5 ? 10 : 20)}deg`, ['--d' as string]: `${(i % 4) * 0.08}s` }}
+                  />
+                ))}
+            </div>
+          )}
           {Array.from({ length: Math.min(restantes, 4) }, (_, i) => (
             <div key={i} className="pile-dos" style={{ ['--i' as string]: i + 1 }} aria-hidden="true" />
           ))}
           {/* Une carte neuve à chaque fiche : sans clé, la précédente revenait de sa sortie en se retournant à l'envers */}
-          <div key={index} className={`pile-carte ${revelee ? 'retournee' : ''} ${suspense ? 'suspense' : ''} ${sortie ? 'sortie' : ''} ${!revelee ? `lueur-${carte.ra}` : ''}`}>
+          <div
+            key={index}
+            className={`pile-carte ${revelee ? 'retournee' : ''} ${suspense ? 'suspense' : ''} ${sortie ? 'sortie' : ''} ${!revelee ? `lueur-${carte.ra}` : ''}`}
+          >
             <div className="pile-face pile-face-dos">
               <Logo taille={72} />
               <span>SCP-████</span>
@@ -310,7 +324,13 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
       <div className="eventail">
         {tirage.cartes.map((t, i) => (
           <div key={i} className="eventail-carte" style={{ ['--i' as string]: i - (tirage.cartes.length - 1) / 2 }}>
-            <Carte carte={base.parId.get(t.carte.id) ?? t.carte} base={base} variante={t.variante} nouvelle={tirage.nouvelles.has(t.carte.id)} onClick={() => ouvrirCarte(t.carte.id)} />
+            <Carte
+              carte={base.parId.get(t.carte.id) ?? t.carte}
+              base={base}
+              variante={t.variante}
+              nouvelle={tirage.nouvelles.has(t.carte.id)}
+              onClick={() => ouvrirCarte(t.carte.id)}
+            />
           </div>
         ))}
       </div>
@@ -418,14 +438,15 @@ function ProtocoleMythique({ carte, onFini }: { carte: TCarte; onFini: () => voi
   const tampon = NOIR_AVANT_SCENE + duree
   const [scene, setScene] = useState(false)
   useEffect(() => {
+    prechargerMythique(carte.id)
     const t = setTimeout(() => setScene(true), NOIR_AVANT_SCENE * 1000)
     const fin = setTimeout(onFini, (tampon + APRES_TAMPON + APRES_ECLAIR) * 1000)
     return () => {
       clearTimeout(t)
       clearTimeout(fin)
     }
-  }, [onFini, tampon])
-  const large = carte.id === 'perso:les-auteurs'
+  }, [carte.id, onFini, tampon])
+  const plein = animationPleinEcran(carte.id)
   return (
     <div
       className="protocole-mythique pm-seul"
@@ -435,7 +456,7 @@ function ProtocoleMythique({ carte, onFini }: { carte: TCarte; onFini: () => voi
       aria-label="Carte mythique"
     >
       {scene && (
-        <div className={`pm-scene ${large ? 'pm-scene-large' : ''}`}>
+        <div className={`pm-scene ${plein ? 'pm-scene-plein' : ''}`}>
           <AnimationMythique id={carte.id} />
         </div>
       )}
