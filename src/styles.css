@@ -5131,6 +5131,20 @@ button.pseudo:focus-visible .pseudo-nom {
   }
 }
 
+.sv-noir {
+  opacity: 0;
+  animation: sv-noir 7s steps(1) 2s infinite;
+}
+
+@keyframes sv-noir {
+  94% {
+    opacity: 1;
+  }
+  97% {
+    opacity: 0;
+  }
+}
+
 .sv-efface {
   opacity: 0;
   animation: sv-efface 9s ease-in-out 3s infinite;

@@ -28,6 +28,7 @@ export const CREDITS_ILLUSTRATIONS: Record<string, { artiste: string; source: st
   'fim:alpha-1': SUNNY,
   'perso:the-administrator': SUNNY,
   'perso:o5-1': SUNNY,
+  'scp-173': { artiste: 'Izumi Kato, « Untitled 2004 »', source: 'https://en.wikipedia.org/wiki/Izumi_Kato', licence: 'tous droits réservés' },
 }
 
 export const signature = (carte: Carte) => SIGNATURES[carte.id] ?? { couleur: '#ff3b5c', indice: 'Dossier de niveau 5.' }

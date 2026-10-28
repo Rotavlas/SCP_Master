@@ -25,7 +25,7 @@ export interface Classe {
 }
 
 /** Valeurs animées par images clés [instant, valeur] */
-export type Piste = 'porte' | 'porteEch' | 'lumiere' | 'rouge' | 'eau' | 'efface' | 'alarme' | 'braise'
+export type Piste = 'porte' | 'porteEch' | 'lumiere' | 'rouge' | 'eau' | 'efface' | 'alarme' | 'braise' | 'noir'
 
 export interface SceneImmersive {
   /** Carte des temps : public/immersion/<nom>.png */
@@ -115,7 +115,7 @@ uniform int u_fond;
 uniform vec3 u_c1, u_c2;
 uniform vec3 u_couleur[8];
 uniform float u_tau[8], u_eclat[8], u_ondule[8], u_photo[8];
-uniform float u_porte, u_porteEch, u_lumiere, u_rouge, u_eau, u_efface, u_alarme, u_braise;
+uniform float u_porte, u_porteEch, u_lumiere, u_rouge, u_eau, u_efface, u_alarme, u_braise, u_noir;
 out vec4 sortie;
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -243,6 +243,8 @@ void main() {
     col = mix(col, orig, smoothstep(u_fin, u_fin + 0.5, u_t));
   }
   col *= mix(vec3(1.0), vec3(1.0, 0.3, 0.22), u_rouge);
+  // Le noir : une lumière qui grésille, un œil qui cligne
+  col *= 1.0 - u_noir;
   vec2 s = f / u_ecran - 0.5;
   col *= 1.0 - u_vignette * 0.55 * dot(s, s) * 2.0;
   col += (hash(f + fract(u_t) * 91.0) - 0.5) * 0.035 * u_vignette;
@@ -352,7 +354,7 @@ export function Immersion({ id, scene, fige }: { id: string; scene: SceneImmersi
         )
         const fin = scene.retour - 0.6
         gl.uniform1f(u('u_fin'), fin)
-        const pistes: Piste[] = ['porte', 'porteEch', 'lumiere', 'rouge', 'eau', 'efface', 'alarme', 'braise']
+        const pistes: Piste[] = ['porte', 'porteEch', 'lumiere', 'rouge', 'eau', 'efface', 'alarme', 'braise', 'noir']
         const loc = Object.fromEntries(pistes.map((p) => [p, u(`u_${p}`)]))
         const lt = u('u_t')
         const ltr = u('u_tr')

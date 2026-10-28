@@ -27,6 +27,7 @@ export const SUNNY = new Set([
   'perso:the-administrator',
   'perso:aaron-siegel',
   'scp-2747',
+  'scp-173',
 ])
 
 export const aUneScene = (id: string) => id in SCENES || SUNNY.has(id)
@@ -252,6 +253,9 @@ const VIVANTS: Record<string, (u: string) => ReactNode> = {
       <circle cx="440" cy="474" r="46" fill="#2f80ed" className="sv-produit sv-battement" />
     </>
   ),
+
+  // SCP-173 : de temps en temps, la carte cligne
+  'scp-173': () => <rect x="-400" y="-400" width="1150" height="1090" fill="#000" className="sv-noir" />,
 
   // SCP-2747 : le cœur de la dame luit, la couronne brille, une ronce frémit
   'scp-2747': (u) => (

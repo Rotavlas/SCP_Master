@@ -302,6 +302,12 @@ const CARTES = [
     ],
   },
   {
+    // SCP-173 : la photo est là d'emblée, c'est la lumière (et les clignements) qui la montrent
+    nom: 'scp-173',
+    source: 'public/photos/scp-173.png',
+    phases: [{ type: 'photo', classe: 0, t0: 0.3, duree: 0.8, gamma: 1 }],
+  },
+  {
     nom: 'aaron-siegel',
     // La photo préparée (yeux caviardés) : npm run illustrations d'abord
     source: 'public/photos/aaron-siegel.png',

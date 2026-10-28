@@ -326,6 +326,48 @@ const SIEGEL: SceneImmersive = {
   ),
 }
 
+// ---------- SCP-173 ----------
+// Une cellule dans le noir. Le néon grésille et la montre, de dos, contre le mur. On cligne : elle est plus près.
+// On cligne encore : plus près. Encore : son visage. Un dernier clignement… et elle est revenue à sa place.
+const CLIGNEMENTS = [2.3, 3.6, 4.8, 5.95]
+const STATUE: SceneImmersive = {
+  nom: 'scp-173',
+  image: 'photos/scp-173.png',
+  retour: 7.2,
+  fond: { mode: 0, c1: '#050505', c2: '#050505' },
+  classes: [{ couleur: '#ffffff', tau: 1, photo: true }],
+  // Un saut de caméra pendant chaque clignement, et une lente poussée entre deux
+  camera: [
+    [0, 175, 143, 1],
+    [2.35, 168, 143, 1.08],
+    [2.36, 105, 150, 1.7],
+    [3.65, 105, 146, 1.8],
+    [3.66, 112, 110, 2.6],
+    [4.85, 113, 106, 2.75],
+    [4.86, 118, 70, 3.6],
+    [6.0, 118, 66, 3.8],
+    [6.01, 175, 143, 1],
+  ],
+  pistes: {
+    noir: [
+      [0, 1],
+      [0.8, 1],
+      [0.85, 0.35],
+      [0.95, 0.9],
+      [1.05, 0.25],
+      [1.2, 0.75],
+      [1.35, 0.12],
+      ...CLIGNEMENTS.flatMap((t, i): [number, number][] => [
+        [t - 0.06, i === 3 ? 0.3 : 0.12],
+        [t, 1],
+        [t + (i === 3 ? 0.5 : 0.16), 1],
+        [t + (i === 3 ? 0.56 : 0.22), i === 3 ? 0 : 0.12 + i * 0.05],
+      ]),
+    ],
+  },
+  secousses: CLIGNEMENTS.map((t): [number, number] => [t + 0.2, 2]),
+}
+
 // ---------- SCP-2747, l'anafabula ----------
 // Une page de récit. Des flèches noires en jaillissent, une dame couronnée apparaît, ses ronces poussent et se
 // ramifient sur le texte… puis la page est effacée : il ne reste qu'elle. Tout récit qui la contient cesse d'exister.
@@ -358,6 +400,7 @@ const ANAFABULA: SceneImmersive = {
 }
 
 const SCENES: Record<string, SceneImmersive> = {
+  'scp-173': STATUE,
   'scp-2747': ANAFABULA,
   'entite:scarlet-king': ROI,
   'dr-clef-s-proposal': GARDIEN,

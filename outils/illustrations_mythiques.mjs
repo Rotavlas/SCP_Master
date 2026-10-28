@@ -22,6 +22,8 @@ const SOURCES = [
   { id: 'fim:alpha-1', fichier: 'alpha-1.png', fond: '#ffffff' },
   { id: 'perso:o5-1', fichier: 'o5-1.png', fond: '#ffffff' },
   { id: 'perso:the-administrator', fichier: 'administrateur.png', fond: '#ffffff' },
+  // SCP-173 : la photo d'origine, « Untitled 2004 » d'Izumi Kato (pas sous licence libre ; choix du créateur du jeu)
+  { id: 'scp-173', fichier: 'scp-173.png', dossier: 'photos', fond: '#0d0d0d' },
   // SCP-2747, l'anafabula : « Lady in Thorns »
   { id: 'scp-2747', fichier: 'anafabula.png', fond: '#ffffff' },
   { id: 'perso:aaron-siegel', fichier: 'aaron-siegel.png', dossier: 'photos', fond: '#0d0d0d', caviarder: [[132, 116, 246, 152]] },
