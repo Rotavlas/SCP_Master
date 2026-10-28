@@ -256,7 +256,9 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
   }
 
   if (etape === 'pile' && courante) {
-    const { carte, variante, numero } = courante
+    // Toujours la carte du catalogue affiché : un dossier tiré avant l'arrivée de la VF passe en français
+    const { variante, numero } = courante
+    const carte = base.parId.get(courante.carte.id) ?? courante.carte
     const restantes = tirage.cartes.length - index - 1
     const fx = revelee ? (carte.ra === 5 ? 'ra-5' : variante !== 'std' ? 'variante' : `ra-${carte.ra}`) : ''
     const couleurFx = carte.ra === 5 ? signature(carte).couleur : variante !== 'std' ? PAR_ID[variante].couleur : RARETES[carte.ra].couleur
@@ -311,7 +313,7 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
       <div className="eventail">
         {tirage.cartes.map((t, i) => (
           <div key={i} className="eventail-carte" style={{ ['--i' as string]: i - (tirage.cartes.length - 1) / 2 }}>
-            <Carte carte={t.carte} base={base} variante={t.variante} nouvelle={tirage.nouvelles.has(t.carte.id)} onClick={() => ouvrirCarte(t.carte.id)} />
+            <Carte carte={base.parId.get(t.carte.id) ?? t.carte} base={base} variante={t.variante} nouvelle={tirage.nouvelles.has(t.carte.id)} onClick={() => ouvrirCarte(t.carte.id)} />
           </div>
         ))}
       </div>

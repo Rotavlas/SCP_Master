@@ -11,12 +11,14 @@ import {
   varianteAffichee,
 } from '../state/sauvegarde'
 import { recycler } from '../state/actions'
+import { useCarteAffichee } from '../state/traduction'
 import type { Carte as TCarte } from '../types'
 import { Carte } from './Carte'
 import { MarcheCarte } from './MarcheCarte'
 
-export function CarteDetail({ carte, base, onFermer, voirMarche }: { carte: TCarte; base: Base; onFermer: () => void; voirMarche: (carte: TCarte) => void }) {
+export function CarteDetail({ carte: source, base, onFermer, voirMarche }: { carte: TCarte; base: Base; onFermer: () => void; voirMarche: (carte: TCarte) => void }) {
   const s = useSauvegarde()
+  const carte = useCarteAffichee(source)
   const quantite = s.collection[carte.id] ?? 0
   const favori = s.favoris.includes(carte.id)
   const souhait = s.souhaits.includes(carte.id)
@@ -92,6 +94,11 @@ export function CarteDetail({ carte, base, onFermer, voirMarche }: { carte: TCar
           <p className="dossier-entete">
             Fondation SCP · {TYPES[carte.k].nom} · dossier {quantite ? 'déclassifié' : 'scellé'}
             {carte.vf && quantite > 0 && <span className="puce-vf">VF</span>}
+            {carte.auto && quantite > 0 && (
+              <span className="puce-vf auto" title="Pas encore traduite par la branche française : traduction automatique de votre navigateur">
+                VF auto
+              </span>
+            )}
           </p>
           <h2>
             {carte.num ?? ''} <span>{quantite ? carte.nm : '████████'}</span>
@@ -109,13 +116,13 @@ export function CarteDetail({ carte, base, onFermer, voirMarche }: { carte: TCar
               {carte.q && (
                 <section>
                   <h4>Procédures de confinement spéciales</h4>
-                  <p lang={carte.vf ? 'fr' : 'en'}>{carte.q}</p>
+                  <p lang={carte.vf || carte.auto ? 'fr' : 'en'}>{carte.q}</p>
                 </section>
               )}
               {carte.x && (
                 <section>
                   <h4>{carte.k === 's' ? 'Description' : carte.k === 'c' || carte.k === 'd' ? 'Incipit' : 'Dossier'}</h4>
-                  <p lang={carte.vf ? 'fr' : 'en'}>{carte.x}</p>
+                  <p lang={carte.vf || carte.auto ? 'fr' : 'en'}>{carte.x}</p>
                 </section>
               )}
               {carte.lie && carte.lie.length > 0 && (

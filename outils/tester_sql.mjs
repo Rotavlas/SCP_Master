@@ -526,6 +526,38 @@ await test('supprimer son compte rend les mises reçues et libère les offres fa
   assert.equal((await admin('select count(*)::int as n from public.exemplaires where bloque_par = $1', [offreC])).rows[0].n, 0)
 })
 
+console.log('Notifications')
+const types = async (j) => (await valeur(j, 'select public.mes_notifications()')).liste.map((n) => n.type)
+await test('ventes et échanges déjà joués ont laissé leurs notifications', async () => {
+  assert.ok((await types(A)).includes('vente_conclue'), (await types(A)).join(','))
+  assert.ok((await types(A)).includes('echange_accepte'))
+  assert.ok((await types(B)).includes('echange_recu'))
+})
+const N = '00000000-0000-0000-0000-0000000000a1'
+await db.exec(`insert into auth.users (id) values ('${N}')`)
+await admin(`update public.profils set pseudo = 'Novice Nina', credits = 10000 where id = '${N}'`)
+await test('carte souhaitée mise en vente, surenchère : le bon joueur est prévenu', async () => {
+  await en(N, `select public.maj_preferences('{"souhaits": ["scp-5000"]}')`)
+  await donner(A, 'scp-5000')
+  const id = (await valeur(A, "select public.mettre_aux_encheres('scp-5000', 'std', 100, 60, null)")).id
+  const souhait = (await valeur(N, 'select public.mes_notifications()')).liste.find((n) => n.type === 'souhait_en_vente')
+  assert.equal(souhait?.donnees.carte, 'scp-5000')
+  assert.ok(!(await types(A)).includes('souhait_en_vente'), 'pas le vendeur')
+  await valeur(B, 'select public.encherir($1, 100)', [id])
+  await valeur(N, 'select public.encherir($1, 200)', [id])
+  const surenchere = (await valeur(B, 'select public.mes_notifications()')).liste.find((n) => n.type === 'surencheri' && n.donnees.enchere === id)
+  assert.equal(surenchere?.donnees.par, 'Novice Nina')
+})
+await test('lues à la demande, privées, illisibles sans connexion', async () => {
+  assert.ok((await valeur(B, 'select public.mes_notifications()')).nonLues > 0)
+  await en(B, 'select public.lire_notifications()')
+  assert.equal((await valeur(B, 'select public.mes_notifications()')).nonLues, 0)
+  const autres = (await en(N, `select count(*)::int as n from public.notifications where joueur <> '${N}'`)).rows[0].n
+  assert.equal(autres, 0)
+  await echoue(en(null, 'select count(*) from public.notifications'), /permission denied/)
+  await echoue(en(B, "insert into public.notifications (joueur, type) values ($1, 'echange_recu')", [B]), /permission denied/)
+})
+
 console.log('Amis et blocages')
 const E = '00000000-0000-0000-0000-00000000000e'
 const F = '00000000-0000-0000-0000-00000000000f'

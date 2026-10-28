@@ -5378,3 +5378,312 @@ button.pseudo:focus-visible .pseudo-nom {
   background:
     linear-gradient(180deg, rgba(0, 0, 0, 0.5) 0%, transparent 13%, transparent 60%, rgba(0, 0, 0, 0.9) 74%);
 }
+
+.puce-vf.auto {
+  background: transparent;
+  border: 1px dashed #2f5f9e;
+  color: #8fb4e8;
+}
+
+/* ---------- Cloche de notifications ---------- */
+.cloche {
+  position: relative;
+}
+
+.btn-cloche {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  padding: 0.35rem 0.5rem;
+}
+
+.btn-cloche .compteur {
+  position: absolute;
+  top: -0.4rem;
+  right: -0.5rem;
+  margin: 0;
+}
+
+.btn-cloche.sonne svg {
+  transform-origin: 50% 10%;
+  animation: cloche 2.4s ease-in-out infinite;
+}
+
+@keyframes cloche {
+  0%,
+  70%,
+  100% {
+    transform: rotate(0);
+  }
+  75% {
+    transform: rotate(14deg);
+  }
+  82% {
+    transform: rotate(-12deg);
+  }
+  89% {
+    transform: rotate(7deg);
+  }
+}
+
+.cloche-liste {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 0.4rem);
+  z-index: 40;
+  width: min(360px, calc(100vw - 2rem));
+  max-height: min(70vh, 480px);
+  overflow-y: auto;
+  padding: 0.8rem;
+  background: var(--panneau-2);
+  border: 1px solid var(--bord);
+  border-radius: 8px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.5);
+  animation: entree-modale 0.2s ease-out;
+}
+
+.cloche-liste ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.cloche-ligne {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  padding: 0.5rem 0.6rem;
+  border: 1px solid transparent;
+  border-left: 3px solid var(--bord);
+  border-radius: 0;
+  background: none;
+  color: var(--texte);
+  font: inherit;
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.cloche-ligne:hover {
+  background: var(--panneau);
+}
+
+.cloche-ligne small {
+  color: var(--discret);
+  font-size: 0.72rem;
+}
+
+.cloche-ligne.non-lue {
+  border-left-color: var(--ambre);
+  background: color-mix(in srgb, var(--ambre) 7%, transparent);
+}
+
+.cloche-ligne.type-souhait_en_vente {
+  border-left-color: #e05a8a;
+}
+
+.cloche-ligne.type-surencheri {
+  border-left-color: var(--rouge);
+}
+
+.cloche-ligne.type-enchere_gagnee,
+.cloche-ligne.type-vente_conclue,
+.cloche-ligne.type-echange_accepte {
+  border-left-color: var(--vert);
+}
+
+/* ---------- Cadre des Légendaires : pleine page, bandeau sombre liseré d'or, sceau ★ ----------
+   Plus riche qu'une carte ordinaire, plus sobre qu'une Mythique : ni style affiche, ni cadre animé. */
+.carte-legendaire {
+  padding: 3px;
+  background: linear-gradient(145deg, #f7dc8a, #e3b23c 40%, #9c6f12);
+}
+
+.cl-cadre {
+  position: relative;
+  height: 100%;
+  border-radius: 9px;
+  overflow: hidden;
+  background: #1a1712;
+}
+
+.cl-visuel {
+  position: absolute;
+  inset: 0;
+}
+
+.cl-visuel img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 30%;
+}
+
+.cl-visuel .carte-visuel-vide {
+  height: 70%;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 50% 45%, #4a3a16, #1a1712 75%);
+  color: #e3b23c;
+}
+
+.cl-haut {
+  position: absolute;
+  inset: 0 0 auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 3cqw 4cqw;
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.65), transparent);
+  font-family: var(--mono);
+  font-size: 5cqw;
+  font-weight: 700;
+  color: #fff7e0;
+  text-shadow: 0 1px 3px #000;
+}
+
+.cl-sceau {
+  display: grid;
+  place-items: center;
+  width: 9.5cqw;
+  height: 9.5cqw;
+  border-radius: 50%;
+  border: 1.5px solid #e3b23c;
+  background: #1c1b19;
+  color: #e3b23c;
+  font-size: 5.5cqw;
+  text-shadow: none;
+}
+
+.cl-bas {
+  position: absolute;
+  inset: auto 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1cqw;
+  padding: 3cqw 4.5cqw 3.5cqw;
+  background: linear-gradient(180deg, rgba(20, 18, 14, 0.88), #14120e 30%);
+  border-top: 2px solid #e3b23c;
+  color: #fff7e0;
+}
+
+.cl-ligne {
+  display: flex;
+  justify-content: space-between;
+  gap: 2cqw;
+  font-family: var(--mono);
+  font-size: 3.6cqw;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.cl-rang {
+  color: #e3b23c;
+}
+
+.cl-classe {
+  color: var(--classe);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.carte-legendaire .cl-nom {
+  margin: 0;
+  font-family: var(--machine);
+  font-size: 7.5cqw;
+  line-height: 1.1;
+  color: #fff7e0;
+}
+
+.cl-extrait {
+  margin: 0;
+  font-size: 3.6cqw;
+  line-height: 1.35;
+  color: rgba(255, 247, 224, 0.78);
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.cl-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding-top: 1.2cqw;
+  border-top: 1px solid rgba(227, 178, 60, 0.45);
+  font-family: var(--mono);
+  font-size: 4.6cqw;
+  font-weight: 700;
+}
+
+.cl-stats small {
+  font-size: 3cqw;
+  color: #e3b23c;
+}
+
+.cl-note {
+  font-size: 3.4cqw;
+  font-weight: 400;
+  color: rgba(255, 247, 224, 0.65);
+}
+
+.carte-legendaire .carte-holo {
+  inset: 3px;
+}
+
+/* Roi écarlate : les chaînes cèdent à la fin de la cinématique, les yeux s'embrasent */
+.sm-anime.sm-entite-scarlet-king .sm-chaine {
+  animation:
+    sm-chaine 0.35s cubic-bezier(0.3, 1.6, 0.5, 1) calc(2.5s + var(--i) * 0.22s) backwards,
+    sm-brise 0.5s cubic-bezier(0.5, 0, 0.9, 0.4) calc(3.9s + var(--i) * 0.08s) forwards;
+}
+
+@keyframes sm-brise {
+  30% {
+    transform: translate(2px, -2px) scale(1.04);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(40px) rotate(calc(18deg - var(--i) * 18deg)) scale(1.2);
+    opacity: 0;
+  }
+}
+
+.sm-anime.sm-entite-scarlet-king .sm-oeil {
+  animation:
+    sm-ouvre 0.3s ease-out calc(1.7s + var(--i) * 0.2s) backwards,
+    sm-embrase-oeil 0.6s ease-out 3.9s;
+}
+
+@keyframes sm-embrase-oeil {
+  40% {
+    filter: drop-shadow(0 0 4px #ff2a1a) brightness(1.4);
+    transform: scale(1.25);
+  }
+}
+
+/* Reflet des Légendaires : doré et discret, pour ne pas délaver l'image ; l'arc-en-ciel reste à la variante holographique */
+.carte-legendaire .carte-holo {
+  opacity: 0.16;
+  mix-blend-mode: soft-light;
+  background:
+    radial-gradient(circle at var(--mx) var(--my), rgba(255, 244, 200, 0.9), transparent 40%),
+    repeating-linear-gradient(115deg, #fff3c4 0%, #e3b23c 10%, #fff3c4 20%, #9c6f12 30%, #fff3c4 40%);
+  background-size: 100% 100%, 300% 300%;
+  background-position: center, var(--mx) var(--my);
+}
+
+.carte-legendaire.variante-holo .carte-holo {
+  opacity: 0.32;
+  mix-blend-mode: color-dodge;
+  background:
+    radial-gradient(circle at var(--mx) var(--my), rgba(255, 255, 255, 0.55), transparent 45%),
+    repeating-linear-gradient(115deg, #ff6b6b 0%, #ffd93d 8%, #6bff95 16%, #4dd2ff 24%, #b36bff 32%, #ff6b6b 40%);
+  background-size: 100% 100%, 300% 300%;
+  background-position: center, var(--mx) var(--my);
+}

@@ -2,6 +2,7 @@ import { useRef, useState, type PointerEvent } from 'react'
 import { RARETES, TYPES, entete, pastille, type Base } from '../data/catalogue'
 import { signature } from '../data/mythiques'
 import { PAR_ID, type IdVariante } from '../engine/variantes'
+import { useCarteAffichee } from '../state/traduction'
 import type { Carte as TCarte } from '../types'
 import { Logo } from './Logo'
 import { SceneMythique, aUneScene } from './ScenesMythiques'
@@ -68,7 +69,9 @@ function expurger(texte: string): string {
     .join(' ')
 }
 
-export function Carte({ carte, base, taille = 'm', variante = 'std', quantite, nouvelle, favori, souhait, scellee, caviardee, inclinable = true, onClick }: Props) {
+export function Carte({ carte: source, base, taille = 'm', variante = 'std', quantite, nouvelle, favori, souhait, scellee, caviardee, inclinable = true, onClick }: Props) {
+  // En VF, la traduction officielle ou, à défaut, celle du traducteur du navigateur
+  const carte = useCarteAffichee(source)
   const ref = useRef<HTMLDivElement>(null)
   // Vignette réduite d'abord, puis l'image d'origine si elle échoue, puis l'emblème
   const [echecs, setEchecs] = useState({ id: carte.id, n: 0 })
@@ -154,6 +157,71 @@ export function Carte({ carte, base, taille = 'm', variante = 'std', quantite, n
           </div>
         </div>
         <div className="carte-holo" aria-hidden="true" />
+        {nouvelle && <span className="pastille pastille-nouvelle">Nouveau</span>}
+        {quantite !== undefined && quantite > 1 && <span className="pastille pastille-quantite">×{quantite}</span>}
+        {favori && <span className="pastille pastille-favori" aria-label="Favori">★</span>}
+      </div>
+    )
+  }
+
+  // Une Légendaire : l'image en pleine page, un bandeau sombre liseré d'or, le sceau ★
+  if (carte.ra === 4) {
+    return (
+      <div
+        ref={ref}
+        className={`carte carte-${taille} type-${carte.k} rarete-4 carte-legendaire variante-${variante}${caviardee ? ' caviardee' : ''}`}
+        style={{ ['--rarete' as string]: rarete.couleur, ['--classe' as string]: etiquette.couleur }}
+        onPointerMove={suivre}
+        onPointerLeave={relacher}
+        onClick={onClick}
+        role={onClick ? 'button' : undefined}
+        tabIndex={onClick ? 0 : undefined}
+        onKeyDown={(e) => onClick && (e.key === 'Enter' || e.key === ' ') && (e.preventDefault(), onClick())}
+        aria-label={`${carte.num ?? TYPES[carte.k].nom}, ${caviardee ? 'nom caviardé' : carte.nm}, ${rarete.nom}${variante !== 'std' ? `, variante ${PAR_ID[variante].nom}` : ''}`}
+      >
+        <div className="cl-cadre">
+          <div className="cl-visuel">
+            {image ? (
+              <img src={image} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setEchecs({ id: carte.id, n: secours + 1 })} />
+            ) : (
+              <div className="carte-visuel-vide">
+                <Embleme carte={carte} taille={taille === 'p' ? 48 : 80} />
+              </div>
+            )}
+          </div>
+          <header className="cl-haut">
+            <span className="cl-num">{caviardee && !carte.num ? '██████' : entete(carte)}</span>
+            <span className="cl-sceau" title="Légendaire">
+              ★
+            </span>
+          </header>
+          {variante === 'exp' && <span className="tampon-expurge">Expurgé</span>}
+          {variante === 'o5' && <span className="sceau-o5">O5</span>}
+          <div className="cl-bas">
+            <div className="cl-ligne">
+              <span className="cl-rang">Légendaire</span>
+              <span className="cl-classe">{caviardee ? '█████' : etiquette.texte}</span>
+            </div>
+            <h3 className="carte-nom cl-nom" title={caviardee ? undefined : carte.nm}>
+              {caviardee ? <span className="caviarde">██████ ████</span> : carte.nm}
+            </h3>
+            {taille !== 'p' && extrait && !caviardee && <p className="cl-extrait">{extrait}</p>}
+            <footer className="cl-stats">
+              <span title="Menace (attaque)">
+                <small>MEN</small> {carte.atk}
+              </span>
+              <span className="cl-note" title={carte.r !== undefined ? 'Note sur le wiki' : 'Pages du wiki liées à cette fiche'}>
+                {carte.r !== undefined ? `${carte.r > 0 ? '+' : ''}${carte.r}` : `⚑ ${carte.lp ?? 0}`}
+              </span>
+              <span title="Confinement (défense)">
+                <small>CONF</small> {carte.def}
+              </span>
+            </footer>
+          </div>
+        </div>
+        <div className="carte-holo" aria-hidden="true" />
+        {variante === 'breche' && <div className="carte-breche" aria-hidden="true" />}
+        {variante !== 'std' && <span className="ruban-variante">{PAR_ID[variante].nom}</span>}
         {nouvelle && <span className="pastille pastille-nouvelle">Nouveau</span>}
         {quantite !== undefined && quantite > 1 && <span className="pastille pastille-quantite">×{quantite}</span>}
         {favori && <span className="pastille pastille-favori" aria-label="Favori">★</span>}

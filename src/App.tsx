@@ -18,6 +18,9 @@ import { useCompte } from './state/enLigne'
 import { oublierInvitation, repondreDefi, useDuelDemarre, useDuelsEntrants, useInvitations } from './state/jcj'
 import { totalNonLus, useConversations, useMessagesEntrants, usePresence, type Destinataire } from './state/social'
 import { modifier, notifier, useNotifications, useSauvegarde } from './state/sauvegarde'
+import { preparerTraducteur } from './state/traduction'
+import { useCloche, type Notification } from './state/notifications'
+import { Cloche, decrire, type OngletMarche } from './components/Cloche'
 import type { Ecran, Traductions } from './types'
 
 const ONGLETS: { id: Ecran; nom: string }[] = [
@@ -41,6 +44,7 @@ export default function App() {
   const [carteOuverte, setCarteOuverte] = useState<string | null>(null)
   // Carte à retrouver en ouvrant le marché depuis sa fiche
   const [rechercheMarche, setRechercheMarche] = useState('')
+  const [ongletMarche, setOngletMarche] = useState<OngletMarche>('encheres')
   const s = useSauvegarde()
   const compte = useCompte()
   const [profilOuvert, setProfilOuvert] = useState<string | null>(null)
@@ -49,6 +53,9 @@ export default function App() {
   const connecte = compte.statut === 'connecte' && !!s.agent
   usePresence(connecte)
   useMessagesEntrants(connecte)
+  // Une notification qui arrive pendant la partie s'affiche aussi en bas de l'écran
+  const annoncer = useCallback((n: Notification) => baseVO && notifier(decrire(n, baseVO).texte, 'info'), [baseVO])
+  useCloche(connecte, annoncer)
   useDuelsEntrants(connecte)
   const nonLus = totalNonLus(useConversations())
   const [duelDemarre] = useDuelDemarre()
@@ -146,6 +153,7 @@ export default function App() {
                 className={ecran === o.id ? 'actif' : ''}
                 onClick={() => {
                   setRechercheMarche('')
+                  setOngletMarche('encheres')
                   aller(o.id)
                 }}
               >
@@ -164,7 +172,11 @@ export default function App() {
                 aria-checked={s.langue === l}
                 className={s.langue === l ? 'actif' : ''}
                 title={l === 'vo' ? 'Textes originaux en anglais' : 'Traductions de la branche française, quand elles existent'}
-                onClick={() => modifier((x) => ({ ...x, langue: l }))}
+                onClick={() => {
+                  // Le clic sert de geste pour télécharger le modèle de traduction du navigateur
+                  if (l === 'vf') preparerTraducteur(true)
+                  modifier((x) => ({ ...x, langue: l }))
+                }}
               >
                 {l.toUpperCase()}
               </button>
@@ -173,6 +185,16 @@ export default function App() {
           <span className="solde" title="Crédits">
             {s.credits.toLocaleString('fr-FR')} ₵
           </span>
+          {base && (
+            <Cloche
+              base={base}
+              voirMarche={(onglet, recherche) => {
+                setRechercheMarche(recherche ?? '')
+                setOngletMarche(onglet)
+                aller('marche')
+              }}
+            />
+          )}
           <BoutonCompte ouvrirProfil={setProfilOuvert} />
         </header>
       )}
@@ -194,7 +216,9 @@ export default function App() {
           />
         )}
         {ecran === 'classement' && <Classement base={base} ouvrirProfil={setProfilOuvert} />}
-        {ecran === 'marche' && <Marche key={rechercheMarche} base={base} ouvrirCarte={setCarteOuverte} recherche={rechercheMarche} />}
+        {ecran === 'marche' && (
+          <Marche key={`${rechercheMarche}|${ongletMarche}`} base={base} ouvrirCarte={setCarteOuverte} recherche={rechercheMarche} onglet={ongletMarche} />
+        )}
         {ecran === 'boutique' && (
           <Boutique
             base={base}
@@ -215,6 +239,7 @@ export default function App() {
           onFermer={fermer}
           voirMarche={(c) => {
             setRechercheMarche(c.id)
+            setOngletMarche('encheres')
             setCarteOuverte(null)
             aller('marche')
           }}

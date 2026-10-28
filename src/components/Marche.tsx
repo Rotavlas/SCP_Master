@@ -30,9 +30,19 @@ type Onglet = 'encheres' | 'ventes' | 'echanges'
 const credits = (n: number) => `${n.toLocaleString('fr-FR')} ₵`
 
 /** Hôtel des ventes en direct, ventes personnelles et échanges entre joueurs. */
-export function Marche({ base, ouvrirCarte, recherche: rechercheInitiale }: { base: Base; ouvrirCarte: (id: string) => void; recherche: string }) {
+export function Marche({
+  base,
+  ouvrirCarte,
+  recherche: rechercheInitiale,
+  onglet: ongletInitial = 'encheres',
+}: {
+  base: Base
+  ouvrirCarte: (id: string) => void
+  recherche: string
+  onglet?: Onglet
+}) {
   const s = useSauvegarde()
-  const [onglet, setOnglet] = useState<Onglet>('encheres')
+  const [onglet, setOnglet] = useState<Onglet>(ongletInitial)
   const [etat, setEtat] = useState<EtatMarche | null>(null)
   // Écart entre l'horloge du serveur et celle du navigateur, pour des comptes à rebours justes
   const [decalage, setDecalage] = useState(0)

@@ -60,32 +60,47 @@ function Oeil({
   );
 }
 
-/** Flamme noire à volutes blanches, côté gauche ; `miroir` pour le côté droit. */
-function Flammes({ miroir }: { miroir?: boolean }) {
+/** Bois de cerf (côté gauche, le droit en miroir) : un merrain et ses andouillers. */
+const BOIS = [
+  'M94 76 C84 70 74 60 70 46 C66 34 62 24 54 12',
+  'M72 52 C62 50 52 46 44 34',
+  'M54 47 C46 50 38 48 28 40',
+  'M68 40 C70 30 76 22 84 14',
+  'M63 28 C56 27 50 22 46 14',
+  'M84 70 C76 77 64 79 52 74',
+  'M62 77 C55 83 47 84 38 80',
+  'M47 37 C44 30 44 24 47 18',
+].join(' ')
+
+/** Une colonne de flammes noires à volutes blanches, à gauche des épaules (le côté droit en miroir). */
+function ColonneFlammes({ miroir }: { miroir?: boolean }) {
   return (
-    <g transform={miroir ? "translate(200 0) scale(-1 1)" : undefined}>
+    <g transform={miroir ? 'translate(200 0) scale(-1 1)' : undefined}>
       <g className="sm-flammes">
         <path
-          d="M0 280 L0 150 Q14 160 10 176 Q22 166 20 150 Q34 168 26 188 Q40 180 38 166 Q52 190 44 214 Q58 210 56 196 Q66 222 58 250 L62 280 Z"
+          d="M0 280 L0 112 Q9 100 5 84 Q20 94 21 112 Q31 100 27 82 Q42 100 38 122 Q48 116 46 102 Q60 126 50 150 Q58 148 58 138 Q66 160 54 182 L56 280 Z"
           fill={NOIR}
         />
         {[
-          [10, 200, 5],
-          [26, 222, 6],
-          [12, 244, 7],
-          [40, 252, 6],
-          [24, 268, 5],
+          [9, 140, 5],
+          [24, 152, 6.5],
+          [11, 172, 7],
+          [32, 182, 5],
+          [17, 200, 6],
+          [40, 212, 6.5],
+          [10, 228, 7],
+          [28, 242, 6],
+          [46, 252, 5],
+          [14, 262, 5.5],
         ].map(([x, y, r], i) => (
           <circle key={i} cx={x} cy={y} r={r} fill={PAPIER} />
         ))}
+        {/* Coulures blanches entre les volutes */}
+        <path d="M36 196 Q40 206 36 214 Q32 206 36 196 Z M20 214 Q24 226 20 234 Q16 226 20 214 Z" fill={PAPIER} />
       </g>
     </g>
-  );
+  )
 }
-
-/** Bois de cerf (côté gauche, le droit en miroir). */
-const BOIS =
-  "M94 76 Q80 66 70 46 Q64 34 66 18 M70 46 Q58 44 48 36 M76 58 Q62 60 52 56 M66 30 Q56 26 52 14 M84 70 Q72 76 60 74 M70 46 Q76 34 76 24";
 
 /** Une chaîne : maillons blancs cerclés de noir. */
 function Chaine({
@@ -143,69 +158,57 @@ function Chaine({
 const ROUGE = "#e0261b";
 
 const SCENES: Record<string, ReactNode> = {
-  // Le Roi écarlate : bois de cerf, couronne au losange rouge, sept yeux, enchaîné au milieu des flammes
-  "entite:scarlet-king": (
+  // Le Roi écarlate : bois de cerf, couronne au losange rouge, sept yeux, épaules en plaques,
+  // colonnes de flammes à volutes, chaînes qui se brisent dans la cinématique
+  'entite:scarlet-king': (
     <>
       <rect width="200" height="280" fill={PAPIER} />
-      <Flammes />
-      <Flammes miroir />
-      <g
-        className="sm-bois"
-        stroke={NOIR}
-        strokeWidth="4.5"
-        strokeLinecap="round"
-        fill="none"
-      >
+      <ColonneFlammes />
+      <ColonneFlammes miroir />
+      <g className="sm-bois" stroke={NOIR} strokeWidth="4.2" strokeLinecap="round" fill="none">
         <path d={BOIS} />
         <path d={BOIS} transform="translate(200 0) scale(-1 1)" />
       </g>
       <g className="sm-roi">
         <path
-          d="M100 90 Q90 92 88 104 Q66 108 54 128 Q50 150 56 170 Q50 200 58 280 L142 280 Q150 200 144 170 Q150 150 146 128 Q134 108 112 104 Q110 92 100 90 Z"
+          d="M100 92 Q91 94 89 104 Q70 108 58 122 Q50 134 52 150 Q46 170 50 190 Q47 232 54 280 L146 280 Q153 232 150 190 Q154 170 148 150 Q150 134 142 122 Q130 108 111 104 Q109 94 100 92 Z"
           fill={NOIR}
         />
-        <circle cx="100" cy="80" r="13" fill={NOIR} />
-        <path
-          d="M91 92 L93 96 L95 92 L97 96 L99 92 L101 96 L103 92 L105 96 L107 92 L109 96"
-          stroke={PAPIER}
-          strokeWidth="1.2"
-          fill="none"
-        />
-        {/* Plumes blanches sur les épaules et la poitrine */}
-        <g stroke={PAPIER} strokeWidth="1.3" fill="none">
-          <path d="M60 134 Q72 128 82 136" />
-          <path d="M58 152 Q70 146 80 154" />
-          <path d="M140 134 Q128 128 118 136" />
-          <path d="M142 152 Q130 146 120 154" />
-          <path d="M70 196 Q80 206 90 196 Q100 206 110 196 Q120 206 130 196" />
+        <circle cx="100" cy="80" r="13.5" fill={NOIR} />
+        {/* Col dentelé */}
+        <path d="M89 93 L91.5 99 L94 93 L96.5 100 L99 93 L101.5 100 L104 93 L106.5 99 L109 93" stroke={PAPIER} strokeWidth="1.3" fill="none" strokeLinejoin="round" />
+        {/* Plumes des épaules et plaques du torse, liserées de blanc */}
+        <g stroke={PAPIER} strokeWidth="1.2" fill="none" strokeLinecap="round">
+          <path d="M60 128 Q70 120 82 126" />
+          <path d="M56 142 Q67 134 80 141" />
+          <path d="M55 158 Q66 150 78 157" />
+          <path d="M140 128 Q130 120 118 126" />
+          <path d="M144 142 Q133 134 120 141" />
+          <path d="M145 158 Q134 150 122 157" />
+          <path d="M58 200 Q66 214 78 204 Q88 218 100 206 Q112 218 122 204 Q134 214 142 200" />
+          <path d="M64 218 Q72 232 84 222 Q92 236 100 224 Q108 236 116 222 Q128 232 136 218" />
+          <path d="M70 236 L78 246 L86 238 M100 240 L106 250 L114 240 M122 236 L128 246" />
         </g>
       </g>
       <g className="sm-couronne">
-        <path
-          d="M86 70 L88 50 L93 62 L100 30 L107 62 L112 50 L114 70 Z"
-          fill={NOIR}
-        />
-        <path
-          className="sm-gemme"
-          d="M100 54 L103.5 61 L100 68 L96.5 61 Z"
-          fill={ROUGE}
-        />
+        <path d="M86 70 L88 54 L92 61 L95 48 L100 20 L105 48 L108 61 L112 54 L114 70 Z" fill={NOIR} />
+        <path className="sm-gemme" d="M100 54 L103.5 61 L100 68 L96.5 61 Z" fill={ROUGE} />
       </g>
       {[
-        [94, 118, 1, -20],
-        [110, 124, 0.75, 10],
-        [98, 136, 1.05, -10],
-        [88, 152, 0.95, 0],
-        [108, 158, 1, -15],
-        [96, 174, 0.9, 10],
-        [112, 184, 0.6, 0],
+        [94, 116, 1, -20],
+        [110, 121, 0.75, 10],
+        [98, 133, 1.1, -10],
+        [87, 149, 1, 0],
+        [108, 155, 1.05, -15],
+        [95, 172, 0.95, 10],
+        [111, 183, 0.6, 0],
       ].map(([x, y, t, r], i) => (
         <Oeil key={i} x={x} y={y} t={t} r={r} i={i} accent={ROUGE} />
       ))}
       <g className="sm-chaines">
-        <Chaine x1={52} y1={222} x2={150} y2={262} i={0} />
-        <Chaine x1={150} y1={214} x2={60} y2={272} i={1} />
-        <Chaine x1={70} y1={282} x2={146} y2={238} i={2} />
+        <Chaine x1={50} y1={226} x2={152} y2={262} i={0} />
+        <Chaine x1={152} y1={214} x2={58} y2={274} i={1} />
+        <Chaine x1={66} y1={284} x2={150} y2={236} i={2} />
       </g>
     </>
   ),
