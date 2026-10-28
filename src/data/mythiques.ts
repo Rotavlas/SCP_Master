@@ -21,6 +21,7 @@ const SUNNY = {
   licence: 'CC BY-SA 3.0',
 }
 export const CREDITS_ILLUSTRATIONS: Record<string, { artiste: string; source: string; licence: string }> = {
+  'entite:scarlet-king': SUNNY,
   'dr-clef-s-proposal': SUNNY,
   'fim:alpha-1': SUNNY,
   'perso:the-administrator': SUNNY,

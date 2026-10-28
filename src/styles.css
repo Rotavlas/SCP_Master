@@ -5636,37 +5636,6 @@ button.pseudo:focus-visible .pseudo-nom {
   inset: 3px;
 }
 
-/* Roi écarlate : les chaînes cèdent à la fin de la cinématique, les yeux s'embrasent */
-.sm-anime.sm-entite-scarlet-king .sm-chaine {
-  animation:
-    sm-chaine 0.35s cubic-bezier(0.3, 1.6, 0.5, 1) calc(2.5s + var(--i) * 0.22s) backwards,
-    sm-brise 0.5s cubic-bezier(0.5, 0, 0.9, 0.4) calc(3.9s + var(--i) * 0.08s) forwards;
-}
-
-@keyframes sm-brise {
-  30% {
-    transform: translate(2px, -2px) scale(1.04);
-    opacity: 1;
-  }
-  100% {
-    transform: translateY(40px) rotate(calc(18deg - var(--i) * 18deg)) scale(1.2);
-    opacity: 0;
-  }
-}
-
-.sm-anime.sm-entite-scarlet-king .sm-oeil {
-  animation:
-    sm-ouvre 0.3s ease-out calc(1.7s + var(--i) * 0.2s) backwards,
-    sm-embrase-oeil 0.6s ease-out 3.9s;
-}
-
-@keyframes sm-embrase-oeil {
-  40% {
-    filter: drop-shadow(0 0 4px #ff2a1a) brightness(1.4);
-    transform: scale(1.25);
-  }
-}
-
 /* Reflet des Légendaires : doré et discret, pour ne pas délaver l'image ; l'arc-en-ciel reste à la variante holographique */
 .carte-legendaire .carte-holo {
   opacity: 0.16;
@@ -5686,172 +5655,6 @@ button.pseudo:focus-visible .pseudo-nom {
     repeating-linear-gradient(115deg, #ff6b6b 0%, #ffd93d 8%, #6bff95 16%, #4dd2ff 24%, #b36bff 32%, #ff6b6b 40%);
   background-size: 100% 100%, 300% 300%;
   background-position: center, var(--mx) var(--my);
-}
-
-/* ---------- Scènes d'après SunnyClockwork : Gate Guardian, Alpha-1, Administrator, O5-1 ---------- */
-@keyframes sm-descend {
-  from {
-    opacity: 0;
-    transform: translateY(-34px);
-  }
-}
-
-@keyframes sm-plante {
-  0% {
-    opacity: 0;
-    transform: translateY(-90px);
-  }
-  70% {
-    opacity: 1;
-    transform: translateY(4px);
-  }
-}
-
-@keyframes sm-brille {
-  50% {
-    opacity: 0.25;
-    transform: scale(0.6);
-  }
-}
-
-/* Gate Guardian */
-.sm-dr-clef-s-proposal .sm-flammes-gg {
-  transform-origin: bottom center;
-  animation: sm-flamme 1s ease-in-out infinite alternate;
-}
-
-.sm-dr-clef-s-proposal .sm-reflet,
-.sm-dr-clef-s-proposal .sm-oeil-gg circle {
-  animation: sm-brille 1.8s ease-in-out infinite;
-}
-
-.sm-anime.sm-dr-clef-s-proposal .sm-gardien-gg {
-  animation: sm-monte 1.1s ease-out backwards;
-}
-
-.sm-anime.sm-dr-clef-s-proposal .sm-flammes-gg {
-  animation:
-    sm-monte 1.2s ease-out 0.3s backwards,
-    sm-flamme 1s ease-in-out 1.5s infinite alternate;
-}
-
-.sm-anime.sm-dr-clef-s-proposal .sm-aile-gg {
-  animation: sm-deploie 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) calc(0.9s + var(--i) * 0.28s) backwards;
-}
-
-.sm-anime.sm-dr-clef-s-proposal .sm-couronne-gg {
-  animation: sm-descend 0.9s cubic-bezier(0.3, 1.4, 0.5, 1) 2.6s backwards;
-}
-
-.sm-anime.sm-dr-clef-s-proposal .sm-oeil-gg {
-  animation: sm-ouvre 0.35s ease-out 3.1s backwards;
-}
-
-.sm-anime.sm-dr-clef-s-proposal .sm-epee {
-  animation: sm-plante 0.7s cubic-bezier(0.5, 0, 0.6, 1.4) 3.4s backwards;
-}
-
-/* Alpha-1 */
-.sm-fim-alpha-1 .sm-anneau {
-  stroke-dasharray: 530;
-}
-
-.sm-anime.sm-fim-alpha-1 .sm-anneau {
-  animation: sm-trace-anneau 1.2s ease-out 0.2s backwards;
-}
-
-@keyframes sm-trace-anneau {
-  from {
-    stroke-dashoffset: 530;
-  }
-}
-
-.sm-anime.sm-fim-alpha-1 .sm-lance {
-  animation: sm-lance 0.5s cubic-bezier(0.2, 1.2, 0.4, 1) 1.4s backwards;
-}
-
-@keyframes sm-lance {
-  from {
-    opacity: 0;
-    transform: translate(-50px, 60px);
-  }
-}
-
-/* The Administrator */
-.sm-anime.sm-perso-the-administrator .sm-socle {
-  animation: sm-monte 0.9s ease-out backwards;
-}
-
-.sm-anime.sm-perso-the-administrator .sm-cadran {
-  animation: sm-cadran 1.6s cubic-bezier(0.2, 0.8, 0.3, 1) 0.8s backwards;
-}
-
-@keyframes sm-cadran {
-  from {
-    opacity: 0;
-    transform: rotate(-320deg);
-  }
-}
-
-.sm-anime.sm-perso-the-administrator .sm-sceau-scp {
-  animation: sm-deploie 0.5s ease-out 2.3s backwards;
-}
-
-.sm-anime.sm-perso-the-administrator .sm-butee {
-  animation: sm-apparait 0.3s ease-out 2.7s backwards;
-}
-
-.sm-anime.sm-perso-the-administrator .sm-combine {
-  animation:
-    sm-apparait 0.4s ease-out 0.4s backwards,
-    sm-sonne 0.12s linear 3s 8;
-}
-
-@keyframes sm-sonne {
-  50% {
-    transform: translate(1.5px, -3px) rotate(2deg);
-  }
-}
-
-/* O5-1 */
-.sm-perso-o5-1 .sm-etoile {
-  animation: sm-brille 2.2s ease-in-out infinite;
-}
-
-.sm-perso-o5-1 .sm-lueur-1 {
-  animation: sm-pulse 2.6s ease-in-out infinite;
-}
-
-.sm-perso-o5-1 .sm-vrille {
-  transform-origin: bottom center;
-}
-
-.sm-anime.sm-perso-o5-1 .sm-disque {
-  animation: sm-deploie 0.7s ease-out backwards;
-}
-
-.sm-anime.sm-perso-o5-1 .sm-globe {
-  animation: sm-monte 0.8s ease-out 0.6s backwards;
-}
-
-.sm-anime.sm-perso-o5-1 .sm-vrille {
-  animation: sm-vrille 0.7s cubic-bezier(0.2, 1.3, 0.4, 1) calc(1.4s + var(--i) * 0.3s) backwards;
-}
-
-@keyframes sm-vrille {
-  from {
-    transform: scaleY(0);
-  }
-}
-
-.sm-anime.sm-perso-o5-1 .sm-pointe {
-  animation: sm-deploie 0.35s cubic-bezier(0.3, 1.8, 0.5, 1) calc(2.3s + var(--i) * 0.25s) backwards;
-}
-
-.sm-anime.sm-perso-o5-1 .sm-lueur-1 {
-  animation:
-    sm-apparait 0.6s ease-out 3.2s backwards,
-    sm-pulse 2.6s ease-in-out 3.8s infinite;
 }
 
 /* ---------- Atelier des Mythiques (atelier.html, développement seulement) ---------- */
@@ -5900,202 +5703,182 @@ button.pseudo:focus-visible .pseudo-nom {
   }
 }
 
-/* ---------- Illustrations de SunnyClockwork vectorisées (SceneTracee) ----------
-   Contours tracés (0–2 s), remplissage du reste (1,1–2,5 s), chaque zone prend sa place à son départ (--t),
-   puis les contours s'effacent : l'image finale est exactement le tracé de l'original. */
-.scene-tracee .sm-contours path {
-  stroke-dasharray: 1;
-  opacity: 0;
+/* ---------- Cinématiques des Mythiques (AnimationsMythiques.tsx) ----------
+   Chaque élément porte son animation en ligne ; ces images clés sont communes. */
+.anim-mythique {
+  display: block;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
 }
 
-.sm-anime.scene-tracee .sm-contours path {
-  animation:
-    sm-contour 1.5s ease-out calc(var(--i) * 0.05s) backwards,
-    sm-efface 0.6s ease-in 3.9s backwards;
-  opacity: 0;
+@keyframes am-depuis {
+  from {
+    transform: var(--depuis);
+    opacity: var(--o0, 1);
+  }
 }
 
-@keyframes sm-contour {
+@keyframes am-apparait {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes am-disparait {
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes am-eclat {
+  0% {
+    opacity: 0;
+  }
+  25% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+@keyframes am-glisse {
+  to {
+    transform: var(--vers);
+  }
+}
+
+@keyframes am-ouvre-oeil {
+  to {
+    transform: scaleY(0);
+  }
+}
+
+@keyframes am-trait {
   from {
     stroke-dashoffset: 1;
-    opacity: 1;
-  }
-  to {
-    stroke-dashoffset: 0;
-    opacity: 1;
   }
 }
 
-@keyframes sm-efface {
-  from {
-    opacity: 1;
+@keyframes am-secousse {
+  15% {
+    transform: translate(-1.2%, 0.8%);
   }
-  to {
-    opacity: 0;
+  35% {
+    transform: translate(1%, -0.9%);
   }
-}
-
-.sm-anime.scene-tracee .sm-reste {
-  animation: sm-apparait 1.4s ease-out 1.1s backwards;
-}
-
-.scene-mythique .sm-mvt {
-  transform-box: view-box;
-  animation-duration: 0.9s;
-  animation-fill-mode: backwards;
-  animation-delay: var(--t);
-}
-
-.sm-mvt-descend {
-  animation-name: sm-mvt-descend;
-  animation-timing-function: cubic-bezier(0.3, 1.4, 0.5, 1);
-}
-
-@keyframes sm-mvt-descend {
-  from {
-    opacity: 0;
-    transform: translateY(-14%);
+  55% {
+    transform: translate(-0.7%, 0.5%);
+  }
+  75% {
+    transform: translate(0.4%, -0.3%);
   }
 }
 
-.sm-mvt-deploie {
-  animation-name: sm-mvt-deploie;
-  animation-timing-function: cubic-bezier(0.2, 1.3, 0.4, 1);
-}
-
-@keyframes sm-mvt-deploie {
-  from {
-    opacity: 0;
-    transform: scale(0.1);
-  }
-}
-
-.sm-mvt-monte {
-  animation-name: sm-mvt-monte;
-  animation-timing-function: ease-out;
-}
-
-@keyframes sm-mvt-monte {
-  from {
-    opacity: 0;
-    transform: translateY(30%);
-  }
-}
-
-.sm-mvt-plante {
-  animation-name: sm-mvt-plante;
-  animation-timing-function: cubic-bezier(0.5, 0, 0.6, 1.4);
-  animation-duration: 0.7s;
-}
-
-@keyframes sm-mvt-plante {
-  0% {
-    opacity: 0;
-    transform: translateY(-55%);
-  }
-  70% {
-    opacity: 1;
-    transform: translateY(1.5%);
-  }
-}
-
-.sm-mvt-tourne {
-  animation-name: sm-mvt-tourne;
-  animation-timing-function: cubic-bezier(0.2, 0.8, 0.3, 1);
-  animation-duration: 1.7s;
-}
-
-@keyframes sm-mvt-tourne {
-  from {
-    opacity: 0;
-    transform: rotate(-320deg);
-  }
-}
-
-.sm-mvt-pousse {
-  animation-name: sm-mvt-pousse;
-  animation-timing-function: cubic-bezier(0.2, 1.3, 0.4, 1);
-}
-
-@keyframes sm-mvt-pousse {
-  from {
-    opacity: 0;
-    transform: scale(0.2, 0);
-  }
-}
-
-.sm-mvt-frappe {
-  animation-name: sm-mvt-frappe;
-  animation-timing-function: cubic-bezier(0.5, 0, 0.9, 0.4);
-  animation-duration: 0.4s;
-}
-
-@keyframes sm-mvt-frappe {
-  from {
-    opacity: 0;
-    transform: scale(1.9);
-  }
-}
-
-.sm-mvt-sonne {
-  animation-name: sm-mvt-sonne;
-  animation-timing-function: linear;
-  animation-duration: 1.1s;
-}
-
-@keyframes sm-mvt-sonne {
-  0% {
-    opacity: 0;
-    transform: translateY(-12%);
-  }
-  30% {
-    opacity: 1;
-    transform: none;
-  }
-  40%,
-  60%,
-  80% {
-    transform: translate(0.6%, -1.5%) rotate(1.5deg);
-  }
-  50%,
-  70%,
-  90% {
-    transform: translate(-0.6%, -1.5%) rotate(-1.5deg);
-  }
-}
-
-.atelier-ligne {
-  grid-template-columns: auto minmax(200px, 260px) minmax(160px, 220px) 1fr;
-}
-
-.atelier-original {
-  margin: 0;
+/* Les Auteurs : la page s'écrit d'elle-même et s'adresse au joueur */
+.am-auteurs {
+  position: relative;
+  width: 100%;
+  height: 100%;
   display: grid;
-  gap: 0.3rem;
-  justify-items: center;
+  place-items: center;
+  background: #efe6d2;
+  color: #1c1630;
+  font-family: var(--machine);
+  overflow: hidden;
 }
 
-.atelier-original img {
-  max-width: 100%;
-  max-height: 300px;
-  background: #fff;
+.am-auteurs-page {
+  width: min(88%, 34rem);
+  font-size: clamp(0.85rem, 2.4vw, 1.25rem);
+  line-height: 1.5;
 }
 
-.atelier-original figcaption {
-  font-family: var(--mono);
-  font-size: 0.7rem;
-  color: var(--discret);
-  text-transform: uppercase;
+.am-auteurs-page p {
+  margin: 0 0 0.9em;
 }
 
-/* L'original entier se pose sur la construction quand elle s'achève (4,5 s) : l'image finale est identique au pixel près */
-.sm-anime.scene-tracee .sm-final {
-  opacity: 0;
-  animation: sm-final 0.25s ease-out 4.5s forwards;
+.am-auteurs-page p span {
+  display: inline;
+  background: linear-gradient(90deg, currentColor, currentColor) no-repeat;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  background-size: 100% 100%;
+  animation: am-ecrit calc(var(--n) * 0.045s) steps(var(--n)) var(--t) backwards;
 }
 
-@keyframes sm-final {
-  to {
-    opacity: 1;
+@keyframes am-ecrit {
+  from {
+    background-size: 0% 100%;
   }
+}
+
+.am-auteurs-titre {
+  font-size: 1.4em;
+  animation: am-apparait 0.4s ease-out var(--t) backwards;
+}
+
+.am-auteurs-titre del {
+  text-decoration-thickness: 3px;
+  text-decoration-color: #7b3fe4;
+  animation: am-rature 0.6s ease-out var(--t) backwards;
+}
+
+.am-auteurs-titre ins {
+  text-decoration: none;
+  color: #7b3fe4;
+  font-style: italic;
+  animation: am-apparait 0.8s ease-out calc(var(--t) + 0.8s) backwards;
+}
+
+@keyframes am-rature {
+  from {
+    text-decoration-color: transparent;
+  }
+}
+
+.am-auteurs-fin {
+  font-style: italic;
+  animation: am-apparait 1s ease-out var(--t) backwards;
+}
+
+.am-auteurs-curseur {
+  position: absolute;
+  right: 8%;
+  bottom: 8%;
+  width: 0.6rem;
+  height: 1.3rem;
+  background: #1c1630;
+  animation: pm-clignote 0.9s steps(2) infinite;
+}
+
+/* Cinématique d'une Mythique : pas de terminal, la scène prend toute la place */
+.pm-seul .pm-scene {
+  width: min(82vw, 58vh);
+}
+
+.pm-seul .pm-scene-large {
+  width: min(92vw, 46rem);
+  height: min(80vh, 40rem);
+  aspect-ratio: auto;
+}
+
+.atelier-voir {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: #000;
+}
+
+.atelier-voir-scene {
+  height: min(86vh, 900px);
+  aspect-ratio: 200 / 280;
+}
+
+.atelier-voir-scene:has(.am-auteurs) {
+  aspect-ratio: auto;
+  width: min(92vw, 46rem);
 }

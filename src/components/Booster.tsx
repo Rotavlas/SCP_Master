@@ -9,7 +9,7 @@ import type { Carte as TCarte, Ecran } from '../types'
 import { Carte } from './Carte'
 import { CompteARebours } from './CompteARebours'
 import { Logo } from './Logo'
-import { SceneMythique } from './ScenesMythiques'
+import { AnimationMythique, dureeAnimation } from './AnimationsMythiques'
 
 export interface Tirage {
   id: number
@@ -27,11 +27,8 @@ const valeur = (t: CarteTiree) => t.carte.ra * 10 + (5 - PRESTIGE.indexOf(t.vari
 /** Niveau d'accréditation inscrit sur chaque dossier scellé */
 const NIVEAUX_DOSSIER: Record<string, number> = { standard: 1, scp: 2, contes: 2, personnel: 3, keter: 4, o5: 5 }
 
-/** Durées des cinématiques (ms), en phase avec les animations .pm-* de styles.css */
-const DUREE_PROTOCOLE = 9400
+/** Durée de la cinématique d'une Légendaire (ms), en phase avec .protocole-legendaire */
 const DUREE_PROTOCOLE_LEGENDAIRE = 4600
-/** Moment où la scène d'une Mythique remplace le terminal */
-const DEBUT_SCENE = 3300
 
 let tirageEnCours = false
 
@@ -369,38 +366,33 @@ function indiceLegendaire(c: TCarte): string {
 }
 
 /**
- * La cinématique d'une Légendaire ou d'une Mythique. L'écran s'éteint, la sirène tourne, le terminal
- * demande l'autorisation et donne un indice, sans jamais nommer la carte. Pour une Mythique, sa scène
- * se construit ensuite plein écran (chaînes du Roi écarlate, ailes du Gardien…), puis vient le tampon.
+ * La cinématique d'une Légendaire ou d'une Mythique. Une Légendaire a son terminal : l'écran s'éteint, la sirène
+ * tourne, le terminal donne un indice sans nommer la carte, puis vient le tampon. Une Mythique n'a pas de terminal :
+ * sa propre animation occupe tout l'écran (AnimationsMythiques.tsx), le temps qu'il lui faut, puis le tampon tombe.
  * Un clic ne l'abrège qu'une fois l'essentiel vu.
  */
 export function Protocole({ carte, onFini }: { carte: TCarte; onFini: () => void }) {
+  return carte.ra === 5 ? <ProtocoleMythique carte={carte} onFini={onFini} /> : <ProtocoleLegendaire carte={carte} onFini={onFini} />
+}
+
+function ProtocoleLegendaire({ carte, onFini }: { carte: TCarte; onFini: () => void }) {
   const debut = useRef(Date.now())
-  const mythique = carte.ra === 5
-  const sig = mythique ? signature(carte) : { couleur: RARETES[4].couleur, indice: '' }
-  const [scene, setScene] = useState(false)
   useEffect(() => {
-    const fin = setTimeout(onFini, mythique ? DUREE_PROTOCOLE : DUREE_PROTOCOLE_LEGENDAIRE)
-    const t = mythique ? setTimeout(() => setScene(true), DEBUT_SCENE) : undefined
-    return () => {
-      clearTimeout(fin)
-      clearTimeout(t)
-    }
-  }, [onFini, mythique])
-  const lignes = mythique
-    ? ['> ALERTE : signal de niveau 5', "> Accréditation O5 requise… ACCORDÉE", '> Levée du confinement en cours', `> ${sig.indice}`]
-    : ['> Dossier de niveau 4 : accès restreint', `> Nature : ${indiceLegendaire(carte)}`, '> Ouverture du dossier…']
+    const fin = setTimeout(onFini, DUREE_PROTOCOLE_LEGENDAIRE)
+    return () => clearTimeout(fin)
+  }, [onFini])
+  const lignes = ['> Dossier de niveau 4 : accès restreint', `> Nature : ${indiceLegendaire(carte)}`, '> Ouverture du dossier…']
   return (
     <div
-      className={`protocole-mythique ${mythique ? '' : 'protocole-legendaire'} ${scene ? 'avec-scene' : ''}`}
-      style={{ ['--sig' as string]: sig.couleur }}
-      onClick={() => Date.now() - debut.current > (mythique ? 6000 : 2500) && onFini()}
+      className="protocole-mythique protocole-legendaire"
+      style={{ ['--sig' as string]: RARETES[4].couleur }}
+      onClick={() => Date.now() - debut.current > 2500 && onFini()}
       role="alert"
-      aria-label={`Carte ${mythique ? 'mythique' : 'légendaire'}`}
+      aria-label="Carte légendaire"
     >
       <div className="pm-sirene" aria-hidden="true" />
       <div className="pm-bandeau" aria-hidden="true">
-        <span>{(mythique ? 'BRÈCHE · ACCÈS NIVEAU 5 · CONSEIL O5 · ' : 'ACCÈS NIVEAU 4 · DOSSIER LÉGENDAIRE · ').repeat(6)}</span>
+        <span>{'ACCÈS NIVEAU 4 · DOSSIER LÉGENDAIRE · '.repeat(6)}</span>
       </div>
       <div className="pm-terminal">
         {lignes.map((l, i) => (
@@ -409,13 +401,48 @@ export function Protocole({ carte, onFini }: { carte: TCarte; onFini: () => void
           </p>
         ))}
       </div>
+      <div className="pm-tampon">Légendaire</div>
+      <div className="pm-flash" aria-hidden="true" />
+    </div>
+  )
+}
+
+/** Temps de noir avant la scène d'une Mythique, puis marges du tampon et de l'éclair (s) */
+const NOIR_AVANT_SCENE = 0.5
+const APRES_TAMPON = 0.9
+const APRES_ECLAIR = 0.5
+
+function ProtocoleMythique({ carte, onFini }: { carte: TCarte; onFini: () => void }) {
+  const debut = useRef(Date.now())
+  const duree = dureeAnimation(carte.id)
+  const tampon = NOIR_AVANT_SCENE + duree
+  const [scene, setScene] = useState(false)
+  useEffect(() => {
+    const t = setTimeout(() => setScene(true), NOIR_AVANT_SCENE * 1000)
+    const fin = setTimeout(onFini, (tampon + APRES_TAMPON + APRES_ECLAIR) * 1000)
+    return () => {
+      clearTimeout(t)
+      clearTimeout(fin)
+    }
+  }, [onFini, tampon])
+  const large = carte.id === 'perso:les-auteurs'
+  return (
+    <div
+      className="protocole-mythique pm-seul"
+      style={{ ['--sig' as string]: signature(carte).couleur }}
+      onClick={() => Date.now() - debut.current > tampon * 700 && onFini()}
+      role="alert"
+      aria-label="Carte mythique"
+    >
       {scene && (
-        <div className="pm-scene">
-          <SceneMythique id={carte.id} anime />
+        <div className={`pm-scene ${large ? 'pm-scene-large' : ''}`}>
+          <AnimationMythique id={carte.id} />
         </div>
       )}
-      <div className="pm-tampon">{mythique ? 'Mythique' : 'Légendaire'}</div>
-      <div className="pm-flash" aria-hidden="true" />
+      <div className="pm-tampon" style={{ animationDelay: `${tampon}s` }}>
+        Mythique
+      </div>
+      <div className="pm-flash" style={{ animationDelay: `${tampon + APRES_TAMPON}s` }} aria-hidden="true" />
     </div>
   )
 }

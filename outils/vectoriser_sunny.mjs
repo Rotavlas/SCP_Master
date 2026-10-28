@@ -14,6 +14,8 @@ const racine = fileURLToPath(new URL('..', import.meta.url))
  * `fond` : couleur autour de l'image dans le cadre de la carte, quand ses proportions diffèrent.
  */
 const SOURCES = [
+  // scarlet-king.png : l'illustration du tarot « IV - The Emperor », recadrée sans son cadre ni son titre
+  { id: 'entite:scarlet-king', fichier: 'scarlet-king.png', niveaux: 1, fond: '#ffffff' },
   { id: 'dr-clef-s-proposal', fichier: 'gate-guardian.png', niveaux: 1, fond: '#ffffff' },
   { id: 'fim:alpha-1', fichier: 'alpha-1.png', niveaux: 1, fond: '#ffffff' },
   { id: 'perso:o5-1', fichier: 'o5-1.png', niveaux: 1, fond: '#ffffff' },
@@ -85,6 +87,8 @@ for (const s of SOURCES) {
     hauteur: Number(h),
     fond: s.fond,
     pieces: pieces.map((p) => ({ d: [p.d, ...p.trous].join(' '), o: p.opacite, c: [Math.round((p.x0 + p.x1) / 2), Math.round((p.y0 + p.y1) / 2)] })),
+    // Les contours extérieurs seuls, sans les trous : de quoi limiter un effet à l'encre du dessin
+    silhouette: pieces.map((p) => p.d).join(' '),
   }
   console.log(`${s.id} : ${pieces.length} formes, ${couches.length} niveau(x)`)
 }

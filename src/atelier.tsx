@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Protocole } from './components/Booster'
 import { Carte } from './components/Carte'
+import { AnimationMythique } from './components/AnimationsMythiques'
 import { SceneMythique } from './components/ScenesMythiques'
 import { chargerBase, type Base } from './data/catalogue'
 import { CREDITS_ILLUSTRATIONS, SIGNATURES } from './data/mythiques'
@@ -15,6 +16,7 @@ import './styles.css'
 
 // Les originaux de SunnyClockwork (public/sunny/), pour comparer avec la fin de l'animation
 const ORIGINAUX: Record<string, string> = {
+  'entite:scarlet-king': 'scarlet-king.png',
   'dr-clef-s-proposal': 'gate-guardian.png',
   'fim:alpha-1': 'alpha-1.png',
   'perso:o5-1': 'o5-1.png',
@@ -23,7 +25,24 @@ const ORIGINAUX: Record<string, string> = {
 
 const LEGENDAIRES = ['scp-173', 'scp-2521', 'site:site-19', 'fim:epsilon-11', 'dept:ethics-committee', 'fim:r-sh-1']
 
+/** atelier.html?voir=<id> : une seule cinématique, en grand, rejouable */
+function Voir({ id }: { id: string }) {
+  const [n, setN] = useState(0)
+  return (
+    <main className="atelier-voir">
+      <div className="atelier-voir-scene">
+        <AnimationMythique key={n} id={id} />
+      </div>
+      <button className="btn btn-principal" onClick={() => setN(n + 1)}>
+        Rejouer
+      </button>
+    </main>
+  )
+}
+
 function Atelier({ base }: { base: Base }) {
+  const voir = new URLSearchParams(location.search).get('voir')
+  if (voir) return <Voir id={voir} />
   const mythiques = Object.keys(SIGNATURES)
     .map((id) => base.parId.get(id))
     .filter((c): c is TCarte => !!c)
@@ -42,9 +61,7 @@ function Atelier({ base }: { base: Base }) {
         return (
           <section key={c.id} className="atelier-ligne" style={{ ['--sig' as string]: SIGNATURES[c.id].couleur }}>
             <Carte carte={c} base={base} taille="g" />
-            <div className="atelier-scene">
-              <SceneMythique key={rejeu[c.id] ?? 0} id={c.id} anime={!!rejeu[c.id]} />
-            </div>
+            <div className="atelier-scene">{rejeu[c.id] ? <AnimationMythique key={rejeu[c.id]} id={c.id} /> : <SceneMythique id={c.id} />}</div>
             {ORIGINAUX[c.id] && (
               <figure className="atelier-original">
                 <img src={`/sunny/${ORIGINAUX[c.id]}`} alt={`Original de SunnyClockwork : ${c.nm}`} />
