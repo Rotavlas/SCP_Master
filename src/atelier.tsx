@@ -22,6 +22,7 @@ const ORIGINAUX: Record<string, string> = {
   'perso:o5-1': 'sunny/o5-1.png',
   'perso:the-administrator': 'sunny/administrateur.png',
   'perso:aaron-siegel': 'photos/aaron-siegel.png',
+  'scp-2747': 'sunny/anafabula.png',
 }
 
 const LEGENDAIRES = ['scp-173', 'scp-2521', 'site:site-19', 'fim:epsilon-11', 'dept:ethics-committee', 'fim:r-sh-1']

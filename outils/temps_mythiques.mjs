@@ -270,6 +270,38 @@ const CARTES = [
     ],
   },
   {
+    // SCP-2747, l'anafabula (« Lady in Thorns ») : sur une page de texte, les flèches noires jaillissent du sol, la
+    // dame apparaît, ses ronces poussent et se ramifient, la couronne se pose ; puis la page est effacée
+    nom: 'anafabula',
+    source: 'outils/sunny/anafabula.png',
+    interieurSombre: false,
+    details: 0.4,
+    papier: { t0: 7.4, vitesse: 900, classe: 4 },
+    phases: [
+      {
+        type: 'encre',
+        classe: 1,
+        // Les flèches, sans les ronces qui les surplombent (x 130 à 640, jusqu'à y 570)
+        region: [rect(0, 290, 130, 1063), rect(640, 320, 752, 1063), rect(0, 570, 752, 1063)],
+        sauf: [rect(300, 395, 470, 780)],
+        graines: [
+          [60, 1062, 0.6],
+          [190, 1062, 0.8],
+          [290, 1062, 1.0],
+          [480, 1062, 0.95],
+          [570, 1062, 0.7],
+          [700, 1062, 0.9],
+        ],
+        vitesse: 700,
+        remplissage: 0.9,
+        finir: 2.7,
+      },
+      { type: 'encre', classe: 0, region: [rect(300, 395, 470, 780)], graines: [[380, 470, 2.9]], vitesse: 260, remplissage: 0.8, saut: 0.5, finir: 4.0 },
+      { type: 'encre', classe: 3, region: [rect(345, 345, 415, 398)], graines: [[380, 394, 6.2]], vitesse: 140, saut: 0.8 },
+      { type: 'encre', classe: 2, region: [rect(90, 0, 680, 620)], voisins: true, t0: 4.0, vitesse: 230, remplissage: 0.9, finir: 6.1 },
+    ],
+  },
+  {
     nom: 'aaron-siegel',
     // La photo préparée (yeux caviardés) : npm run illustrations d'abord
     source: 'public/photos/aaron-siegel.png',

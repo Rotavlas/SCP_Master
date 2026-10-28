@@ -326,7 +326,39 @@ const SIEGEL: SceneImmersive = {
   ),
 }
 
+// ---------- SCP-2747, l'anafabula ----------
+// Une page de récit. Des flèches noires en jaillissent, une dame couronnée apparaît, ses ronces poussent et se
+// ramifient sur le texte… puis la page est effacée : il ne reste qu'elle. Tout récit qui la contient cesse d'exister.
+const ANAFABULA: SceneImmersive = {
+  nom: 'anafabula',
+  image: 'sunny/anafabula.png',
+  retour: 8.6,
+  fond: { mode: 6, c1: '#ece4d2', c2: '#2a2420' },
+  classes: [
+    { couleur: '#9b1c1c', tau: 0.3 },
+    { couleur: '#5a1212', tau: 0.25 },
+    { couleur: '#b3261e', tau: 0.3 },
+    { couleur: '#d4a017', tau: 0.6 },
+    { couleur: '#ffffff', tau: 0.2, eclat: 0 },
+  ],
+  camera: [
+    [0, 376, 920, 1.9],
+    [2.4, 376, 760, 1.35],
+    [3.0, 382, 470, 2.4],
+    [4.2, 380, 420, 1.7],
+    [5.8, 376, 330, 1.1],
+    [6.3, 380, 380, 2.2],
+    [6.9, 380, 380, 2.0],
+    [7.6, 376, 531, 1],
+  ],
+  secousses: [
+    [0.7, 5],
+    [1.0, 4],
+  ],
+}
+
 const SCENES: Record<string, SceneImmersive> = {
+  'scp-2747': ANAFABULA,
   'entite:scarlet-king': ROI,
   'dr-clef-s-proposal': GARDIEN,
   'fim:alpha-1': MAIN_ROUGE,

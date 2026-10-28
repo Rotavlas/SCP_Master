@@ -19,7 +19,15 @@ export function SceneMythique({ id, anime = false }: { id: string; anime?: boole
 }
 
 /** Les Mythiques illustrées par une image : SunnyClockwork, ou une photo (voir outils/illustrations_mythiques.mjs) */
-export const SUNNY = new Set(['entite:scarlet-king', 'dr-clef-s-proposal', 'fim:alpha-1', 'perso:o5-1', 'perso:the-administrator', 'perso:aaron-siegel'])
+export const SUNNY = new Set([
+  'entite:scarlet-king',
+  'dr-clef-s-proposal',
+  'fim:alpha-1',
+  'perso:o5-1',
+  'perso:the-administrator',
+  'perso:aaron-siegel',
+  'scp-2747',
+])
 
 export const aUneScene = (id: string) => id in SCENES || SUNNY.has(id)
 
@@ -242,6 +250,23 @@ const VIVANTS: Record<string, (u: string) => ReactNode> = {
         />
       </g>
       <circle cx="440" cy="474" r="46" fill="#2f80ed" className="sv-produit sv-battement" />
+    </>
+  ),
+
+  // SCP-2747 : le cœur de la dame luit, la couronne brille, une ronce frémit
+  'scp-2747': (u) => (
+    <>
+      <defs>
+        <Lueur id={`${u}-rouge`} couleur="#b3261e" />
+        <Lueur id={`${u}-or`} couleur="#f2c14e" />
+      </defs>
+      <g className="sv-ecran">
+        <circle cx="381" cy="570" r="60" fill={`url(#${u}-rouge)`} className="sv-battement" />
+        <circle cx="380" cy="375" r="34" fill={`url(#${u}-or)`} className="sv-eclair" />
+      </g>
+      <g className="sv-produit">
+        <circle cx="376" cy="300" r="320" fill={`url(#${u}-rouge)`} className="sv-respire" />
+      </g>
     </>
   ),
 

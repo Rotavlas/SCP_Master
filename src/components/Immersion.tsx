@@ -34,7 +34,7 @@ export interface SceneImmersive {
   image: string
   /** Début du retour dans la carte (il dure RETOUR s) */
   retour: number
-  /** Décor derrière l'illustration : 0 nuit, 1 brasier, 2 porte, 3 mur, 4 papier, 5 cuve de révélateur */
+  /** Décor derrière l'illustration : 0 nuit, 1 brasier, 2 porte, 3 mur, 4 papier, 5 cuve de révélateur, 6 page écrite */
   fond: { mode: number; c1: string; c2: string }
   classes: Classe[]
   /** Caméra : [instant, x, y, zoom] (coordonnées de l'image ; zoom 1 : l'image entière à l'écran) */
@@ -168,6 +168,17 @@ vec3 fond(vec2 p) {
   if (u_fond == 4) {
     // Papier ancien, taché
     return u_c1 * (0.9 + fbm(p * 0.008) * 0.14) - vec3(hash(floor(p)) * 0.03);
+  }
+  if (u_fond == 6) {
+    // Une page de récit : des lignes de mots (u_c2) sur un papier (u_c1)
+    vec3 c = u_c1 * (0.93 + fbm(p * 0.008) * 0.1);
+    float rang = floor(p.y / 30.0);
+    float y = mod(p.y, 30.0);
+    float decalage = hash(vec2(rang, 3.0)) * 40.0;
+    float mot = floor((p.x + decalage) / 26.0);
+    float lettre = step(4.0, mod(p.x + decalage, 26.0)) * step(0.22, hash(vec2(mot, rang)));
+    float encre = step(13.0, y) * step(y, 19.0) * lettre * step(30.0, p.x) * step(p.x, u_taille.x - 30.0);
+    return mix(c, u_c2, encre * 0.6);
   }
   if (u_fond == 5) {
     // Le révélateur dans la cuve, sous la lampe inactinique
