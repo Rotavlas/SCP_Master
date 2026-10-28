@@ -12,6 +12,7 @@ import {
 } from '../state/sauvegarde'
 import { recycler } from '../state/actions'
 import { useCarteAffichee } from '../state/traduction'
+import { CREDITS_ILLUSTRATIONS } from '../data/mythiques'
 import type { Carte as TCarte } from '../types'
 import { Carte } from './Carte'
 import { MarcheCarte } from './MarcheCarte'
@@ -185,6 +186,16 @@ export function CarteDetail({ carte: source, base, onFermer, voirMarche }: { car
             <br />
             {carte.a ? `« ${carte.num ?? carte.nm} » par ${carte.a}, ` : `Extrait de la page « ${carte.u ?? carte.id} », `}
             SCP Wiki, licence CC BY-SA 3.0{carte.vf ? ' ; traduction de la branche française de la Fondation SCP' : ''}.
+            {CREDITS_ILLUSTRATIONS[carte.id] && (
+              <>
+                <br />
+                Illustration redessinée d'après{' '}
+                <a href={CREDITS_ILLUSTRATIONS[carte.id].source} target="_blank" rel="noreferrer">
+                  {CREDITS_ILLUSTRATIONS[carte.id].artiste}
+                </a>
+                , licence {CREDITS_ILLUSTRATIONS[carte.id].licence}.
+              </>
+            )}
           </p>
         </div>
       </div>

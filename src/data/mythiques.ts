@@ -14,4 +14,17 @@ export const SIGNATURES: Record<string, { couleur: string; indice: string }> = {
   'perso:les-auteurs': { couleur: '#7b3fe4', indice: "Quelqu'un, au-dessus, écrit cette phrase." },
 }
 
+/** Les illustrations redessinées d'après une œuvre du wiki : son auteur, sa source et sa licence. */
+const SUNNY = {
+  artiste: 'SunnyClockwork',
+  source: 'https://scp-wiki.wikidot.com/sunny-art-tales',
+  licence: 'CC BY-SA 3.0',
+}
+export const CREDITS_ILLUSTRATIONS: Record<string, { artiste: string; source: string; licence: string }> = {
+  'dr-clef-s-proposal': SUNNY,
+  'fim:alpha-1': SUNNY,
+  'perso:the-administrator': SUNNY,
+  'perso:o5-1': SUNNY,
+}
+
 export const signature = (carte: Carte) => SIGNATURES[carte.id] ?? { couleur: '#ff3b5c', indice: 'Dossier de niveau 5.' }

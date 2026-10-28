@@ -5687,3 +5687,215 @@ button.pseudo:focus-visible .pseudo-nom {
   background-size: 100% 100%, 300% 300%;
   background-position: center, var(--mx) var(--my);
 }
+
+/* ---------- Scènes d'après SunnyClockwork : Gate Guardian, Alpha-1, Administrator, O5-1 ---------- */
+@keyframes sm-descend {
+  from {
+    opacity: 0;
+    transform: translateY(-34px);
+  }
+}
+
+@keyframes sm-plante {
+  0% {
+    opacity: 0;
+    transform: translateY(-90px);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(4px);
+  }
+}
+
+@keyframes sm-brille {
+  50% {
+    opacity: 0.25;
+    transform: scale(0.6);
+  }
+}
+
+/* Gate Guardian */
+.sm-dr-clef-s-proposal .sm-flammes-gg {
+  transform-origin: bottom center;
+  animation: sm-flamme 1s ease-in-out infinite alternate;
+}
+
+.sm-dr-clef-s-proposal .sm-reflet,
+.sm-dr-clef-s-proposal .sm-oeil-gg circle {
+  animation: sm-brille 1.8s ease-in-out infinite;
+}
+
+.sm-anime.sm-dr-clef-s-proposal .sm-gardien-gg {
+  animation: sm-monte 1.1s ease-out backwards;
+}
+
+.sm-anime.sm-dr-clef-s-proposal .sm-flammes-gg {
+  animation:
+    sm-monte 1.2s ease-out 0.3s backwards,
+    sm-flamme 1s ease-in-out 1.5s infinite alternate;
+}
+
+.sm-anime.sm-dr-clef-s-proposal .sm-aile-gg {
+  animation: sm-deploie 0.6s cubic-bezier(0.2, 1.4, 0.4, 1) calc(0.9s + var(--i) * 0.28s) backwards;
+}
+
+.sm-anime.sm-dr-clef-s-proposal .sm-couronne-gg {
+  animation: sm-descend 0.9s cubic-bezier(0.3, 1.4, 0.5, 1) 2.6s backwards;
+}
+
+.sm-anime.sm-dr-clef-s-proposal .sm-oeil-gg {
+  animation: sm-ouvre 0.35s ease-out 3.1s backwards;
+}
+
+.sm-anime.sm-dr-clef-s-proposal .sm-epee {
+  animation: sm-plante 0.7s cubic-bezier(0.5, 0, 0.6, 1.4) 3.4s backwards;
+}
+
+/* Alpha-1 */
+.sm-fim-alpha-1 .sm-anneau {
+  stroke-dasharray: 530;
+}
+
+.sm-anime.sm-fim-alpha-1 .sm-anneau {
+  animation: sm-trace-anneau 1.2s ease-out 0.2s backwards;
+}
+
+@keyframes sm-trace-anneau {
+  from {
+    stroke-dashoffset: 530;
+  }
+}
+
+.sm-anime.sm-fim-alpha-1 .sm-lance {
+  animation: sm-lance 0.5s cubic-bezier(0.2, 1.2, 0.4, 1) 1.4s backwards;
+}
+
+@keyframes sm-lance {
+  from {
+    opacity: 0;
+    transform: translate(-50px, 60px);
+  }
+}
+
+/* The Administrator */
+.sm-anime.sm-perso-the-administrator .sm-socle {
+  animation: sm-monte 0.9s ease-out backwards;
+}
+
+.sm-anime.sm-perso-the-administrator .sm-cadran {
+  animation: sm-cadran 1.6s cubic-bezier(0.2, 0.8, 0.3, 1) 0.8s backwards;
+}
+
+@keyframes sm-cadran {
+  from {
+    opacity: 0;
+    transform: rotate(-320deg);
+  }
+}
+
+.sm-anime.sm-perso-the-administrator .sm-sceau-scp {
+  animation: sm-deploie 0.5s ease-out 2.3s backwards;
+}
+
+.sm-anime.sm-perso-the-administrator .sm-butee {
+  animation: sm-apparait 0.3s ease-out 2.7s backwards;
+}
+
+.sm-anime.sm-perso-the-administrator .sm-combine {
+  animation:
+    sm-apparait 0.4s ease-out 0.4s backwards,
+    sm-sonne 0.12s linear 3s 8;
+}
+
+@keyframes sm-sonne {
+  50% {
+    transform: translate(1.5px, -3px) rotate(2deg);
+  }
+}
+
+/* O5-1 */
+.sm-perso-o5-1 .sm-etoile {
+  animation: sm-brille 2.2s ease-in-out infinite;
+}
+
+.sm-perso-o5-1 .sm-lueur-1 {
+  animation: sm-pulse 2.6s ease-in-out infinite;
+}
+
+.sm-perso-o5-1 .sm-vrille {
+  transform-origin: bottom center;
+}
+
+.sm-anime.sm-perso-o5-1 .sm-disque {
+  animation: sm-deploie 0.7s ease-out backwards;
+}
+
+.sm-anime.sm-perso-o5-1 .sm-globe {
+  animation: sm-monte 0.8s ease-out 0.6s backwards;
+}
+
+.sm-anime.sm-perso-o5-1 .sm-vrille {
+  animation: sm-vrille 0.7s cubic-bezier(0.2, 1.3, 0.4, 1) calc(1.4s + var(--i) * 0.3s) backwards;
+}
+
+@keyframes sm-vrille {
+  from {
+    transform: scaleY(0);
+  }
+}
+
+.sm-anime.sm-perso-o5-1 .sm-pointe {
+  animation: sm-deploie 0.35s cubic-bezier(0.3, 1.8, 0.5, 1) calc(2.3s + var(--i) * 0.25s) backwards;
+}
+
+.sm-anime.sm-perso-o5-1 .sm-lueur-1 {
+  animation:
+    sm-apparait 0.6s ease-out 3.2s backwards,
+    sm-pulse 2.6s ease-in-out 3.8s infinite;
+}
+
+/* ---------- Atelier des Mythiques (atelier.html, développement seulement) ---------- */
+.atelier {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 4rem;
+}
+
+.atelier-ligne {
+  display: grid;
+  grid-template-columns: auto minmax(220px, 300px) 1fr;
+  gap: 1.5rem;
+  align-items: center;
+  padding: 1.5rem 0;
+  border-bottom: 1px solid var(--bord);
+}
+
+.atelier-scene {
+  aspect-ratio: 200 / 280;
+  border: 3px solid var(--sig);
+  box-shadow: 0 0 30px color-mix(in srgb, var(--sig) 35%, transparent);
+  overflow: hidden;
+}
+
+.atelier-infos a {
+  color: var(--ambre);
+}
+
+.atelier-legendaires {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.atelier-legendaires > div {
+  display: grid;
+  gap: 0.5rem;
+  justify-items: center;
+}
+
+@media (max-width: 760px) {
+  .atelier-ligne {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+}

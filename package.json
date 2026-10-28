@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "atelier": "vite --open /atelier.html",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "cartes": "python -I outils/construire_cartes.py",

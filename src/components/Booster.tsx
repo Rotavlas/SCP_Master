@@ -374,7 +374,7 @@ function indiceLegendaire(c: TCarte): string {
  * se construit ensuite plein écran (chaînes du Roi écarlate, ailes du Gardien…), puis vient le tampon.
  * Un clic ne l'abrège qu'une fois l'essentiel vu.
  */
-function Protocole({ carte, onFini }: { carte: TCarte; onFini: () => void }) {
+export function Protocole({ carte, onFini }: { carte: TCarte; onFini: () => void }) {
   const debut = useRef(Date.now())
   const mythique = carte.ra === 5
   const sig = mythique ? signature(carte) : { couleur: RARETES[4].couleur, indice: '' }

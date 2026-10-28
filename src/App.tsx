@@ -278,7 +278,12 @@ function Pied({ genere }: { genere: string }) {
       <a href="https://scp-data.tedivm.com" target="_blank" rel="noreferrer">
         scp-data
       </a>{' '}
-      (export du {genere}), redistribué sous la même licence. Jeu de fan non officiel. <a href="/confidentialite.html">Données personnelles</a>
+      (export du {genere}), redistribué sous la même licence. Illustrations des cartes Mythiques redessinées d'après le travail
+      exceptionnel de{' '}
+      <a href="https://scp-wiki.wikidot.com/sunny-art-tales" target="_blank" rel="noreferrer">
+        SunnyClockwork
+      </a>{' '}
+      (CC BY-SA 3.0). Jeu de fan non officiel. <a href="/confidentialite.html">Données personnelles</a>
     </footer>
   )
 }
