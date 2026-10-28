@@ -18,9 +18,16 @@
     "test-duel": "node outils/construire_duel.mjs && node outils/tester_duel.mjs"
   },
   "dependencies": {
+    "@fontsource/caveat": "^5.3.0",
+    "@fontsource/cinzel": "^5.3.0",
+    "@fontsource/cormorant-garamond": "^5.3.0",
     "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/im-fell-english": "^5.3.0",
     "@fontsource/inter": "^5.3.0",
     "@fontsource/special-elite": "^5.3.0",
+    "@fontsource/stardos-stencil": "^5.3.0",
+    "@fontsource/unifrakturmaguntia": "^5.3.0",
+    "@fontsource/vt323": "^5.3.0",
     "@supabase/supabase-js": "^2.118.0",
     "@vercel/analytics": "^1.6.1",
     "react": "^19.2.6",

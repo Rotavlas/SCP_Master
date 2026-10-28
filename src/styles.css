@@ -5837,6 +5837,389 @@ button.pseudo:focus-visible .pseudo-nom {
   }
 }
 
+/* ---------- Préludes des Mythiques (Preludes.tsx) : quelques lignes, lentement, pour faire deviner ---------- */
+.prelude {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  color: var(--couleur);
+  animation: am-disparait 0.8s ease-in var(--fin) forwards;
+}
+
+.pr-texte {
+  position: relative;
+  z-index: 1;
+  width: min(88%, 44rem);
+  display: grid;
+  gap: 1.1em;
+  text-align: center;
+  font-size: calc(clamp(1.15rem, 3.2vw, 2rem) * var(--taille, 1));
+  line-height: 1.35;
+}
+
+.pr-ligne {
+  margin: 0;
+  opacity: 0;
+  text-shadow: 0 0 18px color-mix(in srgb, var(--couleur) 45%, transparent);
+}
+
+/* Chaque ligne arrive, puis recule quand la suivante paraît ; la dernière reste et bat */
+.pr-effet-brume .pr-ligne {
+  animation:
+    pr-brume 1.8s ease-out var(--t) forwards,
+    pr-recule 1s ease var(--t2) forwards;
+}
+
+.pr-effet-brume .pr-derniere {
+  animation:
+    pr-brume 1.8s ease-out var(--t) forwards,
+    pr-bat 1.6s ease-in-out calc(var(--t) + 1.8s) infinite;
+}
+
+@keyframes pr-brume {
+  from {
+    opacity: 0;
+    filter: blur(14px);
+    letter-spacing: 0.35em;
+  }
+  to {
+    opacity: 1;
+    filter: blur(0);
+    letter-spacing: 0.03em;
+  }
+}
+
+@keyframes pr-recule {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0.32;
+  }
+}
+
+@keyframes pr-bat {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.75;
+    transform: scale(1.03);
+  }
+}
+
+/* Un tampon qui frappe la page */
+.pr-effet-tampon .pr-ligne {
+  letter-spacing: 0.08em;
+  animation:
+    pr-tampon 0.45s cubic-bezier(0.5, 0, 0.75, 0) var(--t) forwards,
+    pr-recule 1s ease var(--t2) forwards;
+}
+
+.pr-effet-tampon .pr-derniere {
+  animation:
+    pr-tampon 0.45s cubic-bezier(0.5, 0, 0.75, 0) var(--t) forwards,
+    pr-bat 1.2s ease-in-out calc(var(--t) + 0.5s) infinite;
+}
+
+@keyframes pr-tampon {
+  0% {
+    opacity: 0;
+    transform: scale(1.7) rotate(-2deg);
+  }
+  70% {
+    opacity: 1;
+    transform: scale(0.97) rotate(0.5deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Lettre à lettre, comme un terminal ; sur une seule ligne (la découpe se fait en largeur), assez petite pour tenir */
+.pr-effet-frappe .pr-ligne,
+.pr-effet-plume .pr-ligne {
+  white-space: nowrap;
+  font-size: min(1em, calc(88vw / var(--n) * 2));
+}
+
+.pr-effet-frappe .pr-ligne {
+  text-align: left;
+  clip-path: inset(0 100% 0 0);
+  opacity: 1;
+  animation:
+    pr-frappe calc(var(--n) * 0.055s) steps(var(--n)) var(--t) forwards,
+    pr-recule 1s ease var(--t2) forwards;
+}
+
+.pr-effet-frappe .pr-derniere {
+  animation:
+    pr-frappe calc(var(--n) * 0.055s) steps(var(--n)) var(--t) forwards,
+    pm-clignote 1s steps(2) calc(var(--t) + var(--n) * 0.055s + 0.6s) infinite;
+}
+
+@keyframes pr-frappe {
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+/* À la plume : la ligne s'écrit d'un trait, de gauche à droite */
+.pr-effet-plume .pr-ligne {
+  clip-path: inset(0 100% 0 0);
+  opacity: 1;
+  text-shadow: none;
+  animation:
+    pr-frappe 1.7s cubic-bezier(0.3, 0.1, 0.6, 1) var(--t) forwards,
+    pr-recule 1s ease var(--t2) forwards;
+}
+
+.pr-effet-plume .pr-derniere {
+  animation: pr-frappe 1.7s cubic-bezier(0.3, 0.1, 0.6, 1) var(--t) forwards;
+}
+
+.pr-indice {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Le Roi écarlate : le brasier bat, des braises montent, une chaîne passe */
+.pr-pouls {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 100%, rgba(224, 38, 27, 0.45), transparent 60%);
+  animation: pr-pouls 1.6s ease-in-out infinite;
+}
+
+@keyframes pr-pouls {
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.pr-braise {
+  position: absolute;
+  left: var(--x);
+  bottom: -2%;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: #ff8a1f;
+  box-shadow: 0 0 8px #ff5a1f;
+  opacity: 0;
+  animation: pr-braise 4s ease-out var(--d) infinite;
+}
+
+@keyframes pr-braise {
+  10% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--dx), -70vh);
+  }
+}
+
+.pr-chaine {
+  position: absolute;
+  left: -10%;
+  bottom: 8%;
+  width: 120%;
+  height: 50px;
+  animation: pr-chaine var(--duree) linear both;
+}
+
+@keyframes pr-chaine {
+  from {
+    transform: translateX(-12%) rotate(-3deg);
+  }
+  to {
+    transform: translateX(4%) rotate(-3deg);
+  }
+}
+
+/* Le Gate Guardian : une fente de lumière s'élargit, des plumes tombent */
+.pr-fente {
+  position: absolute;
+  left: 50%;
+  top: 8%;
+  bottom: 8%;
+  width: 3px;
+  translate: -50% 0;
+  background: #fff1cf;
+  box-shadow:
+    0 0 30px 6px rgba(255, 220, 140, 0.55),
+    0 0 120px 30px rgba(255, 200, 100, 0.2);
+  transform-origin: center;
+  animation: pr-fente var(--duree) ease-in both;
+}
+
+@keyframes pr-fente {
+  from {
+    transform: scaleY(0);
+    opacity: 0;
+  }
+  30% {
+    opacity: 0.8;
+  }
+  to {
+    transform: scaleY(1) scaleX(4);
+    opacity: 1;
+  }
+}
+
+.pr-plume {
+  position: absolute;
+  left: var(--x);
+  top: -8%;
+  width: 14px;
+  height: 42px;
+  opacity: 0;
+  animation: pr-plume-tombe 7s ease-in-out var(--d) infinite;
+}
+
+@keyframes pr-plume-tombe {
+  10% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+    transform: translate(40px, 110vh) rotate(var(--r));
+  }
+}
+
+/* Alpha-1 : le viseur se resserre, l'écran est balayé */
+.pr-viseur {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(70vw, 70vh);
+  translate: -50% -50%;
+  opacity: 0.45;
+  animation: pr-viseur var(--duree) cubic-bezier(0.3, 0, 0.2, 1) both;
+}
+
+@keyframes pr-viseur {
+  from {
+    transform: scale(2.4) rotate(-30deg);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+.pr-balayage::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(255, 30, 20, 0.05) 0 2px, transparent 2px 5px);
+  animation: pr-balayage 6s linear infinite;
+}
+
+@keyframes pr-balayage {
+  to {
+    background-position: 0 200px;
+  }
+}
+
+/* L'Administrator : un sceau immense tourne lentement derrière les mots */
+.pr-sceau {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: min(90vw, 90vh);
+  translate: -50% -50%;
+  opacity: 0;
+  animation: pr-sceau var(--duree) ease-out both;
+}
+
+@keyframes pr-sceau {
+  from {
+    opacity: 0;
+    transform: scale(0.8) rotate(-40deg);
+  }
+  to {
+    opacity: 0.13;
+    transform: scale(1.05) rotate(0deg);
+  }
+}
+
+/* O5-1 : le moniteur bat derrière le texte */
+.pr-ecg {
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 100%;
+  height: 30vh;
+  translate: 0 -50%;
+  opacity: 0.35;
+  filter: drop-shadow(0 0 6px #2f80ed);
+}
+
+.pr-ecg polyline {
+  stroke-dasharray: 0.25 1;
+  animation: sv-ecg 2.6s linear infinite;
+}
+
+.pr-lignes-ecran::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(47, 128, 237, 0.06) 0 1px, transparent 1px 4px);
+}
+
+/* Aaron Siegel : un vieux papier, son grain, un tampon de date */
+.pr-grain {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.pr-tampon-date {
+  position: absolute;
+  right: 8%;
+  bottom: 10%;
+  font-size: clamp(3rem, 14vw, 9rem);
+  color: rgba(110, 40, 20, 0.22);
+  rotate: -12deg;
+  animation: am-apparait 3s ease-out 1s backwards;
+}
+
+/* Les Auteurs : des taches d'encre tombent sur la page */
+.pr-tache {
+  position: absolute;
+  left: var(--x);
+  top: var(--y);
+  width: calc(var(--s) * 3rem);
+  aspect-ratio: 1;
+  border-radius: 46% 54% 50% 50% / 55% 45% 55% 45%;
+  background: radial-gradient(circle at 40% 40%, #2a1650, #12082a);
+  opacity: 0;
+  transform: scale(0);
+  animation: pr-tache 0.5s cubic-bezier(0.2, 1.4, 0.4, 1) var(--d) forwards;
+}
+
+@keyframes pr-tache {
+  to {
+    opacity: 0.55;
+    transform: scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pr-indice {
+    display: none;
+  }
+}
+
 /* ---------- Cinématiques immersives (Immersion.tsx) : plein écran, puis retour dans la carte ---------- */
 .pm-seul .pm-scene.pm-scene-plein {
   position: fixed;
@@ -6180,7 +6563,7 @@ button.pseudo:focus-visible .pseudo-nom {
   aspect-ratio: 200 / 280;
 }
 
-.atelier-voir-scene:has(.immersion, .am-auteurs) {
+.atelier-voir-scene:has(.immersion, .am-auteurs, .prelude) {
   position: fixed;
   inset: 0;
   height: auto;

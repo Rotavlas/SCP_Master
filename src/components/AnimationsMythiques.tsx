@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import { useSauvegarde } from '../state/sauvegarde'
 import { Immersion, RETOUR, dureeScene, prechargerScene, type SceneImmersive } from './Immersion'
+import { PRELUDES, PreludeMythique, dureePrelude, prechargerPrelude } from './Preludes'
 import { SceneMythique } from './ScenesMythiques'
 
 /**
@@ -477,18 +478,29 @@ function LesAuteurs() {
 
 // ---------- Les entrées ----------
 
-/** Durée de chaque cinématique (s), avant le tampon « Mythique ». */
-export const dureeAnimation = (id: string) => (id === 'perso:les-auteurs' ? DUREE_AUTEURS : SCENES[id] ? dureeScene(SCENES[id]) : 6)
+/** Durée de chaque cinématique (s), prélude compris, avant le tampon « Mythique ». */
+export const dureeAnimation = (id: string) =>
+  (PRELUDES[id] ? dureePrelude(PRELUDES[id]) : 0) + (id === 'perso:les-auteurs' ? DUREE_AUTEURS : SCENES[id] ? dureeScene(SCENES[id]) : 6)
 
 /** Charge d'avance ce qu'il faut à la cinématique d'une carte. */
 export const prechargerMythique = (id: string) => {
+  prechargerPrelude(id)
   if (SCENES[id]) void prechargerScene(SCENES[id])
 }
 
 /** La cinématique est-elle en plein écran (et non dans le cadre de la carte) ? */
 export const animationPleinEcran = (id: string) => id in SCENES || id === 'perso:les-auteurs'
 
+/** `fige` : la scène arrêtée à cet instant, sans prélude (pour l'atelier). */
 export function AnimationMythique({ id, fige }: { id: string; fige?: number }) {
+  const prelude = fige === undefined ? PRELUDES[id] : undefined
+  const [apresPrelude, setApresPrelude] = useState(!prelude)
+  useEffect(() => {
+    if (!prelude) return
+    const t = setTimeout(() => setApresPrelude(true), dureePrelude(prelude) * 1000)
+    return () => clearTimeout(t)
+  }, [prelude])
+  if (prelude && !apresPrelude) return <PreludeMythique prelude={prelude} />
   if (id === 'perso:les-auteurs') return <LesAuteurs />
   const scene = SCENES[id]
   if (scene) return <Immersion id={id} scene={scene} fige={fige} />

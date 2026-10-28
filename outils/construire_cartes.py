@@ -50,8 +50,9 @@ SEUILS_RARETE = [0.01, 0.05, 0.15, 0.40]
 SEUILS_REFERENCE = [0.04, 0.12, 0.27, 0.55]
 # Icônes de la Fondation, légendaires d'office : leur notoriété vient surtout d'en dehors du wiki
 # (jeux SCP: Containment Breach et Secret Laboratory), que les mentions dans le wiki ne mesurent pas.
-# Rēsh-1, Omega-1 et Beta-1 : choix du créateur du jeu
-ICONES = {"fim:epsilon-11", "gdi:the-chaos-insurgency", "fim:r-sh-1", "fim:omega-1", "fim:beta-1"}
+# Rēsh-1, Omega-1, Beta-1 et la Reine Noire (le groupe et Alison Chao, qui la porte) : choix du créateur du jeu
+ICONES = {"fim:epsilon-11", "gdi:the-chaos-insurgency", "fim:r-sh-1", "fim:omega-1", "fim:beta-1",
+          "gdi:the-black-queen", "perso:alison-chao-aka-the-black-queen"}
 # Épiques d'office (choix du créateur du jeu)
 EPIQUES = {"fim:lambda-5", "fim:tau-5"}
 # Rareté Mythique (5), au-dessus de Légendaire : choisies à la main, hors du classement par popularité
