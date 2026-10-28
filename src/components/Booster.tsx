@@ -1,9 +1,10 @@
-import { useCallback, useEffect, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
 import { RARETES, designation, nomClasse, type Base } from '../data/catalogue'
 import { signature } from '../data/mythiques'
 import { BOOSTERS, type CarteTiree, type TypeBooster } from '../engine/boosters'
 import { PAR_ID, PRESTIGE } from '../engine/variantes'
 import { tirerBooster } from '../state/actions'
+import { useCarteAffichee } from '../state/traduction'
 import { notifier, obtenir, useSauvegarde } from '../state/sauvegarde'
 import type { Carte as TCarte, Ecran } from '../types'
 import { Carte } from './Carte'
@@ -28,7 +29,7 @@ const valeur = (t: CarteTiree) => t.carte.ra * 10 + (5 - PRESTIGE.indexOf(t.vari
 const NIVEAUX_DOSSIER: Record<string, number> = { standard: 1, scp: 2, contes: 2, personnel: 3, keter: 4, o5: 5 }
 
 /** Durée de la cinématique d'une Légendaire (ms), en phase avec .protocole-legendaire */
-const DUREE_PROTOCOLE_LEGENDAIRE = 4600
+const DUREE_PROTOCOLE_LEGENDAIRE = 7900
 
 let tirageEnCours = false
 
@@ -395,18 +396,44 @@ export function Protocole({ carte, onFini }: { carte: TCarte; onFini: () => void
   return carte.ra === 5 ? <ProtocoleMythique carte={carte} onFini={onFini} /> : <ProtocoleLegendaire carte={carte} onFini={onFini} />
 }
 
+/** Instants (s) du protocole d'une Légendaire : les lignes du terminal, l'extrait, son décryptage
+ * (le tampon tombe à 6,2 s et l'éclair à 7,4 s : styles.css, .protocole-legendaire) */
+const L_LIGNES = [0.5, 1.3, 2.1]
+const L_EXTRAIT = 2.9
+const L_DECRYPTAGE = [3.4, 5.6]
+
+/**
+ * Le dossier d'une Légendaire, entrouvert : sa nature, sa date et son auteur, puis un extrait entièrement
+ * caviardé dont la moitié des mots se décryptent un à un. Le nom et le numéro de la carte restent noircis.
+ */
 function ProtocoleLegendaire({ carte, onFini }: { carte: TCarte; onFini: () => void }) {
-  const debut = useRef(Date.now())
+  const affichee = useCarteAffichee(carte)
+  const [t, setT] = useState(0)
   useEffect(() => {
+    const debut = performance.now()
+    let image = 0
+    const suivante = () => {
+      setT((performance.now() - debut) / 1000)
+      image = requestAnimationFrame(suivante)
+    }
+    image = requestAnimationFrame(suivante)
     const fin = setTimeout(onFini, DUREE_PROTOCOLE_LEGENDAIRE)
-    return () => clearTimeout(fin)
+    return () => {
+      cancelAnimationFrame(image)
+      clearTimeout(fin)
+    }
   }, [onFini])
-  const lignes = ['> Dossier de niveau 4 : accès restreint', `> Nature : ${indiceLegendaire(carte)}`, '> Ouverture du dossier…']
+  const lignes = [
+    '> DOSSIER DE NIVEAU 4 : ACCÈS RESTREINT',
+    `> NATURE : ${indiceLegendaire(carte)}`,
+    carte.y ? `> ARCHIVÉ EN ${carte.y}${carte.a ? ` PAR ${carte.a}` : ''}` : '> ORIGINE : [DONNÉES SUPPRIMÉES]',
+  ]
+  const extrait = useMemo(() => extraitCaviarde(affichee), [affichee])
   return (
     <div
       className="protocole-mythique protocole-legendaire"
       style={{ ['--sig' as string]: RARETES[4].couleur }}
-      onClick={() => Date.now() - debut.current > 2500 && onFini()}
+      onClick={() => t > 3.5 && onFini()}
       role="alert"
       aria-label="Carte légendaire"
     >
@@ -416,15 +443,55 @@ function ProtocoleLegendaire({ carte, onFini }: { carte: TCarte; onFini: () => v
       </div>
       <div className="pm-terminal">
         {lignes.map((l, i) => (
-          <p key={i} style={{ ['--i' as string]: i, ['--n' as string]: l.length }}>
-            <span>{l}</span>
+          <p key={i} className="pl-ligne">
+            {l.slice(0, Math.max(0, Math.floor((t - L_LIGNES[i]) / 0.025)))}
           </p>
         ))}
+        {extrait && t > L_EXTRAIT && (
+          <p className="pl-ligne pl-extrait">
+            {'> « '}
+            {extrait.map((m, i) =>
+              m.revele !== undefined && t >= m.revele ? (
+                <span key={i}>{`${m.mot} `}</span>
+              ) : (
+                <mark key={i} className="pl-caviar">
+                  {`${'█'.repeat(Math.min(m.mot.length, 12))} `}
+                </mark>
+              ),
+            )}
+            {'»'}
+          </p>
+        )}
       </div>
       <div className="pm-tampon">Légendaire</div>
       <div className="pm-flash" aria-hidden="true" />
     </div>
   )
+}
+
+/**
+ * La première phrase de la description, mot à mot : un peu plus de la moitié des mots se décryptent pendant le
+ * protocole, dans un ordre propre à la carte ; ceux qui la nomment (numéro, titre) restent caviardés.
+ */
+function extraitCaviarde(c: TCarte): { mot: string; revele?: number }[] | null {
+  if (!c.x) return null
+  const phrase = (c.x.match(/^.{20,}?[.!?](?=\s|$)/)?.[0] ?? c.x).slice(0, 170)
+  const nom = new Set(
+    `${c.nm} ${c.num ?? ''}`
+      .toLowerCase()
+      .split(/[^\p{L}\p{N}-]+/u)
+      .filter((m) => m.length > 2),
+  )
+  const mots = phrase.split(/\s+/).filter(Boolean)
+  const nomme = (m: string) => /scp-\d/i.test(m) || nom.has(m.toLowerCase().replace(/[^\p{L}\p{N}-]/gu, ''))
+  // Ordre de décryptage tiré de l'identifiant de la carte : toujours le même pour une carte
+  let graine = [...c.id].reduce((h, ch) => (h * 31 + ch.charCodeAt(0)) >>> 0, 7)
+  const hasard = () => ((graine = (graine * 1103515245 + 12345) >>> 0) % 10000) / 10000
+  const ordre = mots.map((_, i) => i).sort(() => hasard() - 0.5)
+  const decryptes = ordre.filter((i) => !nomme(mots[i])).slice(0, Math.ceil(mots.length * 0.55))
+  const [debut, fin] = L_DECRYPTAGE
+  const revele = new Map(decryptes.map((i, k) => [i, debut + ((fin - debut) * k) / Math.max(1, decryptes.length - 1)]))
+  return mots.map((mot, i) => ({ mot, revele: revele.get(i) }))
 }
 
 /** Temps de noir avant la scène d'une Mythique, puis marges du tampon et de l'éclair (s) */

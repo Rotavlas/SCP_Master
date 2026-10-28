@@ -50,14 +50,17 @@ SEUILS_RARETE = [0.01, 0.05, 0.15, 0.40]
 SEUILS_REFERENCE = [0.04, 0.12, 0.27, 0.55]
 # Icônes de la Fondation, légendaires d'office : leur notoriété vient surtout d'en dehors du wiki
 # (jeux SCP: Containment Breach et Secret Laboratory), que les mentions dans le wiki ne mesurent pas.
-# Rēsh-1, Omega-1, Beta-1 et la Reine Noire (le groupe et Alison Chao, qui la porte) : choix du créateur du jeu
+# Choix du créateur du jeu : Rēsh-1, Omega-1, Beta-1 ; Alison Chao, la Reine Noire (pas son groupe d'intérêt) ;
+# tout le Conseil O5 (O5-1 est Mythique) ; les grandes entités de la cosmologie
 ICONES = {"fim:epsilon-11", "gdi:the-chaos-insurgency", "fim:r-sh-1", "fim:omega-1", "fim:beta-1",
-          "gdi:the-black-queen", "perso:alison-chao-aka-the-black-queen"}
+          "perso:alison-chao-aka-the-black-queen", "perso:o5-command",
+          *(f"perso:o5-{i}" for i in range(2, 14)),
+          "entite:yaldabaoth", "entite:hanged-king", "entite:the-serpent", "entite:nameless", "entite:anafabula"}
 # Épiques d'office (choix du créateur du jeu)
 EPIQUES = {"fim:lambda-5", "fim:tau-5"}
 # Rareté Mythique (5), au-dessus de Légendaire : choisies à la main, hors du classement par popularité
 MYTHIQUES = {"perso:aaron-siegel", "perso:the-administrator", "perso:o5-1", "entite:scarlet-king",
-             "fim:alpha-1", "dr-clef-s-proposal", "perso:les-auteurs"}
+             "fim:alpha-1", "dr-clef-s-proposal", "perso:les-auteurs", "scp-173", "scp-2747"}
 # Tags de la section « Departments » qui désignent des équipes FIM, déjà des cartes
 TAGS_FIM = {"last-hope", "samsara", "angle-grinders"}
 # Noms que la description d'un tag ne donne pas proprement

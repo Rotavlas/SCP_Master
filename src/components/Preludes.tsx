@@ -4,13 +4,15 @@ import '@fontsource/cinzel/400.css'
 import '@fontsource/stardos-stencil/400.css'
 import '@fontsource/im-fell-english/400.css'
 import '@fontsource/vt323/400.css'
+import '@fontsource/cormorant-garamond/400.css'
 import '@fontsource/cormorant-garamond/400-italic.css'
 import '@fontsource/caveat/400.css'
 
 /**
  * Le prélude de chaque cinématique Mythique : avant que la carte apparaisse, quelques lignes la font deviner,
  * lentement, une à une, sans jamais la nommer. Chaque carte a sa police, sa couleur, sa façon d'écrire et
- * son indice visuel (braises et chaînes, fente de lumière et plumes, viseur, sceau, moniteur, vieux papier…).
+ * son indice visuel (braises et chaînes, fente de lumière et plumes, viseur, sceau, moniteur, vieux papier, une
+ * silhouette qui se rapproche à chaque clignement, des ronces…).
  */
 
 type Style = CSSProperties & Record<`--${string}`, string | number>
@@ -23,8 +25,9 @@ export interface Prelude {
   fond: string
   lignes: string[]
   /** Façon dont chaque ligne apparaît */
-  effet: 'brume' | 'tampon' | 'frappe' | 'plume'
-  indice: 'braises' | 'plumes' | 'viseur' | 'sceau' | 'moniteur' | 'sepia' | 'encre'
+  /** Façon dont chaque ligne apparaît ; « ronge » : comme « brume », puis les lettres sont dévorées à la fin */
+  effet: 'brume' | 'tampon' | 'frappe' | 'plume' | 'ronge'
+  indice: 'braises' | 'patmos' | 'viseur' | 'sceau' | 'moniteur' | 'sepia' | 'encre' | 'clignement' | 'ronces'
   /** Taille du texte (em) */
   taille?: number
   italique?: boolean
@@ -53,16 +56,17 @@ export const PRELUDES: Record<string, Prelude> = {
     ],
   },
   'dr-clef-s-proposal': {
+    // L'ordre d'urgence Patmos, d'après la proposition du Dr Clef : Site 0, l'observateur d'O5-14, l'eau bénite
     police: 'Cinzel',
     couleur: '#e8c46a',
     fond: '#030201',
     effet: 'brume',
-    indice: 'plumes',
+    indice: 'patmos',
     lignes: [
-      'Au-delà du Site 0, il y a une porte.',
-      "Personne ne l'a jamais franchie.",
-      "De l'autre côté, quelque chose veille : six ailes, un œil, une épée de feu.",
-      "Elle s'ouvre.",
+      "Site 0 : l'observateur ne répond plus.",
+      "Ordre d'urgence Patmos-Oméga : déchiffrement autorisé.",
+      "Gardez l'eau bénite sur vous. Désignez un remplaçant d'une autre foi.",
+      'Il a relevé la tête.',
     ],
   },
   'fim:alpha-1': {
@@ -124,6 +128,24 @@ export const PRELUDES: Record<string, Prelude> = {
       'Et il vient de lever les yeux de sa page.',
     ],
   },
+  'scp-173': {
+    police: 'Special Elite',
+    couleur: '#d9d2c3',
+    fond: 'radial-gradient(ellipse at 50% 50%, #151410 0%, #050505 75%)',
+    effet: 'frappe',
+    indice: 'clignement',
+    taille: 1.15,
+    lignes: ['Ne le quittez pas des yeux.', 'Ne clignez pas.', "Ce raclement de béton, c'est lui qui bouge.", 'Vous venez de cligner.'],
+  },
+  'scp-2747': {
+    police: 'Cormorant Garamond',
+    couleur: '#ece6da',
+    fond: '#000',
+    effet: 'ronge',
+    indice: 'ronces',
+    taille: 1.4,
+    lignes: ['Il était une fois…', "Non. Il n'y a jamais eu de fois.", 'Tout récit qui la contient cesse d’exister.', 'Cette carte en est un.'],
+  },
 }
 
 /** Charge d'avance la police d'un prélude, pour que la première ligne ne s'affiche pas dans une autre. */
@@ -137,7 +159,7 @@ export function PreludeMythique({ prelude: p }: { prelude: Prelude }) {
   const fin = DEBUT + n * RYTHME + TENUE
   return (
     <div
-      className={`prelude pr-effet-${p.effet}`}
+      className={`prelude pr-effet-${p.effet === 'ronge' ? 'brume pr-effet-ronge' : p.effet}`}
       style={
         {
           '--fin': `${fin}s`,
@@ -158,7 +180,14 @@ export function PreludeMythique({ prelude: p }: { prelude: Prelude }) {
             className={`pr-ligne ${i === n - 1 ? 'pr-derniere' : ''}`}
             style={{ '--t': `${DEBUT + i * RYTHME}s`, '--t2': `${DEBUT + (i + 1) * RYTHME}s`, '--n': l.length } as Style}
           >
-            {l}
+            {p.effet === 'ronge'
+              ? // Chaque lettre est dévorée à son tour, dans le désordre
+                [...l].map((c, j) => (
+                  <span key={j} className="pr-lettre" style={{ '--r': `${((j * 0.618 + i * 0.37) % 1) * 1.4}s` } as Style}>
+                    {c}
+                  </span>
+                ))
+              : l}
           </p>
         ))}
       </div>
@@ -189,9 +218,10 @@ function Indice({ indice, duree }: { indice: Prelude['indice']; duree: number })
           </svg>
         </div>
       )
-    case 'plumes':
+    case 'patmos':
       return (
         <div className="pr-indice" style={d}>
+          <div className="pr-alerte" />
           <div className="pr-fente" />
           {semis(10, (i) => (
             <svg
@@ -262,6 +292,23 @@ function Indice({ indice, duree }: { indice: Prelude['indice']; duree: number })
           <span className="pr-tampon-date">1891</span>
         </div>
       )
+    case 'clignement':
+      // Il ne bouge que quand on cligne : l'écran s'éteint un instant, et à chaque fois il est plus près
+      return (
+        <div className="pr-indice" style={d}>
+          <svg className="pr-statue" viewBox="0 0 100 270" aria-hidden="true">
+            <path
+              d="M50 8 C72 8 80 30 73 50 C68 63 81 72 83 102 C87 152 77 202 71 262 L29 262 C23 202 13 152 17 102 C19 72 32 63 27 50 C20 30 28 8 50 8 Z"
+              fill="#1b1914"
+            />
+            <path d="M38 30 l9 4 M54 33 l9 -4 M41 44 q9 5 18 0" stroke="#4a6b2a" strokeWidth="2.5" fill="none" />
+            <path d="M33 26 q4 -6 10 -2 M58 22 q6 -3 9 3" stroke="#7a2a1f" strokeWidth="2" fill="none" />
+          </svg>
+          <div className="pr-paupiere" />
+        </div>
+      )
+    case 'ronces':
+      return <Ronces duree={duree} />
     case 'encre':
       return (
         <div className="pr-indice" style={d}>
@@ -277,4 +324,41 @@ function Indice({ indice, duree }: { indice: Prelude['indice']; duree: number })
         </div>
       )
   }
+}
+
+/** Des ronces qui poussent des quatre coins vers le texte, épines comprises. */
+function Ronces({ duree }: { duree: number }) {
+  const tiges = [
+    [0, 0, 1, 1],
+    [1000, 0, -1, 1],
+    [0, 1000, 1, -1],
+    [1000, 1000, -1, -1],
+  ].map(([x0, y0, sx, sy], k) => {
+    // Une tige ondulante, du coin vers le centre
+    const pts = Array.from({ length: 24 }, (_, i) => {
+      const t = i / 23
+      const ondule = Math.sin(t * 9 + k) * 40 * (1 - t)
+      return [x0 + sx * (t * 380 + ondule), y0 + sy * (t * 330 - ondule * 0.6)]
+    })
+    const epines = pts.slice(2, -1).map(([x, y], i) => {
+      const [x1, y1] = pts[i + 3] ?? pts[pts.length - 1]
+      const a = Math.atan2(y1 - y, x1 - x) + (i % 2 ? 1 : -1) * 1.2
+      return { x, y, x2: x + Math.cos(a) * 22, y2: y + Math.sin(a) * 22, t: ((i + 2) / 23) * duree * 0.85 }
+    })
+    return { d: pts.map(([x, y], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' '), epines }
+  })
+  return (
+    <div className="pr-indice" style={{ '--duree': `${duree}s` } as Style}>
+      <svg className="pr-ronces" viewBox="0 0 1000 1000" preserveAspectRatio="none" aria-hidden="true">
+        {tiges.map((tg, k) => (
+          <g key={k}>
+            <path d={tg.d} pathLength={1} className="pr-tige" />
+            {tg.epines.map((e, i) => (
+              <line key={i} x1={e.x} y1={e.y} x2={e.x2} y2={e.y2} className="pr-epine" style={{ '--t': `${e.t}s` } as Style} />
+            ))}
+          </g>
+        ))}
+      </svg>
+    </div>
+  )
 }

@@ -4414,26 +4414,6 @@ select:focus {
 }
 
 /* Protocole court d'une Légendaire : mêmes éléments, plus vite (DUREE_PROTOCOLE_LEGENDAIRE) */
-.protocole-legendaire .pm-sirene {
-  opacity: 0.4;
-  animation:
-    rayons 2.2s linear infinite,
-    pm-sirene 2.7s ease-in-out backwards;
-}
-
-.protocole-legendaire .pm-terminal span {
-  animation-delay: calc(0.45s + var(--i) * 0.5s);
-}
-
-.protocole-legendaire .pm-tampon {
-  animation-delay: 1.55s;
-}
-
-.protocole-legendaire .pm-flash {
-  animation-delay: 2.2s;
-  animation-duration: 0.45s;
-}
-
 /* ---------- Badges de profil ---------- */
 .badge-profil {
   --badge: var(--ambre);
@@ -5235,8 +5215,31 @@ button.pseudo:focus-visible .pseudo-nom {
   animation: none;
 }
 
-.protocole-legendaire .pm-terminal span {
-  animation-delay: calc(0.45s + var(--i) * 0.6s);
+/* Le dossier entrouvert : les lignes sont tapées par le composant, l'extrait se décrypte mot à mot */
+.pl-ligne {
+  min-height: 1.4em;
+  white-space: pre-wrap;
+}
+
+.pl-extrait {
+  margin-top: 0.7rem;
+  line-height: 1.55;
+}
+
+/* Les mots décryptés ne sont pas des lignes tapées (.pm-terminal span) */
+.pm-terminal .pl-extrait span {
+  display: inline;
+  width: auto;
+  overflow: visible;
+  white-space: normal;
+  animation: am-apparait 0.25s ease-out;
+}
+
+.pl-caviar {
+  background: none;
+  color: color-mix(in srgb, var(--sig) 45%, #000);
+  text-shadow: none;
+  letter-spacing: -0.08em;
 }
 
 .protocole-legendaire .pm-tampon {
@@ -5245,18 +5248,18 @@ button.pseudo:focus-visible .pseudo-nom {
   bottom: auto;
   translate: none;
   background: none;
-  animation-delay: 2.6s;
+  animation-delay: 6.2s;
 }
 
 .protocole-legendaire .pm-flash {
-  animation-delay: 4.05s;
+  animation-delay: 7.4s;
   animation-duration: 0.5s;
 }
 
 .protocole-legendaire .pm-sirene {
   animation:
     rayons 2.2s linear infinite,
-    pm-sirene 4.6s ease-in-out backwards;
+    pm-sirene 7.9s ease-in-out backwards;
 }
 
 /* ---------- Cadre des Mythiques : scène plein cadre, sceau Ω, texte posé sur l'image ---------- */
@@ -6211,6 +6214,100 @@ button.pseudo:focus-visible .pseudo-nom {
   to {
     opacity: 0.55;
     transform: scale(1);
+  }
+}
+
+/* Gate Guardian : l'alerte Patmos bat en rouge sur les bords */
+.pr-alerte {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, transparent 45%, rgba(200, 20, 12, 0.35) 100%);
+  opacity: 0;
+  animation: pr-alerte 2.2s ease-in-out 1.5s infinite;
+}
+
+@keyframes pr-alerte {
+  50% {
+    opacity: 1;
+  }
+}
+
+/* SCP-173 : à chaque clignement, la silhouette est plus près */
+.pr-statue {
+  position: absolute;
+  left: 50%;
+  bottom: -2%;
+  height: 46vh;
+  translate: -50% 0;
+  transform-origin: bottom center;
+  animation: pr-approche 12.5s steps(5, jump-end) -0.2s both;
+}
+
+@keyframes pr-approche {
+  from {
+    transform: scale(0.3);
+    opacity: 0.35;
+  }
+  to {
+    transform: scale(2.1);
+    opacity: 0.95;
+  }
+}
+
+.pr-paupiere {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: #000;
+  opacity: 0;
+  animation: pr-cligne 2.5s linear infinite;
+}
+
+@keyframes pr-cligne {
+  0%,
+  86%,
+  100% {
+    opacity: 0;
+  }
+  89%,
+  95% {
+    opacity: 1;
+  }
+}
+
+/* SCP-2747 : des ronces poussent des coins, puis les lettres sont dévorées */
+.pr-ronces {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.pr-tige {
+  fill: none;
+  stroke: #3d2b2b;
+  stroke-width: 9;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  animation: am-trait calc(var(--duree) * 0.85) cubic-bezier(0.3, 0.1, 0.5, 1) both;
+}
+
+.pr-epine {
+  stroke: #3d2b2b;
+  stroke-width: 4;
+  stroke-linecap: round;
+  opacity: 0;
+  animation: am-apparait-reste 0.3s ease-out var(--t) forwards;
+}
+
+.pr-lettre {
+  animation: pr-devore 0.4s ease-in calc(var(--fin) - 2s + var(--r)) forwards;
+}
+
+@keyframes pr-devore {
+  to {
+    opacity: 0;
+    filter: blur(5px);
   }
 }
 

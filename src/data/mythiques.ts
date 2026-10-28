@@ -12,6 +12,8 @@ export const SIGNATURES: Record<string, { couleur: string; indice: string }> = {
   'perso:o5-1': { couleur: '#2f80ed', indice: "Le premier siège n'est jamais vide." },
   'perso:aaron-siegel': { couleur: '#2f6fd1', indice: 'Cornell, 1891 : un physicien disparaît des registres.' },
   'perso:les-auteurs': { couleur: '#7b3fe4', indice: "Quelqu'un, au-dessus, écrit cette phrase." },
+  'scp-173': { couleur: '#8fae5a', indice: 'Ne clignez pas.' },
+  'scp-2747': { couleur: '#ece6da', indice: "Il était une fois une histoire qui n'a jamais existé." },
 }
 
 /** Les illustrations redessinées d'après une œuvre du wiki : son auteur, sa source et sa licence. */

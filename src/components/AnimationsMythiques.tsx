@@ -480,7 +480,11 @@ function LesAuteurs() {
 
 /** Durée de chaque cinématique (s), prélude compris, avant le tampon « Mythique ». */
 export const dureeAnimation = (id: string) =>
-  (PRELUDES[id] ? dureePrelude(PRELUDES[id]) : 0) + (id === 'perso:les-auteurs' ? DUREE_AUTEURS : SCENES[id] ? dureeScene(SCENES[id]) : 6)
+  (PRELUDES[id] ? dureePrelude(PRELUDES[id]) : 0) +
+  (id === 'perso:les-auteurs' ? DUREE_AUTEURS : SCENES[id] ? dureeScene(SCENES[id]) : PRELUDES[id] ? SANS_SCENE : 6)
+
+/** Une Mythique dont la scène n'est pas encore dessinée : le prélude, puis le tampon presque aussitôt */
+const SANS_SCENE = 0.4
 
 /** Charge d'avance ce qu'il faut à la cinématique d'une carte. */
 export const prechargerMythique = (id: string) => {
@@ -489,7 +493,7 @@ export const prechargerMythique = (id: string) => {
 }
 
 /** La cinématique est-elle en plein écran (et non dans le cadre de la carte) ? */
-export const animationPleinEcran = (id: string) => id in SCENES || id === 'perso:les-auteurs'
+export const animationPleinEcran = (id: string) => id in SCENES || id in PRELUDES
 
 /** `fige` : la scène arrêtée à cet instant, sans prélude (pour l'atelier). */
 export function AnimationMythique({ id, fige }: { id: string; fige?: number }) {
