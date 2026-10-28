@@ -13,17 +13,29 @@ import { CREDITS_ILLUSTRATIONS, SIGNATURES } from './data/mythiques'
 import type { Carte as TCarte } from './types'
 import './styles.css'
 
+// Les originaux de SunnyClockwork (public/sunny/), pour comparer avec la fin de l'animation
+const ORIGINAUX: Record<string, string> = {
+  'dr-clef-s-proposal': 'gate-guardian.png',
+  'fim:alpha-1': 'alpha-1.png',
+  'perso:o5-1': 'o5-1.png',
+  'perso:the-administrator': 'administrateur.png',
+}
+
 const LEGENDAIRES = ['scp-173', 'scp-2521', 'site:site-19', 'fim:epsilon-11', 'dept:ethics-committee', 'fim:r-sh-1']
 
 function Atelier({ base }: { base: Base }) {
-  const mythiques = Object.keys(SIGNATURES).map((id) => base.parId.get(id)).filter((c): c is TCarte => !!c)
+  const mythiques = Object.keys(SIGNATURES)
+    .map((id) => base.parId.get(id))
+    .filter((c): c is TCarte => !!c)
   const [rejeu, setRejeu] = useState<Record<string, number>>({})
   const [cinematique, setCinematique] = useState<TCarte | null>(null)
   return (
     <main className="atelier">
       <header>
         <h1>Atelier des Mythiques</h1>
-        <p className="discret">Chaque carte, sa scène et son animation. Modifier src/components/ScenesMythiques.tsx ou styles.css (.sm-*) : la page se met à jour seule.</p>
+        <p className="discret">
+          Chaque carte, sa scène et son animation. Modifier src/components/ScenesMythiques.tsx ou styles.css (.sm-*) : la page se met à jour seule.
+        </p>
       </header>
       {mythiques.map((c) => {
         const credit = CREDITS_ILLUSTRATIONS[c.id]
@@ -33,6 +45,12 @@ function Atelier({ base }: { base: Base }) {
             <div className="atelier-scene">
               <SceneMythique key={rejeu[c.id] ?? 0} id={c.id} anime={!!rejeu[c.id]} />
             </div>
+            {ORIGINAUX[c.id] && (
+              <figure className="atelier-original">
+                <img src={`/sunny/${ORIGINAUX[c.id]}`} alt={`Original de SunnyClockwork : ${c.nm}`} />
+                <figcaption>Original</figcaption>
+              </figure>
+            )}
             <div className="atelier-infos">
               <h2>{c.nm}</h2>
               <p className="discret">« {SIGNATURES[c.id].indice} »</p>
@@ -55,14 +73,16 @@ function Atelier({ base }: { base: Base }) {
       })}
       <h2>Légendaires</h2>
       <div className="atelier-legendaires">
-        {LEGENDAIRES.map((id) => base.parId.get(id)).filter((c): c is TCarte => !!c).map((c) => (
-          <div key={c.id}>
-            <Carte carte={c} base={base} taille="m" />
-            <button className="btn" onClick={() => setCinematique(c)}>
-              Cinématique
-            </button>
-          </div>
-        ))}
+        {LEGENDAIRES.map((id) => base.parId.get(id))
+          .filter((c): c is TCarte => !!c)
+          .map((c) => (
+            <div key={c.id}>
+              <Carte carte={c} base={base} taille="m" />
+              <button className="btn" onClick={() => setCinematique(c)}>
+                Cinématique
+              </button>
+            </div>
+          ))}
       </div>
       {cinematique && <Protocole key={cinematique.id + Date.now()} carte={cinematique} onFini={() => setCinematique(null)} />}
     </main>

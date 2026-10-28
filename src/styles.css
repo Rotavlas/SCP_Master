@@ -5899,3 +5899,203 @@ button.pseudo:focus-visible .pseudo-nom {
     justify-items: center;
   }
 }
+
+/* ---------- Illustrations de SunnyClockwork vectorisées (SceneTracee) ----------
+   Contours tracés (0–2 s), remplissage du reste (1,1–2,5 s), chaque zone prend sa place à son départ (--t),
+   puis les contours s'effacent : l'image finale est exactement le tracé de l'original. */
+.scene-tracee .sm-contours path {
+  stroke-dasharray: 1;
+  opacity: 0;
+}
+
+.sm-anime.scene-tracee .sm-contours path {
+  animation:
+    sm-contour 1.5s ease-out calc(var(--i) * 0.05s) backwards,
+    sm-efface 0.6s ease-in 3.9s backwards;
+  opacity: 0;
+}
+
+@keyframes sm-contour {
+  from {
+    stroke-dashoffset: 1;
+    opacity: 1;
+  }
+  to {
+    stroke-dashoffset: 0;
+    opacity: 1;
+  }
+}
+
+@keyframes sm-efface {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.sm-anime.scene-tracee .sm-reste {
+  animation: sm-apparait 1.4s ease-out 1.1s backwards;
+}
+
+.scene-mythique .sm-mvt {
+  transform-box: view-box;
+  animation-duration: 0.9s;
+  animation-fill-mode: backwards;
+  animation-delay: var(--t);
+}
+
+.sm-mvt-descend {
+  animation-name: sm-mvt-descend;
+  animation-timing-function: cubic-bezier(0.3, 1.4, 0.5, 1);
+}
+
+@keyframes sm-mvt-descend {
+  from {
+    opacity: 0;
+    transform: translateY(-14%);
+  }
+}
+
+.sm-mvt-deploie {
+  animation-name: sm-mvt-deploie;
+  animation-timing-function: cubic-bezier(0.2, 1.3, 0.4, 1);
+}
+
+@keyframes sm-mvt-deploie {
+  from {
+    opacity: 0;
+    transform: scale(0.1);
+  }
+}
+
+.sm-mvt-monte {
+  animation-name: sm-mvt-monte;
+  animation-timing-function: ease-out;
+}
+
+@keyframes sm-mvt-monte {
+  from {
+    opacity: 0;
+    transform: translateY(30%);
+  }
+}
+
+.sm-mvt-plante {
+  animation-name: sm-mvt-plante;
+  animation-timing-function: cubic-bezier(0.5, 0, 0.6, 1.4);
+  animation-duration: 0.7s;
+}
+
+@keyframes sm-mvt-plante {
+  0% {
+    opacity: 0;
+    transform: translateY(-55%);
+  }
+  70% {
+    opacity: 1;
+    transform: translateY(1.5%);
+  }
+}
+
+.sm-mvt-tourne {
+  animation-name: sm-mvt-tourne;
+  animation-timing-function: cubic-bezier(0.2, 0.8, 0.3, 1);
+  animation-duration: 1.7s;
+}
+
+@keyframes sm-mvt-tourne {
+  from {
+    opacity: 0;
+    transform: rotate(-320deg);
+  }
+}
+
+.sm-mvt-pousse {
+  animation-name: sm-mvt-pousse;
+  animation-timing-function: cubic-bezier(0.2, 1.3, 0.4, 1);
+}
+
+@keyframes sm-mvt-pousse {
+  from {
+    opacity: 0;
+    transform: scale(0.2, 0);
+  }
+}
+
+.sm-mvt-frappe {
+  animation-name: sm-mvt-frappe;
+  animation-timing-function: cubic-bezier(0.5, 0, 0.9, 0.4);
+  animation-duration: 0.4s;
+}
+
+@keyframes sm-mvt-frappe {
+  from {
+    opacity: 0;
+    transform: scale(1.9);
+  }
+}
+
+.sm-mvt-sonne {
+  animation-name: sm-mvt-sonne;
+  animation-timing-function: linear;
+  animation-duration: 1.1s;
+}
+
+@keyframes sm-mvt-sonne {
+  0% {
+    opacity: 0;
+    transform: translateY(-12%);
+  }
+  30% {
+    opacity: 1;
+    transform: none;
+  }
+  40%,
+  60%,
+  80% {
+    transform: translate(0.6%, -1.5%) rotate(1.5deg);
+  }
+  50%,
+  70%,
+  90% {
+    transform: translate(-0.6%, -1.5%) rotate(-1.5deg);
+  }
+}
+
+.atelier-ligne {
+  grid-template-columns: auto minmax(200px, 260px) minmax(160px, 220px) 1fr;
+}
+
+.atelier-original {
+  margin: 0;
+  display: grid;
+  gap: 0.3rem;
+  justify-items: center;
+}
+
+.atelier-original img {
+  max-width: 100%;
+  max-height: 300px;
+  background: #fff;
+}
+
+.atelier-original figcaption {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  color: var(--discret);
+  text-transform: uppercase;
+}
+
+/* L'original entier se pose sur la construction quand elle s'achève (4,5 s) : l'image finale est identique au pixel près */
+.sm-anime.scene-tracee .sm-final {
+  opacity: 0;
+  animation: sm-final 0.25s ease-out 4.5s forwards;
+}
+
+@keyframes sm-final {
+  to {
+    opacity: 1;
+  }
+}

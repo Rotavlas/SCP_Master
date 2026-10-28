@@ -1,28 +1,164 @@
-import type { ReactNode } from 'react'
+import { useEffect, useId, useState, type ReactNode } from 'react'
 
 /**
- * L'illustration de chaque Mythique, en SVG (cadre 200 × 280, celui d'une carte), dans un même style
- * d'affiche : silhouettes noires en aplat sur fond papier, une seule couleur d'accent par carte.
- * Sur la carte elle est au repos ; dans la cinématique d'ouverture (`anime`), elle se construit
- * sous les yeux du joueur : les yeux du Roi écarlate s'ouvrent, les ailes du Gardien s'embrasent…
+ * L'illustration de chaque Mythique, en SVG. Deux familles :
+ * - les illustrations de SunnyClockwork (CC BY-SA 3.0), préparées par outils/vectoriser_sunny.mjs : l'original
+ *   (public/sunny/) et le tracé de ses contours (public/data/scenes.json). Dans la cinématique, les contours se
+ *   dessinent, puis l'original se construit zone par zone (la couronne descend, les ailes se déploient…) :
+ *   l'image finale est l'original, au pixel près ;
+ * - les autres, dessinées ici dans le même style d'affiche (cadre 200 × 280, celui d'une carte).
  * Les états de départ des animations sont dans styles.css (.sm-*), l'état final est celui du dessin.
  */
 export function SceneMythique({ id, anime = false }: { id: string; anime?: boolean }) {
+  if (id in ZONES) return <SceneTracee id={id} anime={anime} />
   const scene = SCENES[id]
   if (!scene) return null
   return (
-    <svg
-      className={`scene-mythique sm-${id.replace(/[^a-z0-9]+/g, '-')} ${anime ? 'sm-anime' : ''}`}
-      viewBox="0 0 200 280"
-      preserveAspectRatio="xMidYMid slice"
-      aria-hidden="true"
-    >
+    <svg className={`scene-mythique sm-${classe(id)} ${anime ? 'sm-anime' : ''}`} viewBox="0 0 200 280" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
       {scene}
     </svg>
   )
 }
 
-export const aUneScene = (id: string) => id in SCENES
+export const aUneScene = (id: string) => id in SCENES || id in ZONES
+
+const classe = (id: string) => id.replace(/[^a-z0-9]+/g, '-')
+
+// ---------- Illustrations vectorisées de SunnyClockwork ----------
+
+interface Trace {
+  /** L'original de SunnyClockwork, relatif à la racine du site */
+  image: string
+  largeur: number
+  hauteur: number
+  /** Couleur autour de l'image, quand ses proportions ne sont pas celles de la carte */
+  fond: string
+  /** Formes du tracé, pour les contours de la construction : chemin (contour et trous), opacité, centre */
+  pieces: { d: string; o: number; c: [number, number] }[]
+}
+
+type Mouvement = 'descend' | 'deploie' | 'monte' | 'plante' | 'tourne' | 'pousse' | 'frappe' | 'sonne'
+
+/**
+ * La chorégraphie de chaque illustration : des zones de l'image (polygones en pixels de l'original),
+ * chacune avec son mouvement, son départ (s) et son point d'origine. Le reste de l'image se remplit
+ * après le tracé des contours. Toutes les zones finissent à leur place : l'image finale est l'original.
+ */
+const ZONES: Record<string, { points: string; mvt: Mouvement; t: number; o: [number, number] }[]> = {
+  'dr-clef-s-proposal': [
+    { points: '300,30 500,30 500,140 300,140', mvt: 'descend', t: 2.9, o: [400, 90] },
+    { points: '300,140 500,140 500,290 300,290', mvt: 'deploie', t: 2.4, o: [400, 210] },
+    { points: '100,250 340,250 340,560 100,560', mvt: 'deploie', t: 1.2, o: [340, 330] },
+    { points: '470,250 720,250 720,620 470,620', mvt: 'deploie', t: 1.5, o: [470, 330] },
+    { points: '40,560 360,560 360,1132 40,1132', mvt: 'deploie', t: 1.8, o: [360, 580] },
+    { points: '360,470 440,470 440,1132 360,1132', mvt: 'plante', t: 3.3, o: [400, 800] },
+    { points: '440,600 800,600 800,1132 440,1132', mvt: 'monte', t: 0.9, o: [620, 1132] },
+  ],
+  'fim:alpha-1': [
+    { points: '174,174 441,160 561,321 695,561 601,695 347,561 174,347', mvt: 'frappe', t: 2.2, o: [430, 430] },
+    { points: '500,140 660,140 660,310 500,310', mvt: 'pousse', t: 1.5, o: [500, 310] },
+  ],
+  'perso:o5-1': [
+    { points: '300,180 540,180 540,390 300,390', mvt: 'pousse', t: 1.8, o: [420, 390] },
+    { points: '330,380 570,380 570,610 330,610', mvt: 'deploie', t: 1.1, o: [451, 491] },
+  ],
+  'perso:the-administrator': [
+    { points: '380,0 600,0 600,130 380,130', mvt: 'sonne', t: 3.0, o: [490, 60] },
+    {
+      points: Array.from({ length: 24 }, (_, i) => {
+        const a = (i / 24) * 2 * Math.PI
+        return `${Math.round(491 + Math.cos(a) * 168)},${Math.round(291 + Math.sin(a) * 168)}`
+      }).join(' '),
+      mvt: 'tourne',
+      t: 1.2,
+      o: [491, 291],
+    },
+  ],
+}
+
+let traces: Promise<Record<string, Trace>> | null = null
+const chargerTraces = () =>
+  (traces ??= fetch(`${import.meta.env.BASE_URL}data/scenes.json`)
+    .then((r) => r.json() as Promise<Record<string, Trace>>)
+    .catch(() => {
+      traces = null
+      return {} as Record<string, Trace>
+    }))
+
+function SceneTracee({ id, anime }: { id: string; anime: boolean }) {
+  const [trace, setTrace] = useState<Trace | undefined>()
+  // Identifiants propres à cet affichage : la même scène peut figurer deux fois dans la page (carte et cinématique)
+  const unique = useId().replace(/[^a-zA-Z0-9]/g, '')
+  useEffect(() => {
+    let actif = true
+    void chargerTraces().then((t) => actif && setTrace(t[id]))
+    return () => {
+      actif = false
+    }
+  }, [id])
+  const c = classe(id)
+  if (!trace) return <svg className={`scene-mythique sm-${c}`} viewBox="0 0 200 280" aria-hidden="true" />
+  const { largeur: l, hauteur: h } = trace
+  const zones = ZONES[id]
+  const dessin = `dessin-${c}-${unique}`
+  return (
+    <svg
+      className={`scene-mythique scene-tracee sm-${c} ${anime ? 'sm-anime' : ''}`}
+      viewBox={`0 0 ${l} ${h}`}
+      preserveAspectRatio="xMidYMid meet"
+      aria-hidden="true"
+    >
+      <rect x={-l} y={-h} width={l * 3} height={h * 3} fill={trace.fond} />
+      <rect width={l} height={h} fill="#ffffff" />
+      <defs>
+        <image id={dessin} href={`${import.meta.env.BASE_URL}${trace.image}`} width={l} height={h} />
+        {anime && (
+          <>
+            {zones.map((z, i) => (
+              <clipPath key={i} id={`${dessin}-zone-${i}`}>
+                <polygon points={z.points} />
+              </clipPath>
+            ))}
+            <mask id={`${dessin}-reste`}>
+              <rect width={l} height={h} fill="#ffffff" />
+              {zones.map((z, i) => (
+                <polygon key={i} points={z.points} fill="#000000" />
+              ))}
+            </mask>
+          </>
+        )}
+      </defs>
+      {!anime ? (
+        <use href={`#${dessin}`} />
+      ) : (
+        <>
+          {/* Les contours se tracent, le reste se remplit, puis chaque zone vient prendre sa place */}
+          <g className="sm-contours" stroke="#000000" strokeWidth={l / 260} fill="none">
+            {trace.pieces.map((p, i) => (
+              <path key={i} d={p.d} pathLength={1} style={{ ['--i' as string]: Math.min(i, 30) }} />
+            ))}
+          </g>
+          <g mask={`url(#${dessin}-reste)`}>
+            <g className="sm-reste">
+              <use href={`#${dessin}`} />
+            </g>
+          </g>
+          {zones.map((z, i) => (
+            <g key={i} clipPath={`url(#${dessin}-zone-${i})`}>
+              <g className={`sm-mvt sm-mvt-${z.mvt}`} style={{ ['--t' as string]: `${z.t}s`, transformOrigin: `${z.o[0]}px ${z.o[1]}px` }}>
+                <use href={`#${dessin}`} />
+              </g>
+            </g>
+          ))}
+          {/* À la fin, l'original entier se pose par-dessus : aucun filet aux bords des zones */}
+          <use className="sm-final" href={`#${dessin}`} />
+        </>
+      )}
+    </svg>
+  )
+}
+
+// ---------- Illustrations dessinées ici ----------
 
 const PAPIER = '#f4f1ea'
 const NOIR = '#0b0b0b'
@@ -154,145 +290,6 @@ const SCENES: Record<string, ReactNode> = {
         <Chaine x1={152} y1={214} x2={58} y2={274} i={1} />
         <Chaine x1={66} y1={284} x2={150} y2={236} i={2} />
       </g>
-    </>
-  ),
-
-  // The Gate Guardian, d'après SunnyClockwork : séraphin couronné à l'œil unique, six ailes, l'épée plantée, les flammes
-  'dr-clef-s-proposal': (
-    <>
-      <rect width="200" height="280" fill={PAPIER} />
-      <g className="sm-flammes-gg" fill={NOIR}>
-        <path d="M118 280 Q112 260 120 246 Q118 262 128 262 Q122 240 136 226 Q132 246 144 246 Q138 228 150 214 Q150 234 160 232 Q154 210 170 196 Q166 216 178 220 Q172 202 186 192 Q184 214 196 214 L200 280 Z" />
-        <path d="M150 196 Q144 178 156 164 Q154 180 164 180 Q160 162 174 152 Q170 170 182 172 Q178 158 190 150 Q190 172 182 186 Q172 200 150 196 Z" />
-        <path d="M108 236 Q102 222 110 210 Q110 222 118 222 Q112 206 124 194 Q122 210 130 214 Q126 230 108 236 Z" />
-      </g>
-      <g className="sm-ailes-gg" fill={NOIR}>
-        {[
-          ['translate(88 90) rotate(22)', 0.6, 0],
-          ['translate(112 90) rotate(-22) scale(-1 1)', 0.6, 1],
-          ['translate(84 116) rotate(4)', 0.85, 2],
-          ['translate(116 116) rotate(-4) scale(-1 1)', 0.85, 3],
-          ['translate(84 146) rotate(-42)', 1.45, 4],
-          ['translate(116 146) rotate(26) scale(-1 1)', 0.8, 5],
-        ].map(([t, e, i]) => (
-          <g key={i as number} transform={`${t} scale(${e})`}>
-            <path
-              className="sm-aile-gg"
-              style={{ ['--i' as string]: i }}
-              d="M0 0 C-14 -10 -30 -20 -50 -26 L-44 -17 C-56 -18 -66 -14 -74 -8 L-62 -5 C-72 0 -78 7 -82 15 L-66 11 C-71 19 -74 28 -74 38 L-59 26 C-59 35 -56 43 -52 50 L-45 33 C-41 41 -35 47 -27 51 L-28 32 C-17 28 -7 18 0 10 Z"
-            />
-          </g>
-        ))}
-      </g>
-      <g className="sm-gardien-gg" fill={NOIR}>
-        <path d="M88 76 Q100 70 112 76 L118 112 Q122 150 112 170 L118 280 L82 280 L88 170 Q78 150 82 112 Z" />
-        <path d="M92 104 Q100 96 110 104 Q104 112 106 122 Q100 114 94 122 Q96 112 92 104 Z" fill={PAPIER} />
-        {/* Tête hérissée de plumes */}
-        <path d="M100 46 L104 52 L110 46 L110 54 L118 52 L114 60 L120 64 L112 68 Q108 78 100 80 Q92 78 88 68 L80 64 L86 60 L82 52 L90 54 L90 46 L96 52 Z" />
-      </g>
-      <g className="sm-oeil-gg">
-        <path d="M100 56 Q105 63 100 72 Q95 63 100 56 Z" fill={PAPIER} />
-        <circle cx="100" cy="64" r="2.2" fill="#e8a200" />
-      </g>
-      <g className="sm-couronne-gg" fill={NOIR}>
-        <path d="M80 34 L84 22 L90 30 L95 18 L100 6 L105 18 L110 30 L116 22 L120 34 Z" />
-        <rect x="80" y="36" width="40" height="4" rx="1" />
-      </g>
-      <g className="sm-epee">
-        <rect x="96" y="162" width="8" height="118" fill={NOIR} />
-        <line x1="100" y1="170" x2="100" y2="280" stroke={PAPIER} strokeWidth="1.2" />
-        <path d="M80 160 L120 160 L116 168 L84 168 Z" fill={NOIR} />
-        <path d="M100 148 L104 158 L100 166 L96 158 Z" fill={PAPIER} />
-        <rect x="97" y="134" width="6" height="26" fill={NOIR} />
-        <circle className="sm-reflet" cx="100" cy="132" r="4" fill="#e8a200" />
-      </g>
-    </>
-  ),
-
-  // MTF Alpha-1 « Red Right Hand », d'après SunnyClockwork : la main qui agrippe la lance, dans le cercle
-  'fim:alpha-1': (
-    <>
-      <rect width="200" height="280" fill={PAPIER} />
-      <circle className="sm-anneau" cx="100" cy="140" r="84" fill="none" stroke={NOIR} strokeWidth="13" />
-      {/* La rotation reste sur le groupe parent : l'animation de .sm-main ne doit pas l'écraser */}
-      <g transform="rotate(-38 108 150)">
-        <g className="sm-main" fill="#c8141c" stroke={PAPIER} strokeWidth="2.5" strokeLinejoin="round">
-          <rect x="92" y="104" width="13" height="44" rx="2" />
-          <rect x="107" y="98" width="13" height="50" rx="2" />
-          <rect x="122" y="102" width="13" height="46" rx="2" />
-          <rect x="137" y="112" width="12" height="38" rx="2" />
-          <path d="M90 146 L150 146 L154 182 Q150 204 128 212 L104 212 Q88 200 90 176 Z" />
-          <path d="M108 212 L132 212 L146 262 L98 262 Z" />
-        </g>
-      </g>
-      <g className="sm-lance" stroke={NOIR} strokeLinecap="butt" fill={NOIR}>
-        <line x1="46" y1="214" x2="146" y2="88" strokeWidth="17" stroke={PAPIER} />
-        <line x1="46" y1="214" x2="146" y2="88" strokeWidth="10" />
-        <path d="M160 70 L128 82 L148 100 Z" />
-        <path d="M138 98 L126 92 L132 104 Z M130 108 L118 102 L124 114 Z" />
-      </g>
-    </>
-  ),
-
-  // The Administrator, d'après SunnyClockwork : le téléphone au cadran de treize sièges, frappé du sceau
-  'perso:the-administrator': (
-    <>
-      <rect width="200" height="280" fill={PAPIER} />
-      <g className="sm-combine" fill={NOIR}>
-        <rect x="56" y="52" width="88" height="12" rx="4" />
-        <rect x="46" y="40" width="26" height="30" rx="8" />
-        <rect x="128" y="40" width="26" height="30" rx="8" />
-      </g>
-      <g className="sm-socle" fill={NOIR}>
-        <rect x="92" y="64" width="16" height="30" />
-        <path d="M58 96 Q100 82 142 96 L156 236 Q100 250 44 236 Z" />
-        <rect x="40" y="232" width="120" height="16" rx="4" />
-      </g>
-      <g className="sm-cadran">
-        <circle cx="100" cy="160" r="54" fill="#1d1d1d" stroke={PAPIER} strokeWidth="2" />
-        {['I', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X', 'XI', 'XII', 'XIII'].map((n, i) => {
-          // Du I à droite au XIII en bas, dans le sens inverse des aiguilles, comme sur l'original
-          const a = (-10 - i * 23.5) * (Math.PI / 180)
-          const x = 100 + Math.cos(a) * 40
-          const y = 160 - Math.sin(a) * 40
-          return (
-            <g key={n}>
-              <circle cx={x} cy={y} r="8" fill={n === 'XIII' ? '#d4a017' : NOIR} stroke={PAPIER} strokeWidth="1" />
-              <text x={x} y={y + 2.4} textAnchor="middle" fontSize={n.length > 3 ? 5 : 6.5} fontFamily="serif" fill={n === 'XIII' ? NOIR : PAPIER}>
-                {n}
-              </text>
-            </g>
-          )
-        })}
-      </g>
-      <g className="sm-sceau-scp">
-        <circle cx="100" cy="160" r="22" fill={PAPIER} />
-        <circle cx="100" cy="160" r="16" fill="none" stroke={NOIR} strokeWidth="4" />
-        <path d="M100 145 L104 155 L96 155 Z M87 168 L95 162 L97 170 Z M113 168 L105 162 L103 170 Z" fill={NOIR} />
-      </g>
-      <path className="sm-butee" d="M126 196 L140 214 L130 212 Z" fill="#d4a017" />
-    </>
-  ),
-
-  // O5-1 « The Founder », d'après SunnyClockwork : le sceau, son étoile et ses trois vrilles fléchées
-  'perso:o5-1': (
-    <>
-      <rect width="200" height="280" fill={NOIR} />
-      <circle className="sm-disque" cx="100" cy="140" r="88" fill={PAPIER} />
-      <g className="sm-vrilles" fill={NOIR}>
-        <path className="sm-vrille" style={{ ['--i' as string]: 0 }} d="M90 170 Q66 150 74 120 Q78 104 72 90 Q84 98 84 116 Q84 136 96 150 Z" />
-        <path className="sm-vrille" style={{ ['--i' as string]: 1 }} d="M96 150 Q90 120 100 98 Q106 84 100 70 Q114 82 112 102 Q108 124 110 146 Z" />
-        <path className="sm-vrille" style={{ ['--i' as string]: 2 }} d="M110 146 Q114 126 126 112 Q134 102 130 90 Q142 100 140 116 Q136 132 120 150 Z" />
-        <path className="sm-pointe" style={{ ['--i' as string]: 0 }} d="M66 92 L72 78 L80 92 L73 88 Z" />
-        <path className="sm-pointe" style={{ ['--i' as string]: 1 }} d="M94 72 L100 58 L108 72 L101 68 Z" />
-        <path className="sm-pointe" style={{ ['--i' as string]: 2 }} d="M124 92 L130 78 L138 92 L131 88 Z" />
-      </g>
-      <g className="sm-globe">
-        <path d="M84 196 Q66 184 74 162 Q80 150 96 150" fill="none" stroke={NOIR} strokeWidth="5" strokeLinecap="round" />
-        <circle cx="106" cy="178" r="26" fill={NOIR} />
-        <path className="sm-etoile" d="M108 160 L111 174 L124 178 L111 182 L108 198 L105 182 L92 178 L105 174 Z" fill={PAPIER} />
-      </g>
-      <circle className="sm-lueur-1" cx="108" cy="178" r="34" fill="none" stroke="#2f80ed" strokeWidth="2" opacity="0.8" />
     </>
   ),
 
