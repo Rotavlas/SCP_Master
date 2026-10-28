@@ -311,8 +311,9 @@ export function Immersion({ id, scene, fige }: { id: string; scene: SceneImmersi
         const u = (n: string) => gl.getUniformLocation(prog, n)
         gl.uniform1i(u('u_img'), 0)
         gl.uniform1i(u('u_temps'), 1)
-        const l = img.width
-        const h = img.height
+        // Le repère est celui de la carte des temps (l'original) ; l'image peut être plus grande (agrandie, plus nette)
+        const l = temps.width
+        const h = temps.height / 3
         gl.uniform2f(u('u_taille'), l, h)
         gl.uniform1i(u('u_fond'), scene.fond.mode)
         gl.uniform3fv(u('u_c1'), hex(scene.fond.c1))
@@ -411,17 +412,20 @@ export function Immersion({ id, scene, fige }: { id: string; scene: SceneImmersi
           gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4)
           // Ce qui suit la caméra, et le cadre de la carte qui se referme
           if (dessus.current) dessus.current.style.transform = `translate(${L / 2 - cx * k}px, ${H / 2 - cy * k}px) scale(${k})`
+          // La fenêtre se resserre de tout l'écran jusqu'à la carte ; le cadre en suit exactement le bord,
+          // il ne passe jamais par-dessus le dessin
+          const [haut, droite, bas, gauche] = [carte.y * r, (L - carte.x - carte.l) * r, (H - carte.y - carte.h) * r, carte.x * r]
           if (cadre.current) {
-            const ins = [carte.y * r, (L - carte.x - carte.l) * r, (H - carte.y - carte.h) * r, carte.x * r]
-            cadre.current.style.clipPath = r > 0 ? `inset(${ins.map((v) => `${v}px`).join(' ')} round ${10 * r}px)` : ''
+            cadre.current.style.clipPath = r > 0 ? `inset(${haut}px ${droite}px ${bas}px ${gauche}px round ${10 * r}px)` : ''
             if (scene.debutToile !== undefined) cadre.current.style.opacity = String(Math.min(1, Math.max(0, (t - scene.debutToile) / 0.6)))
           }
           if (bord.current) {
             Object.assign(bord.current.style, {
-              left: `${carte.x}px`,
-              top: `${carte.y}px`,
-              width: `${carte.l}px`,
-              height: `${carte.h}px`,
+              left: `${gauche}px`,
+              top: `${haut}px`,
+              width: `${L - gauche - droite}px`,
+              height: `${H - haut - bas}px`,
+              borderRadius: `${10 * r}px`,
               opacity: String(r),
             })
           }

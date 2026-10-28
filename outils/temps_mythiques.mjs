@@ -271,7 +271,8 @@ const CARTES = [
   },
   {
     nom: 'aaron-siegel',
-    source: 'outils/photos/aaron-siegel.png',
+    // La photo préparée (yeux caviardés) : npm run illustrations d'abord
+    source: 'public/photos/aaron-siegel.png',
     phases: [{ type: 'photo', classe: 0, t0: 1.6, duree: 3.4, gamma: 1.2 }],
   },
 ]
@@ -527,6 +528,34 @@ function construire(carte) {
       // Lentement : le blanc est couvert par l'encre qui le borde de près, pas par une flamme lointaine
       (i) => (encre[i] ? Infinity : 1 / 40),
     )
+    // Seuls les détails fins (traits blancs, dents, reflets) s'ouvrent avec le dessin : une plage blanche plus large
+    // que 2 × `detailMax` px garde le décor jusqu'à ce que tout le papier blanchisse (sinon, des taches blanches
+    // apparaîtraient au milieu de la scène)
+    const fin = new Uint8Array(n)
+    {
+      const vu = new Uint8Array(n)
+      const seuil = carte.detailMax ?? 3.5
+      for (let i0 = 0; i0 < n; i0++) {
+        if (vu[i0] || encre[i0] || exterieur[i0] || tPapier[i0] < Infinity) continue
+        const composante = []
+        const pile = [i0]
+        vu[i0] = 1
+        let large = 0
+        while (pile.length) {
+          const i = pile.pop()
+          composante.push(i)
+          large = Math.max(large, versEncre[i])
+          voisin(i, (j) => {
+            if (!vu[j] && !encre[j] && !exterieur[j] && tPapier[j] === Infinity) {
+              vu[j] = 1
+              pile.push(j)
+            }
+            return false
+          })
+        }
+        if (large <= seuil) for (const i of composante) fin[i] = 1
+      }
+    }
     // Un trait blanc entre deux aplats ne noircit qu'une fois les deux aplats posés : l'encre la plus tardive
     // dans un rayon de 2 px, sinon l'arrivée par le blanc
     const tardive = (i) => {
@@ -545,7 +574,7 @@ function construire(carte) {
     for (let i = 0; i < n; i++) {
       if (encre[i]) continue
       if (sombre[i] === 1) sombre[i] = Math.min(couvert[i], tPapier[i])
-      else if (tPapier[i] === Infinity && !exterieur[i] && couvert[i] < Infinity) {
+      else if (tPapier[i] === Infinity && !exterieur[i] && fin[i] && couvert[i] < Infinity) {
         tPapier[i] = couvert[i] + carte.details
         if (carte.interieurSombre) sombre[i] = couvert[i]
       }
