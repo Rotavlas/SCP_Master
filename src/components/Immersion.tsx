@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { SceneMythique } from './ScenesMythiques'
+import { ambiance, jouer, planifier } from '../state/sons'
 
 /**
  * Le moteur des cinématiques immersives des Mythiques (à la manière des cartes immersives) : la scène occupe
@@ -50,6 +51,9 @@ export interface SceneImmersive {
   avant?: ReactNode
   /** La toile n'apparaît qu'à cet instant (une avant-scène la précède) */
   debutToile?: number
+  /** Le son : une ambiance (state/sons.ts), des sons à des instants donnés ; les secousses font un impact
+   * (ou un raclement), sauf `secoue: false` */
+  son?: { ambiance: string; evenements?: [number, () => void][]; secoue?: 'impact' | 'raclement' | false }
 }
 
 /** Durée du retour dans la carte (s) */
@@ -301,6 +305,7 @@ export function Immersion({ id, scene, fige }: { id: string; scene: SceneImmersi
 
   useEffect(() => {
     let fini = false
+    let couperSon = () => {}
     let rendu = 0
     const canvas = toile.current!
     const gl = canvas.getContext('webgl2', { antialias: false, premultipliedAlpha: false })
@@ -365,6 +370,26 @@ export function Immersion({ id, scene, fige }: { id: string; scene: SceneImmersi
         const lglitch = u('u_glitch')
         setTaille({ l, h })
         const debut = performance.now()
+        if (fige === undefined && scene.son) {
+          const fond = ambiance(scene.son.ambiance)
+          const secoue = scene.son.secoue ?? 'impact'
+          const annuler = planifier([
+            ...(scene.son.evenements ?? []),
+            ...(secoue
+              ? (scene.secousses ?? []).map(([ts, force]): [number, () => void] => [
+                  ts,
+                  () => (secoue === 'raclement' ? jouer.raclement() : jouer.impact(force > 8 ? 45 : 60)),
+                ])
+              : []),
+            // Le retour dans la carte : l'ambiance s'efface, la carte se pose
+            [scene.retour, fond.arreter],
+            [scene.retour + 0.2, jouer.glisse],
+          ])
+          couperSon = () => {
+            fond.arreter()
+            annuler()
+          }
+        }
         const image = () => {
           if (fini) return
           const t = fige ?? (performance.now() - debut) / 1000
@@ -452,6 +477,7 @@ export function Immersion({ id, scene, fige }: { id: string; scene: SceneImmersi
       })
     return () => {
       fini = true
+      couperSon()
       cancelAnimationFrame(rendu)
       gl.getExtension('WEBGL_lose_context')?.loseContext()
     }

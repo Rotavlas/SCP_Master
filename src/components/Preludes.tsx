@@ -1,4 +1,5 @@
-import type { CSSProperties, ReactNode } from 'react'
+import { useEffect, type CSSProperties, type ReactNode } from 'react'
+import { ambiance, jouer, planifier } from '../state/sons'
 import '@fontsource/unifrakturmaguntia/400.css'
 import '@fontsource/cinzel/400.css'
 import '@fontsource/stardos-stencil/400.css'
@@ -154,9 +155,49 @@ export const prechargerPrelude = (id: string) => {
   if (p) void document.fonts?.load(`${p.italique ? 'italic ' : ''}1em "${p.police}"`).catch(() => undefined)
 }
 
+/** L'ambiance sonore de chaque indice visuel */
+const AMBIANCES: Record<Prelude['indice'], string> = {
+  braises: 'brasier',
+  patmos: 'choeur',
+  viseur: 'alarme',
+  sceau: 'orgue',
+  moniteur: 'machines',
+  sepia: 'chambre',
+  encre: 'bureau',
+  clignement: 'neon',
+  ronces: 'page',
+}
+
+/** Le son d'une ligne qui paraît, selon la façon dont elle s'écrit */
+function sonsLigne(p: Prelude, ligne: string, t: number): [number, () => void][] {
+  switch (p.effet) {
+    case 'tampon':
+      return [[t + 0.3, jouer.tampon]]
+    case 'frappe':
+      return [...ligne].map((c, i): [number, () => void] => [t + i * 0.055, () => c !== ' ' && jouer.frappe()])
+    case 'plume':
+      return [[t, jouer.plume]]
+    default:
+      return [[t, jouer.brume]]
+  }
+}
+
 export function PreludeMythique({ prelude: p }: { prelude: Prelude }) {
   const n = p.lignes.length
   const fin = DEBUT + n * RYTHME + TENUE
+  useEffect(() => {
+    const fond = ambiance(AMBIANCES[p.indice])
+    const evenements = p.lignes.flatMap((l, i) => sonsLigne(p, l, DEBUT + i * RYTHME))
+    // SCP-173 : à chaque clignement, le béton racle ; SCP-2747 : à la fin, les lettres sont dévorées
+    if (p.indice === 'clignement') for (let k = 0; k * 2.5 + 2.2 < fin; k++) evenements.push([k * 2.5 + 2.25, jouer.raclement])
+    if (p.effet === 'ronge') evenements.push([fin - 2, jouer.plantage])
+    evenements.push([fin, fond.arreter])
+    const annuler = planifier(evenements)
+    return () => {
+      fond.arreter()
+      annuler()
+    }
+  }, [p, fin])
   return (
     <div
       className={`prelude pr-effet-${p.effet === 'ronge' ? 'brume pr-effet-ronge' : p.effet}`}

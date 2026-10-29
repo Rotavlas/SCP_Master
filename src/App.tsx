@@ -15,6 +15,7 @@ import { Repertoire } from './components/Repertoire'
 import { Social, type OngletSocial } from './components/Social'
 import { chargerBase, chargerTraductions, type Base } from './data/catalogue'
 import { useCompte } from './state/enLigne'
+import { basculerSon, useSonActif } from './state/sons'
 import { oublierInvitation, repondreDefi, useDuelDemarre, useDuelsEntrants, useInvitations } from './state/jcj'
 import { totalNonLus, useConversations, useMessagesEntrants, usePresence, type Destinataire } from './state/social'
 import { modifier, notifier, useNotifications, useSauvegarde } from './state/sauvegarde'
@@ -73,10 +74,7 @@ export default function App() {
     })
   }, [s.langue, traductions])
 
-  const base = useMemo(
-    () => (baseVO && s.langue === 'vf' && traductions ? baseVO.avecTraductions(traductions) : baseVO),
-    [baseVO, s.langue, traductions],
-  )
+  const base = useMemo(() => (baseVO && s.langue === 'vf' && traductions ? baseVO.avecTraductions(traductions) : baseVO), [baseVO, s.langue, traductions])
 
   const aller = useCallback((e: Ecran) => {
     setEcran(e)
@@ -159,8 +157,16 @@ export default function App() {
               >
                 {o.nom}
                 {o.id === 'booster' && s.boosters > 0 && <span className="compteur">{s.boosters}</span>}
-                {o.id === 'marche' && s.offresRecues > 0 && <span className="compteur compteur-alerte" title="Offres d'échange reçues">{s.offresRecues}</span>}
-                {o.id === 'social' && nonLus > 0 && <span className="compteur compteur-alerte" title="Messages non lus">{nonLus}</span>}
+                {o.id === 'marche' && s.offresRecues > 0 && (
+                  <span className="compteur compteur-alerte" title="Offres d'échange reçues">
+                    {s.offresRecues}
+                  </span>
+                )}
+                {o.id === 'social' && nonLus > 0 && (
+                  <span className="compteur compteur-alerte" title="Messages non lus">
+                    {nonLus}
+                  </span>
+                )}
               </button>
             ))}
           </nav>
@@ -182,6 +188,7 @@ export default function App() {
               </button>
             ))}
           </div>
+          <BoutonSon />
           <span className="solde" title="Crédits">
             {s.credits.toLocaleString('fr-FR')} ₵
           </span>
@@ -278,8 +285,7 @@ function Pied({ genere }: { genere: string }) {
       <a href="https://scp-data.tedivm.com" target="_blank" rel="noreferrer">
         scp-data
       </a>{' '}
-      (export du {genere}), redistribué sous la même licence. Illustrations des cartes Mythiques redessinées d'après le travail
-      exceptionnel de{' '}
+      (export du {genere}), redistribué sous la même licence. Illustrations des cartes Mythiques redessinées d'après le travail exceptionnel de{' '}
       <a href="https://scp-wiki.wikidot.com/sunny-art-tales" target="_blank" rel="noreferrer">
         SunnyClockwork
       </a>{' '}
@@ -330,5 +336,21 @@ function BandeauDefis({ aller }: { aller: (e: Ecran) => void }) {
         Refuser
       </button>
     </div>
+  )
+}
+
+/** Couper ou rétablir le son du jeu (le choix reste sur l'appareil). */
+function BoutonSon() {
+  const actif = useSonActif()
+  return (
+    <button
+      className="bouton-son"
+      onClick={basculerSon}
+      aria-pressed={actif}
+      title={actif ? 'Couper le son' : 'Rétablir le son'}
+      aria-label={actif ? 'Couper le son' : 'Rétablir le son'}
+    >
+      {actif ? '🔊' : '🔇'}
+    </button>
   )
 }

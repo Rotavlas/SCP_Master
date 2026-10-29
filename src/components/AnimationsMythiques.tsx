@@ -3,6 +3,7 @@ import { useSauvegarde } from '../state/sauvegarde'
 import { Immersion, RETOUR, dureeScene, prechargerScene, type SceneImmersive } from './Immersion'
 import { PRELUDES, PreludeMythique, dureePrelude, prechargerPrelude } from './Preludes'
 import { SceneMythique } from './ScenesMythiques'
+import { ambiance, jouer, planifier } from '../state/sons'
 
 /**
  * Les cinématiques d'ouverture des Mythiques : une par carte, écrite d'après son histoire, en plein écran.
@@ -19,6 +20,14 @@ type Style = CSSProperties & Record<`--${string}`, string | number>
 // maillon et se tendent.
 const ROI: SceneImmersive = {
   nom: 'scarlet-king',
+  son: {
+    ambiance: 'brasier',
+    evenements: [
+      [7.6, jouer.chaine],
+      [7.9, jouer.chaine],
+      [8.15, jouer.chaine],
+    ],
+  },
   image: 'sunny/scarlet-king.png',
   retour: 9.6,
   fond: { mode: 1, c1: '#070101', c2: '#b3140c' },
@@ -63,6 +72,14 @@ const ROI: SceneImmersive = {
 // tout ; ses six ailes se déploient, le feu jaillit, son œil s'ouvre et la couronne se pose.
 const GARDIEN: SceneImmersive = {
   nom: 'gate-guardian',
+  son: {
+    ambiance: 'choeur',
+    evenements: [
+      [0.3, () => jouer.impact(40)],
+      [2.8, jouer.eclair],
+      [6.6, jouer.eclair],
+    ],
+  },
   image: 'sunny/gate-guardian.png',
   retour: 9.2,
   fond: { mode: 2, c1: '#050403', c2: '#fff1cf' },
@@ -111,6 +128,13 @@ const GARDIEN: SceneImmersive = {
 // Leur insigne s'y peint : l'anneau, la main qui s'abat, la lance qui part.
 const MAIN_ROUGE: SceneImmersive = {
   nom: 'alpha-1',
+  son: {
+    ambiance: 'alarme',
+    evenements: [
+      [4.0, jouer.frappe],
+      [6.3, jouer.glisse],
+    ],
+  },
   image: 'sunny/alpha-1.png',
   retour: 9.0,
   debutToile: 3.2,
@@ -193,6 +217,7 @@ function Couloir() {
 // se remplissent derrière eux, depuis les traits ; le visage arrive en dernier, les lunettes accrochent la lumière.
 const ADMINISTRATEUR: SceneImmersive = {
   nom: 'administrateur',
+  son: { ambiance: 'orgue', evenements: [0.6, 1.5, 2.4, 3.3, 4.2, 5.1, 6.0].map((t): [number, () => void] => [t, jouer.plume]).concat([[7.1, jouer.eclair]]) },
   image: 'sunny/administrateur.png',
   retour: 9.2,
   fond: { mode: 4, c1: '#e8dfc8', c2: '#e8dfc8' },
@@ -232,6 +257,15 @@ const ADMINISTRATEUR: SceneImmersive = {
 // d'abord, par à-coups, comme un vieux moniteur ; le cœur repart sur l'écran, puis la lumière revient.
 const FONDATEUR: SceneImmersive = {
   nom: 'o5-1',
+  son: {
+    ambiance: 'machines',
+    evenements: [
+      [0.6, jouer.plantage],
+      [6.08, () => jouer.bip(1500)],
+      [6.3, () => jouer.bip(1500)],
+      [6.5, jouer.eclair],
+    ],
+  },
   image: 'sunny/o5-1.png',
   retour: 8.4,
   saccade: [0.4, 6.2],
@@ -287,6 +321,14 @@ const FONDATEUR: SceneImmersive = {
 // sort, la lumière revient… et un instant il s'efface de sa propre photo, comme il a disparu des registres.
 const SIEGEL: SceneImmersive = {
   nom: 'aaron-siegel',
+  son: {
+    ambiance: 'chambre',
+    evenements: [
+      [5.3, jouer.glisse],
+      [6.15, jouer.brume],
+      [6.8, jouer.brume],
+    ],
+  },
   image: 'photos/aaron-siegel.png',
   retour: 7.8,
   fond: { mode: 5, c1: '#1a0605', c2: '#ffb0a0' },
@@ -332,6 +374,7 @@ const SIEGEL: SceneImmersive = {
 const CLIGNEMENTS = [2.3, 3.6, 4.8, 5.95]
 const STATUE: SceneImmersive = {
   nom: 'scp-173',
+  son: { ambiance: 'neon', secoue: 'raclement' },
   image: 'photos/scp-173.png',
   retour: 7.2,
   fond: { mode: 0, c1: '#050505', c2: '#050505' },
@@ -373,6 +416,13 @@ const STATUE: SceneImmersive = {
 // ramifient sur le texte… puis la page est effacée : il ne reste qu'elle. Tout récit qui la contient cesse d'exister.
 const ANAFABULA: SceneImmersive = {
   nom: 'anafabula',
+  son: {
+    ambiance: 'page',
+    evenements: [
+      [4.0, jouer.plume],
+      [7.4, () => jouer.brume()],
+    ],
+  },
   image: 'sunny/anafabula.png',
   retour: 8.6,
   fond: { mode: 6, c1: '#ece4d2', c2: '#2a2420' },
@@ -497,19 +547,38 @@ function LesAuteurs() {
       requestAnimationFrame(image)
     }
     requestAnimationFrame(image)
+    // Le son : un bureau silencieux, le plantage, la rature du titre, la page qui se referme
+    const fond = ambiance('bureau')
+    const sons = planifier([
+      [PLANTAGE[0], jouer.plantage],
+      [20.3, jouer.plume],
+      [21.6, jouer.brume],
+      [DUREE_AUTEURS - RETOUR, fond.arreter],
+      [DUREE_AUTEURS - RETOUR + 0.2, jouer.glisse],
+    ])
     return () => {
       fini = true
       document.title = titre
+      fond.arreter()
+      sons()
     }
   }, [v.pseudo])
 
   const remarque = (quoi: 'souris' | 'clic', texte: string) => {
     if (vu.current[quoi] || t < 3 || t > DUREE_AUTEURS - 3) return
     vu.current[quoi] = true
+    jouer.plume()
     setNotes((n) => [...n, texte])
   }
   const plante = t > PLANTAGE[0] && t < PLANTAGE[1]
-  const lignes = texteA(frappes, t).split('\n')
+  const texte = texteA(frappes, t)
+  const lignes = texte.split('\n')
+  // Chaque lettre tapée (ou effacée) claque comme une touche
+  const longueur = useRef(0)
+  useEffect(() => {
+    if (texte.length !== longueur.current) jouer.frappe(texte.length < longueur.current)
+    longueur.current = texte.length
+  }, [texte])
   return (
     <div
       className={`am-auteurs ${plante ? 'am-plante' : ''}`}

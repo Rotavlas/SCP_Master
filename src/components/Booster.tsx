@@ -4,6 +4,7 @@ import { signature } from '../data/mythiques'
 import { BOOSTERS, type CarteTiree, type TypeBooster } from '../engine/boosters'
 import { PAR_ID, PRESTIGE } from '../engine/variantes'
 import { tirerBooster } from '../state/actions'
+import { ambiance, jouer, planifier } from '../state/sons'
 import { useCarteAffichee } from '../state/traduction'
 import { notifier, obtenir, useSauvegarde } from '../state/sauvegarde'
 import type { Carte as TCarte, Ecran } from '../types'
@@ -122,6 +123,7 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
   }, [base, tirage])
 
   const dechirer = useCallback(() => {
+    jouer.dechirure()
     setDechirure(1)
     setEtape('dechire')
     setTimeout(() => setEtape('pile'), 900)
@@ -152,6 +154,7 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
     setSuspense(false)
     setProtocole(false)
     setRevelee(true)
+    jouer.retourner(t.carte.ra, t.variante !== 'std')
     if (tirage.souhaits.has(t.carte.id)) notifier(`Souhait exaucé : ${t.carte.num ?? t.carte.nm}`, 'succes')
     if (t.variante !== 'std') notifier(`Variante ${PAR_ID[t.variante].nom} !`, 'rare')
     if (t.carte.ra === 5) notifier(`Mythique : ${designation(t.carte)}${t.numero ? `, exemplaire n° ${t.numero}` : ''}`, 'rare')
@@ -169,12 +172,14 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
       if (t.carte.ra === 5 || (t.carte.ra === 4 && t.variante === 'std')) {
         setProtocole(true)
       } else if (spectaculaire) {
+        jouer.suspense()
         setSuspense(true)
         setTimeout(reveler, 900)
       } else reveler()
       return
     }
     setSortie(true)
+    jouer.glisse()
     setTimeout(() => {
       setSortie(false)
       setRevelee(false)
@@ -420,9 +425,17 @@ function ProtocoleLegendaire({ carte, onFini }: { carte: TCarte; onFini: () => v
     }
     image = requestAnimationFrame(suivante)
     const fin = setTimeout(onFini, DUREE_PROTOCOLE_LEGENDAIRE)
+    const alarme = ambiance('alarme')
+    const sons = planifier([
+      [6.2, jouer.tampon],
+      [7.4, jouer.eclair],
+      [6.0, alarme.arreter],
+    ])
     return () => {
       cancelAnimationFrame(image)
       clearTimeout(fin)
+      alarme.arreter()
+      sons()
     }
   }, [onFini])
   const lignes = [
@@ -430,7 +443,20 @@ function ProtocoleLegendaire({ carte, onFini }: { carte: TCarte; onFini: () => v
     `> NATURE : ${indiceLegendaire(carte)}`,
     carte.y ? `> ARCHIVÉ EN ${carte.y}${carte.a ? ` PAR ${carte.a}` : ''}` : '> ORIGINE : [DONNÉES SUPPRIMÉES]',
   ]
+  // Chaque lettre tapée et chaque mot décrypté s'entendent (au plus une touche par image)
+  const tapees = L_LIGNES.reduce((n, t0, i) => n + Math.min(lignes[i].length, Math.max(0, Math.floor((t - t0) / 0.025))), 0)
+  const precedentes = useRef(0)
+  useEffect(() => {
+    if (tapees > precedentes.current) jouer.frappe()
+    precedentes.current = tapees
+  }, [tapees])
   const extrait = useMemo(() => extraitCaviarde(affichee), [affichee])
+  const decryptes = extrait?.filter((m) => m.revele !== undefined && t >= m.revele).length ?? 0
+  const dejaDecryptes = useRef(0)
+  useEffect(() => {
+    if (decryptes > dejaDecryptes.current) jouer.decrypte()
+    dejaDecryptes.current = decryptes
+  }, [decryptes])
   return (
     <div
       className="protocole-mythique protocole-legendaire"
@@ -508,11 +534,16 @@ function ProtocoleMythique({ carte, onFini }: { carte: TCarte; onFini: () => voi
   const [scene, setScene] = useState(false)
   useEffect(() => {
     prechargerMythique(carte.id)
+    const sons = planifier([
+      [tampon, jouer.tampon],
+      [tampon + APRES_TAMPON, jouer.eclair],
+    ])
     const t = setTimeout(() => setScene(true), NOIR_AVANT_SCENE * 1000)
     const fin = setTimeout(onFini, (tampon + APRES_TAMPON + APRES_ECLAIR) * 1000)
     return () => {
       clearTimeout(t)
       clearTimeout(fin)
+      sons()
     }
   }, [carte.id, onFini, tampon])
   const plein = animationPleinEcran(carte.id)
