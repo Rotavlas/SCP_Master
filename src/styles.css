@@ -6723,3 +6723,243 @@ button.pseudo:focus-visible .pseudo-nom {
   bottom: 1rem;
   z-index: 5;
 }
+
+/* ---------- Navigation : icônes et menu « Plus » (affichés sur téléphone seulement) ---------- */
+.onglet-icone,
+.onglet-plus,
+.menu-plus-fond {
+  display: none;
+}
+
+/* ---------- Téléphone : barre d'onglets en bas, en-tête d'une ligne, cibles au doigt ---------- */
+button,
+a,
+select,
+[role='button'] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+@media (max-width: 760px) {
+  /* En-tête : une seule ligne, le logo sans son nom */
+  .barre {
+    flex-wrap: nowrap;
+    gap: 0.45rem;
+    padding: 0.45rem 12px;
+    padding-top: max(0.45rem, env(safe-area-inset-top));
+    /* Un flou d'arrière-plan ferait de l'en-tête le repère de la barre « fixe » du bas : elle resterait en haut */
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(11, 13, 14, 0.97);
+  }
+
+  .marque span {
+    display: none;
+  }
+
+  .barre .solde {
+    margin-left: auto;
+    font-size: 0.85rem;
+  }
+
+  .langue button {
+    padding: 0.3rem 0.45rem;
+    font-size: 0.72rem;
+  }
+
+  .btn-compte {
+    max-width: 7.5rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .btn-compte .badges-affiches {
+    display: none;
+  }
+
+  /* Les onglets deviennent une barre fixe en bas : quatre principaux et « Plus » */
+  .onglets {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 40;
+    order: 0;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0;
+    padding: 0 0 env(safe-area-inset-bottom);
+    background: rgba(11, 13, 14, 0.97);
+    border-top: 1px solid var(--bord);
+    backdrop-filter: blur(8px);
+  }
+
+  .onglets button {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2px;
+    min-height: 56px;
+    padding: 0.35rem 0 0.3rem;
+    font-size: 0.6rem;
+    letter-spacing: 0.02em;
+    border-bottom: 0;
+    border-top: 2px solid transparent;
+  }
+
+  .onglets button.actif {
+    border-top-color: var(--rouge);
+  }
+
+  .onglets button.secondaire {
+    display: none;
+  }
+
+  .onglet-plus {
+    display: flex;
+  }
+
+  .onglet-icone {
+    display: block;
+    font-size: 1.2rem;
+    line-height: 1;
+  }
+
+  .onglets .compteur {
+    position: absolute;
+    top: 4px;
+    left: calc(50% + 6px);
+    margin: 0;
+    font-size: 0.6rem;
+  }
+
+  /* Le menu « Plus » : une feuille qui monte au-dessus de la barre */
+  .menu-plus-fond {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 39;
+    background: rgba(0, 0, 0, 0.5);
+    animation: fondu 0.15s ease-out;
+  }
+
+  .menu-plus {
+    position: absolute;
+    left: 8px;
+    right: 8px;
+    bottom: calc(64px + env(safe-area-inset-bottom));
+    display: grid;
+    gap: 2px;
+    padding: 6px;
+    border: 1px solid var(--bord);
+    border-radius: 12px;
+    background: #121518;
+    animation: entree-modale 0.2s ease-out;
+  }
+
+  .menu-plus button {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    min-height: 48px;
+    padding: 0 0.9rem;
+    border: 0;
+    border-radius: 8px;
+    background: none;
+    color: var(--texte);
+    font-family: var(--mono);
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    text-align: left;
+  }
+
+  .menu-plus button.actif {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--rouge);
+  }
+
+  .menu-plus .onglet-icone {
+    width: 1.4rem;
+    text-align: center;
+  }
+
+  .menu-plus .compteur {
+    margin-left: auto;
+  }
+
+  /* La place de la barre du bas */
+  .app {
+    padding-bottom: calc(64px + env(safe-area-inset-bottom));
+  }
+
+  .notifications {
+    right: 8px;
+    left: 8px;
+    max-width: none;
+    bottom: calc(72px + env(safe-area-inset-bottom));
+  }
+
+  /* Pas de zoom automatique à la saisie (iPhone) : les champs font au moins 16 px */
+  input,
+  select,
+  textarea {
+    font-size: 16px;
+  }
+
+  /* Les filtres en grille compacte : la recherche sur toute la largeur, deux listes par ligne */
+  .filtres {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.4rem;
+  }
+
+  .filtres input,
+  .filtres > :first-child {
+    grid-column: 1 / -1;
+  }
+
+  .filtres select {
+    width: 100%;
+    min-width: 0;
+  }
+
+  /* Fermer une fiche : une vraie cible pour le pouce */
+  .fermer {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  /* En duel : la barre du bas s'efface, les cartes rétrécissent pour que la question et les réponses tiennent
+     à l'écran pendant que le chrono tourne */
+  .app:has(.duel) .onglets {
+    display: none;
+  }
+
+  .app:has(.duel) {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+
+  .duel-table .carte {
+    --w: 92px;
+  }
+
+  .duel-table .carte-cachee {
+    width: 92px;
+  }
+
+  .duel-question h2 {
+    font-size: 1.1rem;
+  }
+
+  .duel-choix .rangee-cartes {
+    gap: 0.5rem;
+  }
+
+  .duel-choix .carte {
+    --w: 104px;
+  }
+}

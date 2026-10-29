@@ -24,16 +24,17 @@ import { useCloche, type Notification } from './state/notifications'
 import { Cloche, decrire, type OngletMarche } from './components/Cloche'
 import type { Ecran, Traductions } from './types'
 
-const ONGLETS: { id: Ecran; nom: string }[] = [
-  { id: 'accueil', nom: 'Terminal' },
-  { id: 'booster', nom: 'Boosters' },
-  { id: 'collection', nom: 'Archives' },
-  { id: 'repertoire', nom: 'Répertoire' },
-  { id: 'duel', nom: 'Confrontation' },
-  { id: 'marche', nom: 'Marché' },
-  { id: 'social', nom: 'Social' },
-  { id: 'classement', nom: 'Classements' },
-  { id: 'boutique', nom: 'Intendance' },
+/** Les onglets ; sur téléphone, les quatre principaux restent dans la barre du bas, les autres passent sous « Plus ». */
+const ONGLETS: { id: Ecran; nom: string; icone: string; principal?: boolean }[] = [
+  { id: 'accueil', nom: 'Terminal', icone: '⌂', principal: true },
+  { id: 'booster', nom: 'Boosters', icone: '✂', principal: true },
+  { id: 'collection', nom: 'Archives', icone: '▤', principal: true },
+  { id: 'repertoire', nom: 'Répertoire', icone: '❖' },
+  { id: 'duel', nom: 'Confrontation', icone: '⚔', principal: true },
+  { id: 'marche', nom: 'Marché', icone: '⇄' },
+  { id: 'social', nom: 'Social', icone: '✉' },
+  { id: 'classement', nom: 'Classements', icone: '♛' },
+  { id: 'boutique', nom: 'Intendance', icone: '₵' },
 ]
 
 export default function App() {
@@ -51,6 +52,8 @@ export default function App() {
   const [profilOuvert, setProfilOuvert] = useState<string | null>(null)
   const [ongletSocial, setOngletSocial] = useState<OngletSocial>('amis')
   const [conversation, setConversation] = useState<Destinataire | null>(null)
+  // Sur téléphone : le menu des onglets secondaires
+  const [menuPlus, setMenuPlus] = useState(false)
   const connecte = compte.statut === 'connecte' && !!s.agent
   usePresence(connecte)
   useMessagesEntrants(connecte)
@@ -148,14 +151,18 @@ export default function App() {
             {ONGLETS.map((o) => (
               <button
                 key={o.id}
-                className={ecran === o.id ? 'actif' : ''}
+                className={`${ecran === o.id ? 'actif' : ''} ${o.principal ? '' : 'secondaire'}`}
                 onClick={() => {
                   setRechercheMarche('')
                   setOngletMarche('encheres')
+                  setMenuPlus(false)
                   aller(o.id)
                 }}
               >
-                {o.nom}
+                <span className="onglet-icone" aria-hidden="true">
+                  {o.icone}
+                </span>
+                <span className="onglet-nom">{o.nom}</span>
                 {o.id === 'booster' && s.boosters > 0 && <span className="compteur">{s.boosters}</span>}
                 {o.id === 'marche' && s.offresRecues > 0 && (
                   <span className="compteur compteur-alerte" title="Offres d'échange reçues">
@@ -169,7 +176,45 @@ export default function App() {
                 )}
               </button>
             ))}
+            {/* Téléphone : les onglets secondaires, dans un menu */}
+            <button
+              className={`onglet-plus ${menuPlus || ONGLETS.some((o) => !o.principal && o.id === ecran) ? 'actif' : ''}`}
+              onClick={() => setMenuPlus(!menuPlus)}
+              aria-expanded={menuPlus}
+            >
+              <span className="onglet-icone" aria-hidden="true">
+                ☰
+              </span>
+              <span className="onglet-nom">Plus</span>
+              {s.offresRecues + nonLus > 0 && <span className="compteur compteur-alerte">{s.offresRecues + nonLus}</span>}
+            </button>
           </nav>
+          {menuPlus && (
+            <div className="menu-plus-fond" onClick={() => setMenuPlus(false)}>
+              <div className="menu-plus" role="menu" onClick={(e) => e.stopPropagation()}>
+                {ONGLETS.filter((o) => !o.principal).map((o) => (
+                  <button
+                    key={o.id}
+                    role="menuitem"
+                    className={ecran === o.id ? 'actif' : ''}
+                    onClick={() => {
+                      setRechercheMarche('')
+                      setOngletMarche('encheres')
+                      setMenuPlus(false)
+                      aller(o.id)
+                    }}
+                  >
+                    <span className="onglet-icone" aria-hidden="true">
+                      {o.icone}
+                    </span>
+                    {o.nom}
+                    {o.id === 'marche' && s.offresRecues > 0 && <span className="compteur compteur-alerte">{s.offresRecues}</span>}
+                    {o.id === 'social' && nonLus > 0 && <span className="compteur compteur-alerte">{nonLus}</span>}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="langue" role="radiogroup" aria-label="Langue des fiches">
             {(['vo', 'vf'] as const).map((l) => (
               <button
