@@ -6748,8 +6748,8 @@ select,
     padding: 0.45rem 12px;
     padding-top: max(0.45rem, env(safe-area-inset-top));
     /* Un flou d'arrière-plan ferait de l'en-tête le repère de la barre « fixe » du bas : elle resterait en haut */
-    backdrop-filter: none;
     -webkit-backdrop-filter: none;
+    backdrop-filter: none;
     background: rgba(11, 13, 14, 0.97);
   }
 
