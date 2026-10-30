@@ -1765,7 +1765,7 @@ function soutien(c) {
 	return c.k === "f" ? "fim" : c.k === "l" ? "site" : c.k === "o" ? "protocole" : "personnel";
 }
 const campReco = () => ({
-	integrite: 100,
+	integrite: 150,
 	manifestation: 0,
 	poison: 0,
 	manifeste: false,
@@ -1846,7 +1846,7 @@ function appliquerLiberation(auteur, camps, anomalie, r, issue, evenements) {
 		}
 		if (e.special === "remede" || e.special === "inoffensif") {
 			const soin = e.special === "remede" ? 15 : 20;
-			camps[auteur].integrite = Math.min(100, camps[auteur].integrite + soin);
+			camps[auteur].integrite = Math.min(150, camps[auteur].integrite + soin);
 			evenements.push({
 				camp: auteur,
 				type: "soin",
@@ -1873,7 +1873,7 @@ function gainReponse(juste, temps) {
 function remplir(camp, n) {
 	if (!camp.manifeste) camp.manifestation = Math.min(100, camp.manifestation + n);
 }
-const termine = (tour, joueur, ia) => tour >= 5 || joueur.integrite <= 0 || ia.integrite <= 0;
+const termine = (tour, joueur, ia) => tour >= 8 || joueur.integrite <= 0 || ia.integrite <= 0;
 function issueReco(joueur, ia) {
 	if (joueur.integrite <= 0 && ia.integrite > 0) return "defaite";
 	if (ia.integrite <= 0 && joueur.integrite > 0) return "victoire";
@@ -1913,7 +1913,7 @@ const MANIFESTATIONS = {
 	"perso:aaron-siegel": {
 		id: "revelation",
 		nom: "Révélation",
-		texte: "La main adverse est révélée, et vos deux prochaines questions n’ont plus que deux réponses."
+		texte: "La vérité se développe : vos trois prochaines questions n’ont plus que deux réponses."
 	},
 	"scp-173": {
 		id: "clignement",
@@ -1958,7 +1958,7 @@ function manifester(m, auteur, camps, mains, hasard = Math.random) {
 			moi.reconfinementsAuto += 2;
 			break;
 		case "reecriture":
-			moi.integrite = Math.min(100, moi.integrite + 35);
+			moi.integrite = Math.min(150, moi.integrite + 35);
 			moi.poison = 0;
 			break;
 		case "veto":
@@ -1966,7 +1966,7 @@ function manifester(m, auteur, camps, mains, hasard = Math.random) {
 			moi.reconfinementsAuto += 1;
 			break;
 		case "revelation":
-			moi.questionsFaciles += 2;
+			moi.questionsFaciles += 3;
 			break;
 		case "clignement":
 			lui.questionsCourtes += 2;
@@ -1974,7 +1974,7 @@ function manifester(m, auteur, camps, mains, hasard = Math.random) {
 		case "effacement":
 			lui.echecsAuto += 1;
 			break;
-		default: moi.integrite = Math.min(100, moi.integrite + 20);
+		default: moi.integrite = Math.min(150, moi.integrite + 20);
 	}
 	return ev;
 }
@@ -2045,7 +2045,7 @@ function vuePublique(etat, b) {
 		tour: etat.tour,
 		main: etat.main,
 		cartesIA: etat.mainIA.length,
-		mainIA: etat.revele ? etat.mainIA : void 0,
+		mainIA: etat.mainIA,
 		joueur: etat.joueur,
 		ia: etat.ia,
 		bonnes: etat.bonnes,
@@ -2223,7 +2223,7 @@ async function resoudre(env, id, idJoueur, version, etat, b, issueJoueur, repons
 	};
 	for (const [x, c] of [["joueur", carte], ["ia", carteIA]]) if (nature(c) === "soutien" && soutien(c) === "site") {
 		const v = Math.round(c.def * .4);
-		camps[x].integrite = Math.min(100, camps[x].integrite + v);
+		camps[x].integrite = Math.min(150, camps[x].integrite + v);
 		evenements.push({
 			camp: x,
 			type: "soin",
@@ -2239,6 +2239,7 @@ async function resoudre(env, id, idJoueur, version, etat, b, issueJoueur, repons
 			reconfinee: etat.reponseIA.juste,
 			temps: etat.reponseIA.temps
 		}, evenements).poche) poche("ia");
+		if (etat.reponseIA.juste) mains.joueur.push(carte.id);
 		if (!etat.recoIA.auto) remplir(camps.ia, gainReponse(etat.reponseIA.juste, etat.reponseIA.temps));
 		for (const k of [
 			"reconfinementsAuto",
@@ -2249,6 +2250,7 @@ async function resoudre(env, id, idJoueur, version, etat, b, issueJoueur, repons
 	}
 	if (etat.reco && issueJoueur) {
 		if (appliquerLiberation("ia", camps, carteIA, etat.reco, issueJoueur, evenements).poche) poche("joueur");
+		if (issueJoueur.reconfinee) mains.ia.push(carteIA.id);
 		if (reponse) remplir(camps.joueur, gainReponse(issueJoueur.reconfinee, issueJoueur.temps));
 		for (const k of [
 			"reconfinementsAuto",

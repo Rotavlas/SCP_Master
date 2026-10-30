@@ -477,11 +477,13 @@ await admin('delete from prive.duels_ia where joueur = $1', [B])
 await test('une partie complète, arbitrée et récompensée par le serveur', async () => {
   const d = (await appel('jeton-B', { action: 'reco_debuter', niveau: 1 })).corps
   assert.ok(d.id, JSON.stringify(d))
-  assert.equal(d.joueur.integrite, 100)
-  assert.ok(!('mainIA' in d && d.mainIA), 'la main de l’IA reste cachée')
+  assert.equal(d.joueur.integrite, 150)
+  assert.equal(d.mainIA.length, 5, 'la main de l’IA est sur la table')
   let fin = null
-  for (const carte of d.main) {
-    const j = await appel('jeton-B', { action: 'reco_jouer', id: d.id, carte })
+  let main = d.main
+  // Jusqu'à 8 tours : les anomalies reconfinées reviennent en main
+  for (let tour = 0; tour < 12 && main.length; tour++) {
+    const j = await appel('jeton-B', { action: 'reco_jouer', id: d.id, carte: main[0] })
     assert.equal(j.statut, 200, j.texte)
     assert.ok(j.corps.carteIA, 'la carte de l’IA est montrée')
     let r = j.corps.resultat
@@ -498,9 +500,22 @@ await test('une partie complète, arbitrée et récompensée par le serveur', as
       fin = r.fin
       break
     }
+    main = r.main
   }
   assert.ok(fin, 'la partie se termine')
   assert.ok(['victoire', 'defaite', 'nul'].includes(fin.issue))
+})
+await test('une anomalie reconfinée retourne dans la main de son propriétaire', async () => {
+  for (let essai = 0; essai < 6; essai++) {
+    const d = (await appel('jeton-B', { action: 'reco_debuter', niveau: 1 })).corps
+    const j = await appel('jeton-B', { action: 'reco_jouer', id: d.id, carte: d.main[0] })
+    if (!j.corps.question) continue
+    horloge += 2000
+    const r = await appel('jeton-B', { action: 'reco_repondre', id: d.id, choix: (await etatServeur(d.id)).question.bonne })
+    assert.ok(r.corps.mainIA.includes(j.corps.carteIA), 'l’anomalie reconfinée est revenue dans la main de l’IA')
+    return
+  }
+  assert.fail('aucune anomalie de l’IA en 6 parties')
 })
 await test('une réponse retirée par la FIM ne compte pas', async () => {
   // Réponse invalide : comme un temps écoulé

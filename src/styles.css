@@ -8006,37 +8006,6 @@ select,
   .breche-centre .breche-question h2 {
     font-size: 1.15rem;
   }
-
-  /* La main reste en bas de l'écran, à moitié levée ; une carte survolée ou choisie se lève entière */
-  .breche-main {
-    position: sticky;
-    bottom: 0;
-    z-index: 6;
-    margin-top: -1rem;
-    padding: 0.8rem 0 0;
-    overflow: visible;
-    background: linear-gradient(180deg, transparent, rgba(11, 13, 14, 0.94) 30%);
-    pointer-events: none;
-  }
-
-  .breche-main-carte {
-    pointer-events: auto;
-    margin-bottom: -8.6rem;
-  }
-
-  .breche-main-carte .breche-badge {
-    order: -1;
-  }
-
-  .breche-main-carte:hover,
-  .breche-main-carte.choisie {
-    transform: translateY(-8.4rem);
-  }
-
-  /* Le bas de la table reste visible au-dessus de la main arrimée */
-  .breche-table {
-    padding-bottom: 3rem;
-  }
 }
 
 /* La main : de grandes cartes qu'on glisse sur le plateau */
@@ -8324,7 +8293,7 @@ select,
 }
 
 /* Une anomalie s'échappe : l'alarme baigne la salle */
-.reco.alerte::before {
+.reco.en-alarme::before {
   content: '';
   position: fixed;
   inset: 0;
@@ -8919,5 +8888,353 @@ select,
   .reco-main-carte {
     width: 7.4rem;
     flex: none;
+  }
+}
+
+/* ---------- Une partie occupe tout l'écran (components/pleinEcran.ts) ---------- */
+body.en-partie .pied {
+  display: none;
+}
+
+body.en-partie .contenu {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+
+/* La table prend la hauteur restante et défile en elle-même ; la main tient dans sa rangée en bas */
+body.en-partie .breche,
+body.en-partie .reco {
+  height: var(--hauteur-jeu, auto);
+  overflow: hidden;
+  gap: 0.6rem;
+  align-content: stretch;
+}
+
+body.en-partie .breche {
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
+body.en-partie .reco {
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+}
+
+body.en-partie .breche-table,
+body.en-partie .reco-scene {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+}
+
+body.en-partie .reco-scene {
+  display: grid;
+  align-content: center;
+}
+
+/* La main, en éventail : le haut des cartes dépasse, une carte survolée ou choisie se lève entière */
+body.en-partie .breche-main,
+body.en-partie .reco-main {
+  position: relative;
+  z-index: 6;
+  height: 8.2rem;
+  margin: 0;
+  padding: 0.3rem 0 0;
+  align-items: flex-start;
+  overflow: visible;
+}
+
+body.en-partie .breche-main-carte,
+body.en-partie .reco-main-carte {
+  transition: transform 0.2s ease;
+}
+
+body.en-partie .breche-main-carte .breche-badge,
+body.en-partie .reco-main-carte .reco-badge {
+  order: -1;
+}
+
+body.en-partie .breche-main-carte:hover,
+body.en-partie .breche-main-carte.choisie,
+body.en-partie .reco-main-carte:hover:not(:disabled) {
+  transform: translateY(-6.6rem);
+}
+
+body.en-partie .breche-main-carte.soulevee {
+  transform: none;
+}
+
+/* Une partie terminée : le rapport se lit en entier */
+body.en-partie .breche:has(.duel-fin),
+body.en-partie .reco:has(.duel-fin) {
+  height: auto;
+  overflow: visible;
+}
+
+@media (max-width: 760px) {
+  /* Sur téléphone, pas de survol : la main montre des cartes entières, plus petites, et défile de côté */
+  body.en-partie .breche-main,
+  body.en-partie .reco-main {
+    height: auto;
+    overflow-x: auto;
+    overflow-y: hidden;
+    align-items: flex-end;
+  }
+
+  body.en-partie .breche-main-carte,
+  body.en-partie .reco-main-carte {
+    width: 5.6rem;
+  }
+
+  body.en-partie .breche-main-carte:hover,
+  body.en-partie .breche-main-carte.choisie,
+  body.en-partie .reco-main-carte:hover:not(:disabled) {
+    transform: none;
+  }
+
+  body.en-partie .breche-main-carte.choisie .carte {
+    transform: translateY(-4px);
+  }
+}
+
+/* ---------- Coups et soins : chiffres qui s'envolent, voiles, lueurs ---------- */
+.integrite-site {
+  position: relative;
+}
+
+.flottant {
+  position: absolute;
+  right: calc(var(--i) * 3.2rem);
+  top: -0.6rem;
+  font-family: var(--mono);
+  font-weight: 700;
+  font-size: 1.35rem;
+  text-shadow: 0 2px 8px #000;
+  pointer-events: none;
+  animation: s-envole 1.8s ease-out forwards;
+  animation-delay: calc(var(--i) * 0.18s);
+}
+
+.flottant.perte {
+  color: #ff5a48;
+}
+
+.flottant.gain {
+  color: #7ef0a0;
+}
+
+@keyframes s-envole {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.6);
+  }
+  18% {
+    opacity: 1;
+    transform: translateY(0) scale(1.25);
+  }
+  75% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.9;
+    transform: translateY(-22px) scale(1);
+  }
+}
+
+.site-reco.touche .integrite-site .jauge {
+  animation: jauge-touchee 0.8s ease-out;
+}
+
+@keyframes jauge-touchee {
+  0%,
+  40% {
+    box-shadow:
+      0 0 0 2px #ff5a48,
+      0 0 18px rgba(255, 90, 72, 0.8);
+  }
+}
+
+.site-reco.soigne .integrite-site .jauge {
+  animation: jauge-soignee 1.4s ease-out;
+}
+
+@keyframes jauge-soignee {
+  0%,
+  50% {
+    box-shadow:
+      0 0 0 2px #7ef0a0,
+      0 0 22px rgba(126, 240, 160, 0.8);
+  }
+}
+
+/* Votre Site touché : un voile rouge passe sur l'écran ; soigné : une lueur verte monte */
+.reco.blesse::after,
+.breche.blesse::after,
+.reco.gueri::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  animation: voile-coup 0.9s ease-out forwards;
+}
+
+.reco.blesse::after,
+.breche.blesse::after {
+  background: radial-gradient(ellipse at center, transparent 45%, rgba(210, 30, 20, 0.55));
+}
+
+.reco.gueri:not(.blesse)::after {
+  background: radial-gradient(ellipse at 50% 100%, rgba(126, 240, 160, 0.3), transparent 60%);
+  animation-duration: 1.6s;
+}
+
+@keyframes voile-coup {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.cellule.soignee {
+  animation: cellule-soignee 1.4s ease-out;
+}
+
+@keyframes cellule-soignee {
+  0%,
+  45% {
+    border-color: #7ef0a0;
+    box-shadow:
+      0 0 0 1px #7ef0a0,
+      0 0 22px rgba(126, 240, 160, 0.6);
+  }
+}
+
+.cellule.gardee {
+  animation: cellule-gardee 1.4s ease-out;
+}
+
+@keyframes cellule-gardee {
+  0%,
+  45% {
+    border-color: #8fc4ff;
+    box-shadow:
+      0 0 0 1px #8fc4ff,
+      inset 0 0 18px rgba(143, 196, 255, 0.45);
+  }
+}
+
+.cellule.touchee {
+  animation:
+    secousse 0.45s ease 1,
+    cellule-touchee 1s ease-out;
+}
+
+@keyframes cellule-touchee {
+  0%,
+  35% {
+    border-color: #ff5a48;
+    box-shadow:
+      0 0 0 1px #ff5a48,
+      inset 0 0 22px rgba(255, 90, 72, 0.55);
+  }
+}
+
+/* ---------- Les Mythiques se voient : aura d'or dans la main, portrait dans la jauge ---------- */
+.breche-main-carte.ultime .carte,
+.reco-main-carte.ultime .carte {
+  animation: aura-mythique 2.2s ease-in-out infinite alternate;
+}
+
+@keyframes aura-mythique {
+  from {
+    box-shadow:
+      0 0 0 2px #c9a13f,
+      0 0 18px rgba(246, 220, 140, 0.35);
+  }
+  to {
+    box-shadow:
+      0 0 0 2px #f6dc8c,
+      0 0 38px rgba(246, 220, 140, 0.85);
+  }
+}
+
+.breche-main-carte.ultime .breche-badge,
+.reco-main-carte.ultime .reco-badge {
+  color: #1c1306;
+  border-color: #f6dc8c;
+  background: linear-gradient(90deg, #b48420, #f6dc8c, #b48420);
+  font-weight: 700;
+}
+
+.jauge-manifestation {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.6rem;
+}
+
+.manif-texte {
+  flex: 1;
+  min-width: 0;
+}
+
+.manif-portrait {
+  flex: none;
+  width: 2.8rem;
+  border-radius: 6px;
+  filter: grayscale(calc(1 - var(--remplissage))) brightness(calc(0.45 + var(--remplissage) * 0.55));
+  transition: filter 0.8s ease;
+}
+
+.manif-portrait .carte {
+  width: 100%;
+}
+
+.jauge-manifestation.pleine .manif-portrait {
+  animation: aura-mythique 1.2s ease-in-out infinite alternate;
+}
+
+.jauge-manifestation.pleine .manif-texte span {
+  color: #f6dc8c;
+  font-weight: 700;
+}
+
+.manifestation-passer {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  z-index: 2;
+  color: #e9dcb6;
+}
+
+/* La main adverse, sur la table */
+.main-vue-carte {
+  display: grid;
+  justify-items: center;
+  gap: 0.2rem;
+  width: 5rem;
+}
+
+.main-vue-carte .carte {
+  width: 100%;
+}
+
+.main-vue-carte .reco-badge {
+  font-size: 0.56rem;
+  padding: 0.05rem 0.35rem;
+}
+
+.site-reco-main-vue {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 760px) {
+  .main-vue-carte {
+    width: 3.6rem;
+  }
+
+  .main-vue-carte .reco-badge {
+    display: none;
   }
 }

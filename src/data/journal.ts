@@ -12,6 +12,16 @@ export interface Entree {
 export const JOURNAL: Entree[] = [
   {
     date: '2026-10-30',
+    titre: 'Des confrontations plus lisibles',
+    points: [
+      'Une partie occupe tout l’écran : plus besoin de faire défiler, et la main ne chevauche plus le bas de page.',
+      'Reconfinement : la main de l’IA est sur la table, avec l’effet de chaque carte. Les parties durent jusqu’à 8 tours sur des Sites de 150 points, et une anomalie reconfinée retourne dans la main de son propriétaire.',
+      'Dégâts et soins se voient et s’entendent : chiffres qui s’envolent, jauge qui flashe, voile rouge quand votre Site est touché, lueur verte quand il est soigné.',
+      'Les Mythiques brillent : aura d’or dans la main, portrait dans la jauge de Manifestation qui reprend ses couleurs, et dans la Brèche, l’ultime joue la cinématique de la carte.',
+    ],
+  },
+  {
+    date: '2026-10-30',
     titre: 'Trois façons d’affronter l’IA',
     points: [
       'Dans Confrontation, choisissez votre mode contre l’IA : Reconfinement, Brèche de confinement ou Duel éclair. Chacun a son tutoriel, montré avant la première partie et à tout moment avec « Comment jouer ? ».',

@@ -21,6 +21,7 @@ import {
   remplir,
   soutien,
   termine,
+  INTEGRITE_SITE,
   URGENCE,
   type CampReco,
   type Evenement,
@@ -78,7 +79,8 @@ function vuePublique(etat: EtatReco, b: Base) {
     tour: etat.tour,
     main: etat.main,
     cartesIA: etat.mainIA.length,
-    mainIA: etat.revele ? etat.mainIA : undefined,
+    // La main de l'IA est sur la table : on joue en sachant ce qui peut sortir d'en face
+    mainIA: etat.mainIA,
     joueur: etat.joueur,
     ia: etat.ia,
     bonnes: etat.bonnes,
@@ -231,7 +233,7 @@ async function resoudre(
   ] as [Cote, Carte][]) {
     if (nature(c) === 'soutien' && soutien(c) === 'site') {
       const v = Math.round(c.def * 0.4)
-      camps[x].integrite = Math.min(100, camps[x].integrite + v)
+      camps[x].integrite = Math.min(INTEGRITE_SITE, camps[x].integrite + v)
       evenements.push({ camp: x, type: 'soin', valeur: v, texte: `${c.num ?? c.nm} renforce le Site : +${v}` })
     }
   }
@@ -242,6 +244,8 @@ async function resoudre(
   if (etat.recoIA && etat.reponseIA) {
     const r = appliquerLiberation('joueur', camps, carte, etat.recoIA, { reconfinee: etat.reponseIA.juste, temps: etat.reponseIA.temps }, evenements)
     if (r.poche) poche('ia')
+    // Reconfinée, l'anomalie retourne dans la main de son propriétaire
+    if (etat.reponseIA.juste) mains.joueur.push(carte.id)
     if (!etat.recoIA.auto) remplir(camps.ia, gainReponse(etat.reponseIA.juste, etat.reponseIA.temps))
     for (const k of ['reconfinementsAuto', 'questionsCourtes', 'echecsAuto', 'questionsFaciles'] as const) consommes.ia[k] = true
   }
@@ -249,6 +253,7 @@ async function resoudre(
   if (etat.reco && issueJoueur) {
     const r = appliquerLiberation('ia', camps, carteIA, etat.reco, issueJoueur, evenements)
     if (r.poche) poche('joueur')
+    if (issueJoueur.reconfinee) mains.ia.push(carteIA.id)
     if (reponse) remplir(camps.joueur, gainReponse(issueJoueur.reconfinee, issueJoueur.temps))
     for (const k of ['reconfinementsAuto', 'questionsCourtes', 'echecsAuto', 'questionsFaciles'] as const) consommes.joueur[k] = true
   }

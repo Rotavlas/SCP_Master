@@ -17,9 +17,11 @@ import {
 import { debuterReco, jouerReco, manifesterReco, repondreReco, type ResultatReco, type TourReco, type VueReco } from '../state/actions'
 import { useSauvegarde, varianteAffichee } from '../state/sauvegarde'
 import type { Carte as TCarte } from '../types'
-import { AnimationMythique, dureeSansPrelude } from './AnimationsMythiques'
 import { Carte } from './Carte'
+import { usePleinEcran } from './pleinEcran'
+import { jouer as son } from '../state/sons'
 import { QuestionAlteree } from './QuestionAlteree'
+import { SpectacleMythique } from './SpectacleMythique'
 
 /**
  * Le Reconfinement contre l'IA (règles : src/engine/reconfinement.ts). Chaque tour, on libère une anomalie chez
@@ -35,19 +37,13 @@ interface Partie extends VueReco {
   resultat?: ResultatReco
 }
 
-/** Une Manifestation qui se joue en plein écran */
-interface Spectacle {
-  m: Manifestation
-  evenements: Evenement[]
-  /** La scène est finie : place au titre */
-  titre: boolean
-}
-
 export function Reconfinement({ base, adversaire, onQuitter }: { base: Base; adversaire: Adversaire; onQuitter: () => void }) {
   const s = useSauvegarde()
+  usePleinEcran()
   const [partie, setPartie] = useState<Partie | null>(null)
   const [regarde, setRegarde] = useState(false)
-  const [spectacle, setSpectacle] = useState<Spectacle | null>(null)
+  // La Manifestation qui vient de se déclencher, jouée en plein écran
+  const [spectacle, setSpectacle] = useState<Manifestation | null>(null)
   const [ecoule, setEcoule] = useState(0)
   const [attente, setAttente] = useState(false)
   const partieRef = useRef(partie)
@@ -77,6 +73,16 @@ export function Reconfinement({ base, adversaire, onQuitter }: { base: Base; adv
     void commencer()
   }, []) // une seule fois
 
+  // Le son du tour : un coup sourd quand votre Site est touché, une cloche claire quand il est soigné
+  const resultatTour = partie?.resultat
+  useEffect(() => {
+    if (!resultatTour) return
+    const ev = resultatTour.evenements
+    if (ev.some((e) => e.camp === 'joueur' && (e.type === 'breche' || e.type === 'poison') && (e.valeur ?? 0) > 0)) son.impact(70)
+    else if (ev.some((e) => e.camp === 'ia' && e.type === 'breche' && (e.valeur ?? 0) > 0)) son.impact(110)
+    if (ev.some((e) => e.camp === 'joueur' && e.type === 'soin')) son.eclair()
+  }, [resultatTour])
+
   // Chronomètre du reconfinement ; le serveur mesure lui-même le temps de réponse
   useEffect(() => {
     if (partie?.phase !== 'question') return
@@ -90,13 +96,6 @@ export function Reconfinement({ base, adversaire, onQuitter }: { base: Base; adv
     }, 100)
     return () => clearInterval(t)
   }, [partie?.phase, partie?.tour])
-
-  // La scène de la Mythique, puis son titre
-  useEffect(() => {
-    if (!spectacle || spectacle.titre) return
-    const t = setTimeout(() => setSpectacle((x) => x && { ...x, titre: true }), (spectacle.m.carte ? dureeSansPrelude(spectacle.m.carte) : 1.2) * 1000)
-    return () => clearTimeout(t)
-  }, [spectacle])
 
   if (!partie) return <section className="reco">{attente && <p className="discret centre">Ouverture des cellules…</p>}</section>
 
@@ -141,7 +140,7 @@ export function Reconfinement({ base, adversaire, onQuitter }: { base: Base; adv
     const m = await exclusif(() => manifesterReco(q.id))
     if (!m) return
     setPartie({ ...q, ...m })
-    setSpectacle({ m: m.declenchee, evenements: m.evenements, titre: false })
+    setSpectacle(m.declenchee)
   }
 
   if (p.phase === 'fin' && r?.fin) {
@@ -179,7 +178,9 @@ export function Reconfinement({ base, adversaire, onQuitter }: { base: Base; adv
   const enAlerte = !!carteIA && nature(carteIA) === 'anomalie' && (p.phase === 'question' || p.phase === 'resultat')
 
   return (
-    <section className={`reco ${enAlerte ? 'alerte' : ''}`}>
+    <section
+      className={`reco ${enAlerte ? 'en-alarme' : ''} ${r?.evenements.some((e) => e.camp === 'joueur' && (e.type === 'breche' || e.type === 'poison') && (e.valeur ?? 0) > 0) ? 'blesse' : ''} ${r?.evenements.some((e) => e.camp === 'joueur' && e.type === 'soin') ? 'gueri' : ''}`}
+    >
       <div className="breche-bandeau">
         <span>
           Tour <strong>{Math.min(p.tour, TOURS_RECO)}</strong>/{TOURS_RECO}
@@ -321,7 +322,7 @@ export function Reconfinement({ base, adversaire, onQuitter }: { base: Base; adv
             const n = nature(c)
             const e = effetDe(c)
             return (
-              <button key={c.id} className={`reco-main-carte ${n}`} disabled={attente} onClick={() => void jouer(c)}>
+              <button key={c.id} className={`reco-main-carte ${n} ${c.ra === 5 ? 'ultime' : ''}`} disabled={attente} onClick={() => void jouer(c)}>
                 <Carte carte={c} base={base} taille="p" variante={varianteAffichee(s, c.id)} inclinable={false} />
                 <span className={`reco-badge ${n}`} title={n === 'anomalie' ? e.texte : SOUTIENS[soutien(c)].texte}>
                   {n === 'anomalie' ? (
@@ -339,23 +340,7 @@ export function Reconfinement({ base, adversaire, onQuitter }: { base: Base; adv
       )}
 
       {spectacle && (
-        <div className={`manifestation ${spectacle.titre ? 'titre' : ''}`} onClick={() => spectacle.titre && setSpectacle(null)}>
-          {spectacle.m.carte && !spectacle.titre && (
-            <div className="manifestation-scene">
-              <AnimationMythique id={spectacle.m.carte} sansPrelude />
-            </div>
-          )}
-          {spectacle.titre && (
-            <div className="manifestation-titre">
-              <span className="dossier-entete">Manifestation</span>
-              <h2>{spectacle.m.nom}</h2>
-              <p>{spectacle.m.texte}</p>
-              <button className="btn btn-principal" onClick={() => setSpectacle(null)} autoFocus>
-                Continuer
-              </button>
-            </div>
-          )}
-        </div>
+        <SpectacleMythique carte={spectacle.carte} surtitre="Manifestation" titre={spectacle.nom} texte={spectacle.texte} onFini={() => setSpectacle(null)} />
       )}
     </section>
   )
@@ -387,7 +372,11 @@ function SiteReco({
   manifestation?: Manifestation
 }) {
   const part = Math.max(0, camp.integrite) / INTEGRITE_SITE
-  const touche = evenements.some((e) => e.type === 'breche' || e.type === 'poison')
+  const mythique = manifestation?.carte ? base.parId.get(manifestation.carte) : undefined
+  // Les coups et les soins du tour, en chiffres qui s'envolent de la jauge
+  const pertes = evenements.filter((e) => (e.type === 'breche' || e.type === 'poison' || e.type === 'reconfinement') && (e.valeur ?? 0) > 0)
+  const soins = evenements.filter((e) => e.type === 'soin' && (e.valeur ?? 0) > 0)
+  const touche = pertes.length > 0
   const statuts = [
     camp.poison > 0 && `☣ Contamination −${camp.poison}/tour`,
     camp.reconfinementsAuto > 0 && `✋ ${camp.reconfinementsAuto} reconfinement${camp.reconfinementsAuto > 1 ? 's' : ''} d’office`,
@@ -396,7 +385,7 @@ function SiteReco({
     camp.questionsFaciles > 0 && `✦ ${camp.questionsFaciles} question${camp.questionsFaciles > 1 ? 's' : ''} à deux réponses`,
   ].filter(Boolean) as string[]
   return (
-    <div className={`site-reco ${adverse ? 'adverse' : ''} ${touche ? 'touche' : ''}`}>
+    <div className={`site-reco ${adverse ? 'adverse' : ''} ${touche ? 'touche' : ''} ${soins.length ? 'soigne' : ''}`}>
       <div className="site-reco-tete">
         <div>
           <strong>{titre}</strong>
@@ -418,11 +407,30 @@ function SiteReco({
           <div className="jauge">
             <div style={{ width: `${part * 100}%` }} className={part < 0.3 ? 'urgent' : ''} />
           </div>
+          {[...pertes.map((e) => ({ e, signe: '−', classe: 'perte' })), ...soins.map((e) => ({ e, signe: '+', classe: 'gain' }))].map(
+            ({ e, signe, classe }, i) => (
+              <span key={i} className={`flottant ${classe}`} style={{ ['--i' as string]: i }}>
+                {signe}
+                {e.valeur}
+              </span>
+            ),
+          )}
         </div>
-        <div className={`jauge-manifestation ${camp.manifestation >= MANIFESTATION_MAX && !camp.manifeste ? 'pleine' : ''} ${camp.manifeste ? 'usee' : ''}`}>
-          <span>{camp.manifeste ? 'Manifestée' : adverse ? 'Manifestation' : (manifestation?.nom ?? 'Manifestation')}</span>
-          <div className="jauge">
-            <div style={{ width: `${(camp.manifestation / MANIFESTATION_MAX) * 100}%` }} />
+        <div
+          className={`jauge-manifestation ${camp.manifestation >= MANIFESTATION_MAX && !camp.manifeste ? 'pleine' : ''} ${camp.manifeste ? 'usee' : ''}`}
+          style={{ ['--remplissage' as string]: camp.manifestation / MANIFESTATION_MAX }}
+        >
+          {/* La Mythique de l'équipe, qui reprend ses couleurs à mesure que la jauge monte */}
+          {mythique && (
+            <div className="manif-portrait" aria-hidden="true">
+              <Carte carte={mythique} base={base} taille="p" inclinable={false} />
+            </div>
+          )}
+          <div className="manif-texte">
+            <span>{camp.manifeste ? 'Manifestée' : adverse ? 'Manifestation' : (manifestation?.nom ?? 'Manifestation')}</span>
+            <div className="jauge">
+              <div style={{ width: `${(camp.manifestation / MANIFESTATION_MAX) * 100}%` }} />
+            </div>
           </div>
         </div>
       </div>
@@ -434,10 +442,20 @@ function SiteReco({
         </div>
       )}
       {mainVue && (
-        <div className="site-reco-main-vue" aria-label="Main adverse révélée">
-          {mainVue.map((c) => (
-            <Carte key={c.id} carte={c} base={base} taille="p" inclinable={false} />
-          ))}
+        <div className="site-reco-main-vue" aria-label="Main adverse">
+          {mainVue.map((c, i) => {
+            const e = effetDe(c)
+            return (
+              <div
+                key={`${c.id}-${i}`}
+                className={`main-vue-carte ${nature(c)}`}
+                title={nature(c) === 'anomalie' ? `${e.nom} : ${e.texte}` : SOUTIENS[soutien(c)].texte}
+              >
+                <Carte carte={c} base={base} taille="p" inclinable={false} />
+                <span className={`reco-badge ${nature(c)}`}>{nature(c) === 'anomalie' ? `${e.icone} ${e.nom}` : `✚ ${SOUTIENS[soutien(c)].nom}`}</span>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>

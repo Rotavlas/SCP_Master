@@ -6,6 +6,7 @@ import { debuterDuel, jouerCarte, repondreDuel, type Issue, type QuestionDuel, t
 import { useSauvegarde, varianteAffichee } from '../state/sauvegarde'
 import type { Carte as TCarte } from '../types'
 import { Carte } from './Carte'
+import { usePleinEcran } from './pleinEcran'
 import { QuestionAlteree } from './QuestionAlteree'
 
 /**
@@ -30,6 +31,7 @@ interface Partie {
 
 export function DuelEclair({ base, adversaire, onQuitter }: { base: Base; adversaire: Adversaire; onQuitter: () => void }) {
   const s = useSauvegarde()
+  usePleinEcran()
   const [partie, setPartie] = useState<Partie | null>(null)
   const [ecoule, setEcoule] = useState(0)
   const [attente, setAttente] = useState(false)

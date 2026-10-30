@@ -18,6 +18,8 @@ import { debuterBreche, jouerBreche, repondreBreche, type QuestionBreche, type R
 import { useSauvegarde, varianteAffichee } from '../state/sauvegarde'
 import type { Carte as TCarte } from '../types'
 import { Carte } from './Carte'
+import { SpectacleMythique } from './SpectacleMythique'
+import { usePleinEcran } from './pleinEcran'
 
 /**
  * La Brèche de confinement contre l'IA (règles : src/engine/breche.ts). Le serveur arbitre tout : cet écran
@@ -75,6 +77,7 @@ function accepte(r: Role, e: Emplacement, camps: Record<Cote, Camp>): boolean {
 
 export function Breche({ base, adversaire, onQuitter }: { base: Base; adversaire: Adversaire; onQuitter: () => void }) {
   const s = useSauvegarde()
+  usePleinEcran()
   const [partie, setPartie] = useState<Partie | null>(null)
   const [poses, setPoses] = useState<Pose[]>([])
   const [choisie, setChoisie] = useState<TCarte | null>(null)
@@ -84,6 +87,8 @@ export function Breche({ base, adversaire, onQuitter }: { base: Base; adversaire
   const [survol, setSurvol] = useState<string | null>(null)
   const [ecoule, setEcoule] = useState(0)
   const [attente, setAttente] = useState(false)
+  // L'ultime d'une Mythique qui vient de se déclencher, joué en plein écran
+  const [ultime, setUltime] = useState<{ carte: TCarte; camp: Cote } | null>(null)
   const partieRef = useRef(partie)
   partieRef.current = partie
   const occupe = useRef(false)
@@ -239,6 +244,11 @@ export function Breche({ base, adversaire, onQuitter }: { base: Base; adversaire
     const suivant: Partie = { ...q, phase: 'resultat', resultat: res }
     partieRef.current = suivant
     setPartie(suivant)
+    const declenche = res.evenements.find((e) => e.type === 'ultime')
+    if (declenche) {
+      const c = declenche.camp === 'joueur' ? q.engagee : base.parId.get(res.coupIA.carte)
+      if (c) setUltime({ carte: c, camp: declenche.camp })
+    }
   }
 
   function continuer() {
@@ -295,7 +305,9 @@ export function Breche({ base, adversaire, onQuitter }: { base: Base; adversaire
   const communs = { base, poses, tour: p.tour, ouverte, survol, onPoser: p.phase === 'choix' ? poser : undefined }
 
   return (
-    <section className={`breche ${glisse ? 'glisse-en-cours' : ''}`}>
+    <section
+      className={`breche ${glisse ? 'glisse-en-cours' : ''} ${coupsSur('joueur').some((e) => e.type === 'breche' || e.type === 'riposte') ? 'blesse' : ''}`}
+    >
       <div className="breche-bandeau">
         <span>
           Tour <strong>{Math.min(p.tour, TOURS)}</strong>/{TOURS}
@@ -460,7 +472,7 @@ export function Breche({ base, adversaire, onQuitter }: { base: Base; adversaire
             return (
               <div
                 key={c.id}
-                className={`breche-main-carte ${choisie?.id === c.id ? 'choisie' : ''} ${glisse?.carte.id === c.id ? 'soulevee' : ''}`}
+                className={`breche-main-carte ${choisie?.id === c.id ? 'choisie' : ''} ${glisse?.carte.id === c.id ? 'soulevee' : ''} ${estUltime(c) && !p.joueur.ultime ? 'ultime' : ''}`}
                 onPointerDown={(ev) => saisir(ev, c)}
               >
                 <Carte carte={c} base={base} taille="p" variante={varianteAffichee(s, c.id)} caviardee inclinable={false} />
@@ -472,6 +484,20 @@ export function Breche({ base, adversaire, onQuitter }: { base: Base; adversaire
             )
           })}
         </div>
+      )}
+
+      {ultime && (
+        <SpectacleMythique
+          carte={ultime.carte.id}
+          surtitre={ultime.camp === 'joueur' ? 'Ultime' : `Ultime adverse`}
+          titre={ultime.carte.nm}
+          texte={
+            role(ultime.carte) === 'defense'
+              ? 'Elle garde toutes les cellules, une fois et demie plus fort.'
+              : 'Elle frappe une fois et demie plus fort, et aucune garde ne l’arrête.'
+          }
+          onFini={() => setUltime(null)}
+        />
       )}
 
       {glisse && (
@@ -615,7 +641,7 @@ function CelluleJauge({ i, valeur, coups, choisie, visee }: { i: number; valeur:
   const tombee = valeur <= 0
   return (
     <div
-      className={`cellule ${tombee ? 'tombee' : ''} ${choisie ? 'choisie' : ''} ${visee ? 'visee' : ''} ${coups.some((c) => c.type === 'breche' || c.type === 'riposte') ? 'touchee' : ''}`}
+      className={`cellule ${tombee ? 'tombee' : ''} ${choisie ? 'choisie' : ''} ${visee ? 'visee' : ''} ${coups.some((c) => c.type === 'breche' || c.type === 'riposte') ? 'touchee' : ''} ${coups.some((c) => c.type === 'reparation' || c.type === 'cellule') ? 'soignee' : ''} ${coups.some((c) => c.type === 'garde' || c.type === 'reconfinement') ? 'gardee' : ''}`}
       aria-label={`Cellule ${i + 1} : ${tombee ? 'tombée' : `${valeur} sur ${INTEGRITE_CELLULE}`}`}
     >
       <span className="cellule-num">{i + 1}</span>

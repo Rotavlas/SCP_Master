@@ -4,14 +4,15 @@
  * Chaque tour, les deux agents jouent une carte de leur main. Une anomalie (SCP, grande entité, Groupe d'intérêt,
  * conte…) est libérée chez l'adversaire et déclenche son effet (src/engine/effets.ts) ; pour la stopper,
  * l'adversaire doit la reconfiner en répondant à une question sur elle. Une carte de soutien (FIM, personnel,
- * Site, Protocole) aide plutôt à reconfiner ce qui arrive en face. Les bonnes réponses remplissent la jauge de
+ * Site, Protocole) aide plutôt à reconfiner ce qui arrive en face. Une anomalie reconfinée retourne dans la main
+ * de son propriétaire : elle pourra ressortir. Les bonnes réponses remplissent la jauge de
  * Manifestation : pleine, elle libère la Mythique de l'équipe, sa cinématique et son pouvoir.
  */
 import type { Carte } from '../types'
 import { DUREE_TEMPORELLE, effetDe, type Effet } from './effets'
 
-export const TOURS_RECO = 5
-export const INTEGRITE_SITE = 100
+export const TOURS_RECO = 8
+export const INTEGRITE_SITE = 150
 export const MANIFESTATION_MAX = 100
 export const DUREE_RECO = 20
 /** Une bonne réponse en moins de 7 s remplit davantage la jauge */
@@ -222,7 +223,7 @@ const MANIFESTATIONS: Record<string, Omit<Manifestation, 'carte'>> = {
   'perso:aaron-siegel': {
     id: 'revelation',
     nom: 'Révélation',
-    texte: 'La main adverse est révélée, et vos deux prochaines questions n’ont plus que deux réponses.',
+    texte: 'La vérité se développe : vos trois prochaines questions n’ont plus que deux réponses.',
   },
   'scp-173': { id: 'clignement', nom: 'Clignement', texte: 'Les deux prochaines questions adverses n’ont que 8 secondes.' },
   'scp-2747': { id: 'effacement', nom: 'Effacement', texte: 'L’adversaire rate d’office son prochain reconfinement : la page est effacée.' },
@@ -268,7 +269,7 @@ export function manifester(
       moi.reconfinementsAuto += 1
       break
     case 'revelation':
-      moi.questionsFaciles += 2
+      moi.questionsFaciles += 3
       break
     case 'clignement':
       lui.questionsCourtes += 2

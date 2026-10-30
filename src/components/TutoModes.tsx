@@ -23,7 +23,8 @@ export const ETAPES_RECO: Etape[] = [
       <>
         Un SCP, une grande entité, un Groupe d'intérêt, un conte… est une <b>anomalie</b> : jouée, elle s'échappe chez l'adversaire. Pour l'arrêter, il doit la{' '}
         <b>reconfiner</b> en répondant à une question sur elle, souvent sur ses procédures de confinement. S'il échoue, c'est la brèche : son Site perd des
-        points selon la Menace de l'anomalie.
+        points selon la Menace de l'anomalie. S'il réussit, l'anomalie retourne dans la main de son propriétaire, qui pourra la relâcher. La main adverse est
+        visible : prévoyez ce qui peut sortir d'en face.
       </>
     ),
   },
