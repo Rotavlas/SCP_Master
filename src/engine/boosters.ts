@@ -28,8 +28,9 @@ export interface TypeBooster {
 }
 
 const MELANGE: Partial<Record<TypeFiche, number>> = { s: 0.61, c: 0.14, d: 0.05, p: 0.06, f: 0.04, g: 0.03, n: 0.02, e: 0.02, l: 0.02, o: 0.01 }
-const COMMUN = [0.66, 0.24, 0.075, 0.02, 0.005]
-const COMMUN_DERNIERE = [0, 0.7, 0.22, 0.065, 0.015]
+// Une Légendaire : 0,2 % par carte en moyenne dans un dossier standard (4 cartes à 0,14 %, la dernière à 0,45 %)
+const COMMUN = [0.6636, 0.24, 0.075, 0.02, 0.0014]
+const COMMUN_DERNIERE = [0, 0.7105, 0.22, 0.065, 0.0045]
 
 export const BOOSTERS: TypeBooster[] = [
   {
@@ -86,8 +87,8 @@ export const BOOSTERS: TypeBooster[] = [
     description: '5 fiches peu communes ou mieux, la dernière au moins rare. Variantes ×2.',
     prix: 350,
     types: MELANGE,
-    poids: [0, 0.68, 0.24, 0.065, 0.015],
-    poidsDerniere: [0, 0, 0.72, 0.22, 0.06],
+    poids: [0, 0.6907, 0.24, 0.065, 0.0043],
+    poidsDerniere: [0, 0, 0.7629, 0.22, 0.0171],
     bonusVariante: 2,
     mythique: 0.0012,
     couleur: '#8c3b33',
@@ -98,8 +99,8 @@ export const BOOSTERS: TypeBooster[] = [
     description: '5 fiches rares ou mieux, la dernière au moins épique. Variantes ×4.',
     prix: 1200,
     types: MELANGE,
-    poids: [0, 0, 0.72, 0.22, 0.06],
-    poidsDerniere: [0, 0, 0, 0.8, 0.2],
+    poids: [0, 0, 0.7629, 0.22, 0.0171],
+    poidsDerniere: [0, 0, 0, 0.9429, 0.0571],
     bonusVariante: 4,
     mythique: 0.004,
     couleur: '#2a2a2a',

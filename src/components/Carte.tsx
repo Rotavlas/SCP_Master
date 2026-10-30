@@ -182,7 +182,7 @@ export function Carte({
     return (
       <div
         ref={ref}
-        className={`carte carte-${taille} type-${carte.k} rarete-5 carte-mythique${caviardee ? ' caviardee' : ''}`}
+        className={`carte carte-${taille} type-${carte.k} rarete-5 carte-mythique variante-${variante}${caviardee ? ' caviardee' : ''}`}
         style={{ ['--rarete' as string]: rarete.couleur, ['--sig' as string]: signature(carte).couleur }}
         onPointerMove={suivre}
         onPointerLeave={relacher}
@@ -216,8 +216,14 @@ export function Carte({
               </span>
             </footer>
           </div>
+          {/* Une Mythique est toujours tirée en version standard, mais un exemplaire obtenu avant qu'elle ne le
+              devienne (SCP-173, SCP-2747) peut porter une variante : elle se voit comme sur une Légendaire */}
+          {variante === 'exp' && <span className="tampon-expurge">Expurgé</span>}
+          {variante === 'o5' && <span className="sceau-o5">O5</span>}
         </div>
         <div className="carte-holo" aria-hidden="true" />
+        {variante === 'breche' && <div className="carte-breche" aria-hidden="true" />}
+        {variante !== 'std' && <span className="ruban-variante">{PAR_ID[variante].nom}</span>}
         {nouvelle && <span className="pastille pastille-nouvelle">Nouveau</span>}
         {quantite !== undefined && quantite > 1 && <span className="pastille pastille-quantite">×{quantite}</span>}
         {favori && (

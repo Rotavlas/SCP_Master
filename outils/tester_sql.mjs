@@ -900,7 +900,7 @@ await test('un visiteur non connecté ne peut lire ni profils, ni cartes, ni mou
 })
 await test("tableau des duels : Elo, rang, duels restants contre l'IA", async () => {
   const t = await valeur(E, 'select public.tableau_duels()')
-  assert.equal(t.iaRestants, 10)
+  assert.equal(t.iaRestants, 5)
   assert.equal(t.rang >= 1, true)
   assert.equal(typeof t.enLigne, 'number')
 })

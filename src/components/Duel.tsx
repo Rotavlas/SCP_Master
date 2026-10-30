@@ -19,6 +19,9 @@ import type { Carte as TCarte, Ecran } from '../types'
 import { Carte } from './Carte'
 import { meilleureEquipe } from './Collection'
 import { DuelJcj } from './DuelJcj'
+
+/** Duels récompensés par 24 heures contre l'IA (le serveur fait foi : public.duel_clore) */
+const DUELS_IA_RECOMPENSES = 5
 import { Pseudo } from './Badges'
 
 /**
@@ -162,8 +165,7 @@ export function Duel({ base, aller, ouvrirProfil }: { base: Base; aller: (e: Ecr
           <div>
             <h2>Votre équipe</h2>
             <p className="discret">
-              Chaque manche, vous jouez une carte. La question porte sur votre carte ou sur celle de l'adversaire : connaître
-              ses dossiers aide.
+              Chaque manche, vous jouez une carte. La question porte sur votre carte ou sur celle de l'adversaire : connaître ses dossiers aide.
             </p>
           </div>
           <div className="equipe-emplacements">
@@ -178,7 +180,11 @@ export function Duel({ base, aller, ouvrirProfil }: { base: Base; aller: (e: Ecr
             )}
           </div>
           <div className="actions">
-            <button className="btn" onClick={() => modifier((x) => ({ ...x, deck: meilleureEquipe(base, x.collection) }))} disabled={!Object.keys(s.collection).length}>
+            <button
+              className="btn"
+              onClick={() => modifier((x) => ({ ...x, deck: meilleureEquipe(base, x.collection) }))}
+              disabled={!Object.keys(s.collection).length}
+            >
               Composer automatiquement
             </button>
             <button className="btn" onClick={() => aller('collection')}>
@@ -190,25 +196,54 @@ export function Duel({ base, aller, ouvrirProfil }: { base: Base; aller: (e: Ecr
         <HallJcj pret={equipe.length === TAILLE_DECK} ouvrir={ouvrirJcj} ouvrirProfil={ouvrirProfil} surTableau={(t) => setRestantsIA(t.iaRestants)} />
 
         <h2 className="titre-entrainement">Entraînement contre l'IA</h2>
-        <p className="discret">
-          {restantsIA === null ? '10' : `${restantsIA}/10`} duels récompensés {restantsIA === null ? 'par jour' : "restants aujourd'hui"} contre l'IA : l'essentiel
-          des gains se joue désormais entre agents.
-        </p>
+        {/* Les duels récompensés du jour : cinq voyants qui s'éteignent un à un */}
+        <div
+          className={`compteur-ia ${restantsIA === 0 ? 'epuise' : ''}`}
+          aria-label={`${restantsIA ?? DUELS_IA_RECOMPENSES} duels récompensés restants sur ${DUELS_IA_RECOMPENSES}`}
+        >
+          <div className="compteur-ia-voyants" aria-hidden="true">
+            {Array.from({ length: DUELS_IA_RECOMPENSES }, (_, i) => (
+              <span key={i} className={i < (restantsIA ?? DUELS_IA_RECOMPENSES) ? 'allume' : ''} />
+            ))}
+          </div>
+          <div>
+            <strong>
+              {restantsIA === 0
+                ? 'Plus de duel récompensé pour aujourd’hui'
+                : `${restantsIA ?? DUELS_IA_RECOMPENSES} duel${(restantsIA ?? DUELS_IA_RECOMPENSES) > 1 ? 's' : ''} récompensé${(restantsIA ?? DUELS_IA_RECOMPENSES) > 1 ? 's' : ''} sur ${DUELS_IA_RECOMPENSES}`}
+            </strong>
+            <span className="discret">
+              {restantsIA === 0
+                ? 'Vous pouvez encore vous entraîner, sans crédits ni XP. Chaque duel se libère 24 h après avoir été joué.'
+                : 'Crédits et XP pour les victoires, sur 24 heures glissantes. Les vrais gains se jouent entre agents.'}
+            </span>
+          </div>
+        </div>
         {equipe.length < TAILLE_DECK && (
           <p className="alerte">
             Il vous faut {TAILLE_DECK} cartes dans l'équipe pour lancer une confrontation
-            {Object.keys(s.collection).length < TAILLE_DECK ? ' : ouvrez d\'abord quelques boosters.' : '.'}
+            {Object.keys(s.collection).length < TAILLE_DECK ? " : ouvrez d'abord quelques boosters." : '.'}
           </p>
         )}
         <div className="adversaires">
           {ADVERSAIRES.map((a) => {
             const verrouille = a.accreditation > niveau
             return (
-              <button key={a.niveau} className={`adversaire ${verrouille ? 'verrouille' : ''}`} disabled={verrouille || equipe.length < TAILLE_DECK || attente} onClick={() => void commencer(a)}>
-                <span className="adversaire-niveau">Menace {'▮'.repeat(a.niveau)}{'▯'.repeat(5 - a.niveau)}</span>
+              <button
+                key={a.niveau}
+                className={`adversaire ${verrouille ? 'verrouille' : ''}`}
+                disabled={verrouille || equipe.length < TAILLE_DECK || attente}
+                onClick={() => void commencer(a)}
+              >
+                <span className="adversaire-niveau">
+                  Menace {'▮'.repeat(a.niveau)}
+                  {'▯'.repeat(5 - a.niveau)}
+                </span>
                 <strong>{a.nom}</strong>
                 <span className="discret">{a.titre}</span>
-                <span className="adversaire-gain">{verrouille ? `Accréditation niveau ${a.accreditation} requise` : `Victoire : +${a.gain} ₵ · +${a.xp} XP`}</span>
+                <span className="adversaire-gain">
+                  {verrouille ? `Accréditation niveau ${a.accreditation} requise` : `Victoire : +${a.gain} ₵ · +${a.xp} XP`}
+                </span>
                 {s.meilleurAdversaire >= a.niveau && <span className="tampon-battu">Neutralisé</span>}
               </button>
             )
@@ -241,7 +276,15 @@ export function Duel({ base, aller, ouvrirProfil }: { base: Base; aller: (e: Ecr
           <p className="discret">Surnoms et classes sont caviardés : à vous de vous souvenir de vos dossiers.</p>
           <div className="rangee-cartes">
             {p.main.map((c) => (
-              <Carte key={c.id} carte={c} base={base} taille="p" variante={varianteAffichee(s, c.id)} caviardee onClick={attente ? undefined : () => void jouer(c)} />
+              <Carte
+                key={c.id}
+                carte={c}
+                base={base}
+                taille="p"
+                variante={varianteAffichee(s, c.id)}
+                caviardee
+                onClick={attente ? undefined : () => void jouer(c)}
+              />
             ))}
           </div>
           <p className="discret">{attente ? 'Transmission au Site-19…' : `L'adversaire a encore ${p.cartesIA} cartes cachées.`}</p>
@@ -292,8 +335,13 @@ export function Duel({ base, aller, ouvrirProfil }: { base: Base; aller: (e: Ecr
             ) : (
               <div className="bilan">
                 <p>
-                  {r.choix === r.bonne ? `Bonne réponse en ${r.temps.toFixed(1)} s : ${r.degatsInfliges} dégâts.` : r.choix === null ? 'Temps écoulé.' : 'Mauvaise réponse.'}{' '}
-                  {p.adversaire.nom} {r.reponseIA.choix === r.bonne ? `a répondu juste en ${r.reponseIA.temps.toFixed(1)} s : ${r.degatsRecus} dégâts subis.` : "s'est trompé."}
+                  {r.choix === r.bonne
+                    ? `Bonne réponse en ${r.temps.toFixed(1)} s : ${r.degatsInfliges} dégâts.`
+                    : r.choix === null
+                      ? 'Temps écoulé.'
+                      : 'Mauvaise réponse.'}{' '}
+                  {p.adversaire.nom}{' '}
+                  {r.reponseIA.choix === r.bonne ? `a répondu juste en ${r.reponseIA.temps.toFixed(1)} s : ${r.degatsRecus} dégâts subis.` : "s'est trompé."}
                 </p>
                 <button className="btn btn-principal" onClick={continuer} autoFocus>
                   {r.fin ? 'Voir le rapport' : 'Manche suivante'}
@@ -318,7 +366,9 @@ export function Duel({ base, aller, ouvrirProfil }: { base: Base; aller: (e: Ecr
 
       {p.phase === 'fin' && p.recompense && (
         <div className={`duel-fin ${p.recompense.issue}`}>
-          <span className="tampon-issue">{p.recompense.issue === 'victoire' ? 'Confinement réussi' : p.recompense.issue === 'nul' ? 'Statu quo' : 'Brèche de confinement'}</span>
+          <span className="tampon-issue">
+            {p.recompense.issue === 'victoire' ? 'Confinement réussi' : p.recompense.issue === 'nul' ? 'Statu quo' : 'Brèche de confinement'}
+          </span>
           <p>
             {p.bonnes}/{p.manche} bonnes réponses · intégrité {Math.max(0, p.pv)} contre {Math.max(0, p.pvIA)}
           </p>
@@ -450,8 +500,8 @@ function HallJcj({
         <p className="dossier-entete">Confrontation entre agents</p>
         <h2>Duel classé</h2>
         <p className="discret">
-          Même question pour les deux agents, au même moment : le plus juste et le plus rapide frappe. Chaque duel classé fait gagner ou perdre de
-          l'Elo, et rapporte des crédits (120 ₵ la victoire).
+          Même question pour les deux agents, au même moment : le plus juste et le plus rapide frappe. Chaque duel classé fait gagner ou perdre de l'Elo, et
+          rapporte des crédits (120 ₵ la victoire).
         </p>
         <div className="stats-jcj">
           <div>

@@ -10,6 +10,7 @@ import { Carte } from './components/Carte'
 import { AnimationMythique } from './components/AnimationsMythiques'
 import { SceneMythique } from './components/ScenesMythiques'
 import { chargerBase, type Base } from './data/catalogue'
+import { VARIANTES } from './engine/variantes'
 import { CREDITS_ILLUSTRATIONS, SIGNATURES } from './data/mythiques'
 import type { Carte as TCarte } from './types'
 import './styles.css'
@@ -90,6 +91,23 @@ function Atelier({ base }: { base: Base }) {
               </div>
             </div>
           </section>
+        )
+      })}
+      <h2>Variantes</h2>
+      <p className="discret">Chaque variante sur une Épique, une Légendaire et une Mythique, pour vérifier qu'elles s'accordent avec les cadres.</p>
+      {['scp-3812', 'scp-096', 'entite:scarlet-king'].map((id) => {
+        const c = base.parId.get(id)
+        return (
+          c && (
+            <div key={id} className="atelier-variantes">
+              {VARIANTES.map((v) => (
+                <figure key={v.id}>
+                  <Carte carte={c} base={base} taille="m" variante={v.id} />
+                  <figcaption>{v.nom}</figcaption>
+                </figure>
+              ))}
+            </div>
+          )
         )
       })}
       <h2>Légendaires</h2>

@@ -8,6 +8,7 @@ import { Classement } from './components/Classement'
 import { BoutonCompte, Portail } from './components/Compte'
 import { Collection } from './components/Collection'
 import { Duel } from './components/Duel'
+import { Journal } from './components/Journal'
 import { Logo } from './components/Logo'
 import { Marche } from './components/Marche'
 import { Profil } from './components/Profil'
@@ -35,6 +36,7 @@ const ONGLETS: { id: Ecran; nom: string; icone: string; principal?: boolean }[] 
   { id: 'social', nom: 'Social', icone: '✉' },
   { id: 'classement', nom: 'Classements', icone: '♛' },
   { id: 'boutique', nom: 'Intendance', icone: '₵' },
+  { id: 'journal', nom: 'Journal', icone: '✎' },
 ]
 
 export default function App() {
@@ -271,6 +273,7 @@ export default function App() {
         {ecran === 'marche' && (
           <Marche key={`${rechercheMarche}|${ongletMarche}`} base={base} ouvrirCarte={setCarteOuverte} recherche={rechercheMarche} onglet={ongletMarche} />
         )}
+        {ecran === 'journal' && <Journal />}
         {ecran === 'boutique' && (
           <Boutique
             base={base}
