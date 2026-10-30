@@ -17,7 +17,7 @@ export const JOURNAL: Entree[] = [
       'Une Légendaire devient bien plus rare : 0,2 % par carte dans un dossier standard (contre 0,7 %). Les dossiers Keter et O5 baissent dans la même proportion et restent plus généreux.',
       'Contre l’IA : 5 duels récompensés par 24 heures au lieu de 10, avec un compteur à voyants dans l’écran Confrontation. Une fois épuisés, l’entraînement reste possible, sans gains.',
       'Nouvel onglet Journal : tout ce qui a changé depuis l’ouverture.',
-      'Les variantes se voient enfin sur les Légendaires et les Mythiques : archive sur papier jauni taché de café, Sceau O5 qui passe l’image à l’or avec un sceau de cire, bandes noires et tampon pour l’expurgée.',
+      'Les variantes se voient enfin sur les Légendaires et les Mythiques : archive sur papier jauni taché de café, Sceau O5 refait en gravure d’or sur laque noire avec sa médaille frappée « O5 », bandes noires et tampon pour l’expurgée.',
       'Recycler ou brûler ses doublons garde toujours un exemplaire standard : une variante ne compte plus comme l’exemplaire gardé.',
       'Archives : nouveaux filtres en pastilles (raretés et types à choix multiples, avec leur nombre), filtre par variante, tri inversable, réinitialisation, et filtres retenus d’une visite à l’autre.',
       'SCP-173 est recadrée sur la statue.',

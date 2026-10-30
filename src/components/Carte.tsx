@@ -196,6 +196,8 @@ export function Carte({
           <SceneMythique id={carte.id} />
           {/* Le calque d'une variante : papier jauni, dorure, bandes noires… posé sur l'image, sous les textes */}
           {variante !== 'std' && <div className="carte-calque" aria-hidden="true" />}
+          {/* Sceau O5 : un second calque dore le dessin inversé par le premier */}
+          {variante === 'o5' && <div className="carte-calque carte-calque-2" aria-hidden="true" />}
           <div className="cm-voile" aria-hidden="true" />
           <header className="cm-haut">
             <span>{caviardee && !carte.num ? '██████' : entete(carte)}</span>

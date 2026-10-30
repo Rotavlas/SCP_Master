@@ -2215,29 +2215,16 @@ select:focus {
   }
 }
 
-/* Sceau O5 : dorure, intérieur noir, lettres d'or */
+/* Sceau O5 : laque noire et gravure d'or, l'image passe en noir et or, une médaille d'or frappée « O5 » */
 .variante-o5 {
-  background: conic-gradient(from var(--angle-or, 0deg), #f9e39a, #b8892b, #fff2c2, #8d6517, #f9e39a);
-  animation: dorure 5s linear infinite;
+  background: linear-gradient(135deg, #f6dc8c, #8d6517 30%, #f9e7a8 50%, #8d6517 70%, #f6dc8c);
   box-shadow:
-    0 6px 18px rgba(0, 0, 0, 0.45),
-    0 0 22px rgba(244, 197, 66, 0.55);
-}
-
-@property --angle-or {
-  syntax: '<angle>';
-  initial-value: 0deg;
-  inherits: false;
-}
-
-@keyframes dorure {
-  to {
-    --angle-or: 360deg;
-  }
+    0 6px 18px rgba(0, 0, 0, 0.5),
+    0 0 18px rgba(244, 197, 66, 0.35);
 }
 
 .variante-o5 .carte-interieur {
-  background: radial-gradient(circle at 50% 0%, #2a2414, #0e0d0a 70%);
+  background: radial-gradient(circle at 50% 0%, #1c1810, #070604 70%);
   color: #f2d27a;
 }
 
@@ -2253,9 +2240,20 @@ select:focus {
 }
 
 .variante-o5 .carte-visuel img {
-  filter: sepia(0.6) saturate(1.4) contrast(1.1);
+  filter: grayscale(1) contrast(1.6) brightness(0.75) sepia(1) saturate(2.4) hue-rotate(-4deg);
 }
 
+/* Le reflet de rareté reste dans l'or, sans arc-en-ciel */
+.variante-o5 .carte-holo {
+  filter: grayscale(1) sepia(1) saturate(1.6);
+}
+
+.variante-o5 .carte-visuel {
+  outline: 0.35cqw solid rgba(233, 196, 106, 0.85);
+  outline-offset: -1.6cqw;
+}
+
+/* La médaille : une pièce d'or bombée, cerclée de noir et d'un filet doré, « O5 » gravé en capitales romaines */
 .sceau-o5 {
   position: absolute;
   top: 3cqw;
@@ -2265,12 +2263,22 @@ select:focus {
   border-radius: 50%;
   display: grid;
   place-items: center;
-  font-family: var(--mono);
+  font-family: Georgia, 'Times New Roman', serif;
   font-weight: 700;
-  font-size: 5.5cqw;
-  color: #3a2a06;
-  background: radial-gradient(circle at 35% 30%, #fff2c2, #d4a73a 60%, #8d6517);
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+  font-size: 5.4cqw;
+  font-variant-numeric: lining-nums;
+  letter-spacing: 0.02em;
+  color: #4a3408;
+  background: radial-gradient(circle at 35% 28%, #fff6cf, #edc65a 40%, #b48420 72%, #7a5510);
+  box-shadow:
+    0 0 0 0.5cqw #070604,
+    0 0 0 0.85cqw #c9a13f,
+    0 3px 10px rgba(0, 0, 0, 0.7),
+    inset 0 -0.8cqw 1.2cqw rgba(90, 60, 10, 0.55),
+    inset 0 0.6cqw 1cqw rgba(255, 250, 220, 0.6);
+  text-shadow:
+    0 0.25cqw 0 rgba(255, 245, 200, 0.7),
+    0 -0.15cqw 0 rgba(70, 45, 5, 0.6);
 }
 
 .pastille-souhait {
@@ -7199,62 +7207,79 @@ select,
     -2px 0 #2de2ff;
 }
 
-/* Sceau O5 : l'image passe à l'or (le blanc devient or, le noir reste noir), un reflet la traverse,
-   un sceau de cire rouge frappé « O5 » */
+/* Sceau O5 : une gravure d'or sur laque noire. Les dessins des Mythiques passent en traits d'or sur fond noir
+   (l'image est inversée, puis dorée), les photos des Légendaires en noir et or ; un filet doré borde l'image,
+   un reflet la traverse lentement, une médaille d'or frappée « O5 » se pose en bas à droite. */
 .carte-legendaire.variante-o5,
 .carte-mythique.variante-o5 {
-  background: conic-gradient(from var(--angle-or, 0deg), #f9e39a, #b8892b, #fff2c2, #8d6517, #f9e39a);
-  animation: dorure 5s linear infinite;
+  background: linear-gradient(135deg, #f6dc8c, #8d6517 30%, #f9e7a8 50%, #8d6517 70%, #f6dc8c);
+  animation: none;
   box-shadow:
-    0 6px 18px rgba(0, 0, 0, 0.45),
-    0 0 26px rgba(244, 197, 66, 0.65);
+    0 6px 18px rgba(0, 0, 0, 0.5),
+    0 0 18px rgba(244, 197, 66, 0.35);
 }
 
-.variante-o5 .carte-calque {
+.carte-legendaire.variante-o5 .cl-visuel img {
+  filter: grayscale(1) contrast(1.35) brightness(0.8);
+}
+
+/* Le dessin d'une Mythique : d'abord en gris (ses rouges ne virent pas au vert), puis inversé (fond noir, traits blancs)… */
+.carte-mythique.variante-o5 .scene-mythique {
+  filter: grayscale(1);
+}
+
+.carte-mythique.variante-o5 .carte-calque {
+  mix-blend-mode: difference;
+  background: #fff;
+}
+
+/* … puis doré : sur une Légendaire, la photo en gris devient noir et or */
+.carte-mythique.variante-o5 .carte-calque-2,
+.carte-legendaire.variante-o5 .carte-calque {
   mix-blend-mode: multiply;
-  background: linear-gradient(160deg, #fff4c9, #f0c24a 45%, #a87916);
+  background: linear-gradient(160deg, #fff1c0, #e8bb4a 45%, #9a6d16);
 }
 
-.variante-o5 .carte-calque::after {
+/* Le filet doré et le reflet, par-dessus l'image */
+.carte-legendaire.variante-o5 .cl-cadre::after,
+.carte-mythique.variante-o5 .cm-cadre::after {
   content: '';
   position: absolute;
-  inset: 0;
+  inset: 2.2cqw;
+  z-index: 1;
+  border: 0.35cqw solid rgba(233, 196, 106, 0.85);
+  border-radius: 1.2cqw;
+  pointer-events: none;
   mix-blend-mode: screen;
-  background: linear-gradient(115deg, transparent 30%, rgba(255, 244, 201, 0.55) 45%, transparent 60%) -150% 0 / 250% 100% no-repeat;
-  animation: reflet-or 4s ease-in-out infinite;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 236, 170, 0.35) 47%, transparent 58%) -150% 0 / 250% 100% no-repeat;
+  animation: reflet-or 6s ease-in-out infinite;
 }
 
 @keyframes reflet-or {
-  60%,
+  55%,
   100% {
     background-position: 250% 0;
   }
 }
 
 .carte-legendaire.variante-o5 .cl-bas {
-  background: radial-gradient(circle at 50% 0%, #2a2414, #0e0d0a 70%);
-  border-top-color: #f9e39a;
-  color: #f2d27a;
+  background: linear-gradient(180deg, rgba(7, 6, 4, 0.92), #070604 30%);
+  border-top-color: #c9a13f;
+  color: #f0d68a;
 }
 
+.carte-mythique.variante-o5 .cm-bas {
+  color: #f0d68a;
+}
+
+/* La médaille se pose en bas à droite de l'image */
 .carte-legendaire .sceau-o5,
 .carte-mythique .sceau-o5 {
   top: auto;
   left: auto;
   right: 5cqw;
-  bottom: 36%;
+  bottom: 37%;
   z-index: 2;
-  width: 19cqw;
-  height: 19cqw;
-  font-size: 6.5cqw;
-  color: #f9e39a;
-  background: radial-gradient(circle at 35% 30%, #d0463a, #8a1a12 60%, #5c0e09);
-  border: 0.6cqw dashed rgba(249, 227, 154, 0.55);
-  box-shadow:
-    0 3px 8px rgba(0, 0, 0, 0.6),
-    inset 0 0 2cqw rgba(0, 0, 0, 0.45);
-  text-shadow: 0 1px 0 #5c0e09;
-  rotate: -10deg;
 }
 
 /* ---------- Filtres des archives : recherche, pastilles à choix multiples, panneau « Plus de filtres » ---------- */
