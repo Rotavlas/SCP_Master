@@ -9,6 +9,7 @@ import { BoutonCompte, Portail } from './components/Compte'
 import { Collection } from './components/Collection'
 import { Duel } from './components/Duel'
 import { Journal } from './components/Journal'
+import { JOURNAL } from './data/journal'
 import { Logo } from './components/Logo'
 import { Marche } from './components/Marche'
 import { Profil } from './components/Profil'
@@ -36,7 +37,6 @@ const ONGLETS: { id: Ecran; nom: string; icone: string; principal?: boolean }[] 
   { id: 'social', nom: 'Social', icone: '✉' },
   { id: 'classement', nom: 'Classements', icone: '♛' },
   { id: 'boutique', nom: 'Intendance', icone: '₵' },
-  { id: 'journal', nom: 'Journal', icone: '✎' },
 ]
 
 export default function App() {
@@ -239,6 +239,7 @@ export default function App() {
           <span className="solde" title="Crédits">
             {s.credits.toLocaleString('fr-FR')} ₵
           </span>
+          <BoutonJournal ouvert={ecran === 'journal'} ouvrir={() => aller('journal')} />
           {base && (
             <Cloche
               base={base}
@@ -388,6 +389,55 @@ function BandeauDefis({ aller }: { aller: (e: Ecran) => void }) {
 }
 
 /** Couper ou rétablir le son du jeu (le choix reste sur l'appareil). */
+const CLE_JOURNAL = 'scp-journal-vu'
+
+/** Le journal des modifications, à côté de la cloche ; un point signale une mise à jour pas encore lue. */
+function BoutonJournal({ ouvert, ouvrir }: { ouvert: boolean; ouvrir: () => void }) {
+  // La date ne suffit pas : deux mises à jour peuvent tomber le même jour
+  const derniere = `${JOURNAL[0].date} ${JOURNAL[0].titre}`
+  const [vu, setVu] = useState(() => {
+    try {
+      return localStorage.getItem(CLE_JOURNAL)
+    } catch {
+      return derniere
+    }
+  })
+  useEffect(() => {
+    if (!ouvert || vu === derniere) return
+    setVu(derniere)
+    try {
+      localStorage.setItem(CLE_JOURNAL, derniere)
+    } catch {
+      // Navigation privée : le point reviendra à la prochaine visite
+    }
+  }, [ouvert, vu, derniere])
+  const nouveau = vu !== derniere
+  return (
+    <button
+      className={`btn btn-cloche ${ouvert ? 'actif' : ''}`}
+      onClick={ouvrir}
+      title="Journal des modifications"
+      aria-label={nouveau ? 'Journal des modifications : nouveautés' : 'Journal des modifications'}
+    >
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden="true"
+      >
+        <path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z" />
+        <path d="M14 3v6h6M8 13h8M8 17h5" />
+      </svg>
+      {nouveau && <span className="point-nouveau" />}
+    </button>
+  )
+}
+
 function BoutonSon() {
   const actif = useSonActif()
   return (

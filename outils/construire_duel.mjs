@@ -9,6 +9,8 @@ const sorties = [
   ['serveur/edge.ts', 'supabase/functions/duel/index.js'],
   // Même logique sans l'enveloppe Deno, pour outils/tester_duel.mjs
   ['serveur/duel.ts', 'outils/.cache/duel.mjs'],
+  // Les règles de la Brèche de confinement seules, pour les tester une à une
+  ['src/engine/breche.ts', 'outils/.cache/breche.mjs'],
 ]
 for (const [entree, fichier] of sorties) {
   await build({

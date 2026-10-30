@@ -12,6 +12,18 @@ export interface Entree {
 export const JOURNAL: Entree[] = [
   {
     date: '2026-10-30',
+    titre: 'La Brèche de confinement',
+    points: [
+      'Les confrontations contre l’IA deviennent un vrai jeu de plateau : chaque agent protège un Site de 3 cellules, et fait tomber celles de l’adversaire en 5 tours.',
+      'Chaque carte a un rôle selon son type : les SCP et les grandes entités font brèche (un Keter frappe plus fort qu’un Safe), les FIM et le personnel gardent une cellule, les Sites en ouvrent une nouvelle, les Protocoles affaiblissent la carte adverse.',
+      'La question porte sur votre propre carte : juste, elle agit pleinement ; fausse, à moitié. Juste en moins de 7 secondes, vous prenez l’initiative et voyez la carte adverse avant de choisir la vôtre.',
+      'Une FIM reconfine aussitôt un SCP qu’elle a confiné dans le wiki ; la première Mythique engagée déclenche son ultime.',
+      'Un tutoriel en six fiches s’ouvre avant la première partie, et à tout moment avec « Comment jouer ? ».',
+      'Le journal quitte les onglets : il est à côté de la cloche, avec un point rouge quand il y a du nouveau.',
+    ],
+  },
+  {
+    date: '2026-10-30',
     titre: 'Légendaires plus rares, duels contre l’IA',
     points: [
       'Une Légendaire devient bien plus rare : 0,2 % par carte dans un dossier standard (contre 0,7 %). Les dossiers Keter et O5 baissent dans la même proportion et restent plus généreux.',

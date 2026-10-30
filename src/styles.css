@@ -5556,6 +5556,17 @@ button.pseudo:focus-visible .pseudo-nom {
   margin: 0;
 }
 
+.btn-cloche .point-nouveau {
+  position: absolute;
+  top: 0.15rem;
+  right: 0.2rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-radius: 50%;
+  background: var(--rouge, #e04a3a);
+  box-shadow: 0 0 0 2px var(--fond, #111);
+}
+
 .btn-cloche.sonne svg {
   transform-origin: 50% 10%;
   animation: cloche 2.4s ease-in-out infinite;
@@ -7397,5 +7408,547 @@ select,
 
   .filtres-bas .tri {
     margin-left: 0;
+  }
+}
+
+/* ---------- Brèche de confinement : le plateau contre l'IA ---------- */
+.breche {
+  display: grid;
+  gap: 0.9rem;
+  max-width: 980px;
+  margin: 0 auto;
+}
+
+.breche-bandeau {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  color: var(--discret);
+}
+
+.breche-bandeau strong {
+  color: var(--texte);
+  font-size: 1.1rem;
+}
+
+.breche-initiative {
+  padding: 0.2rem 0.6rem;
+  border: 1px solid var(--bord);
+  border-radius: 999px;
+}
+
+.breche-initiative.joueur {
+  color: var(--vert);
+  border-color: var(--vert);
+}
+
+.breche-initiative.ia {
+  color: var(--rouge);
+  border-color: var(--rouge);
+}
+
+.breche-camp {
+  display: grid;
+  grid-template-columns: minmax(8rem, 12rem) 1fr auto;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.8rem 1rem;
+  background: var(--panneau);
+  border: 1px solid var(--bord);
+  border-radius: 10px;
+}
+
+.breche-camp.adverse {
+  border-color: rgba(210, 58, 44, 0.45);
+  background: linear-gradient(180deg, rgba(210, 58, 44, 0.08), transparent 70%), var(--panneau);
+}
+
+.breche-identite {
+  display: grid;
+  gap: 0.15rem;
+  font-size: 0.9rem;
+}
+
+.breche-dos {
+  display: flex;
+  gap: 3px;
+  margin-top: 0.3rem;
+}
+
+.breche-dos i {
+  width: 14px;
+  height: 20px;
+  border-radius: 2px;
+  background: repeating-linear-gradient(45deg, #3a1a16 0 3px, #24100d 3px 6px);
+  border: 1px solid rgba(210, 58, 44, 0.5);
+}
+
+/* Les cellules d'un Site */
+.cellules {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  align-items: stretch;
+}
+
+.cellules-titre {
+  flex-basis: 100%;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--discret);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.cellule {
+  position: relative;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  justify-items: center;
+  gap: 0.3rem;
+  width: 4.6rem;
+  min-height: 7.2rem;
+  padding: 0.45rem 0.35rem;
+  background: var(--panneau-2);
+  border: 1px solid var(--bord);
+  border-radius: 8px;
+  color: var(--texte);
+  font-family: var(--mono);
+  cursor: default;
+  transition:
+    transform 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s;
+}
+
+.cellule:disabled {
+  opacity: 1;
+}
+
+.cellules.ciblables .cellule:not(:disabled) {
+  cursor: pointer;
+  border-color: var(--ambre);
+  box-shadow: 0 0 0 1px rgba(240, 180, 60, 0.25);
+}
+
+.cellules.ciblables .cellule:not(:disabled):hover {
+  transform: translateY(-2px);
+}
+
+.cellule.choisie {
+  border-color: var(--ambre);
+  background: linear-gradient(180deg, rgba(240, 180, 60, 0.28), rgba(240, 180, 60, 0.08)), var(--panneau-2);
+  transform: translateY(-3px);
+  box-shadow:
+    0 0 0 2px var(--ambre),
+    0 0 18px rgba(240, 180, 60, 0.45);
+}
+
+.cellule.choisie::after {
+  content: '◎ cible';
+  position: absolute;
+  bottom: -0.7rem;
+  left: 50%;
+  translate: -50% 0;
+  padding: 0 0.35rem;
+  font-size: 0.65rem;
+  color: #1c1b19;
+  background: var(--ambre);
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+/* Visée par la carte adverse déjà montrée (initiative) */
+.cellule.visee::before {
+  content: '◎ visée';
+  position: absolute;
+  top: -0.7rem;
+  left: 50%;
+  translate: -50% 0;
+  padding: 0 0.35rem;
+  font-size: 0.65rem;
+  color: #fff;
+  background: var(--rouge);
+  border-radius: 3px;
+  white-space: nowrap;
+}
+
+.cellule-num {
+  font-size: 0.7rem;
+  color: var(--discret);
+}
+
+.cellule-jauge {
+  position: relative;
+  width: 1.1rem;
+  height: 100%;
+  min-height: 3.6rem;
+  border: 1px solid var(--bord);
+  border-radius: 3px;
+  background: #0b0d0e;
+  overflow: hidden;
+}
+
+.cellule-jauge span {
+  position: absolute;
+  inset: auto 0 0 0;
+  background: linear-gradient(0deg, #3d8a58, var(--vert));
+  transition: height 0.6s ease;
+}
+
+.cellule-jauge span.urgent {
+  background: linear-gradient(0deg, #8a2a20, var(--rouge));
+}
+
+.cellule strong {
+  font-size: 0.95rem;
+}
+
+.cellule.tombee {
+  border-color: rgba(210, 58, 44, 0.6);
+  background: repeating-linear-gradient(-45deg, rgba(210, 58, 44, 0.16) 0 6px, transparent 6px 12px), var(--panneau-2);
+}
+
+.cellule.tombee strong {
+  font-size: 0.7rem;
+  color: var(--rouge);
+  letter-spacing: 0.05em;
+}
+
+.cellule.touchee {
+  animation: secousse 0.45s ease 1;
+}
+
+@keyframes secousse {
+  20%,
+  60% {
+    transform: translateX(-3px);
+  }
+  40%,
+  80% {
+    transform: translateX(3px);
+  }
+}
+
+/* Le coup reçu ou donné sur la cellule, qui monte et reste lisible */
+.cellule-coup {
+  position: absolute;
+  top: 35%;
+  left: 50%;
+  translate: -50% 0;
+  font-weight: 700;
+  font-size: 0.95rem;
+  white-space: nowrap;
+  text-shadow: 0 1px 4px #000;
+  animation: coup 1.6s ease-out forwards;
+  pointer-events: none;
+}
+
+.cellule-coup + .cellule-coup {
+  top: 60%;
+}
+
+.coup-breche,
+.coup-riposte {
+  color: #ff6a5a;
+}
+
+.coup-garde,
+.coup-reconfinement {
+  color: #8fc4ff;
+}
+
+.coup-reparation,
+.coup-cellule {
+  color: var(--vert);
+}
+
+@keyframes coup {
+  0% {
+    opacity: 0;
+    transform: translateY(8px) scale(0.8);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(0) scale(1.15);
+  }
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.85;
+    transform: translateY(-14px) scale(1);
+  }
+}
+
+/* La carte jouée, à côté de son Site */
+.breche-jouee {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  width: 8.5rem;
+}
+
+.breche-jouee .carte {
+  width: 100%;
+}
+
+/* Le rôle d'une carte */
+.breche-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  white-space: nowrap;
+  color: var(--r, var(--texte));
+  border: 1px solid var(--r, var(--bord));
+  background: rgba(0, 0, 0, 0.55);
+}
+
+.role-attaque {
+  --r: #ff7a5c;
+}
+
+.role-defense {
+  --r: #8fc4ff;
+}
+
+.role-fortification {
+  --r: #9fd98a;
+}
+
+.role-protocole {
+  --r: #e3b5ff;
+}
+
+.breche-centre {
+  min-height: 5rem;
+}
+
+.breche-consigne {
+  display: grid;
+  justify-items: center;
+  gap: 0.5rem;
+  text-align: center;
+  padding: 0.6rem 1rem;
+}
+
+.breche-consigne p {
+  margin: 0;
+}
+
+.breche-role {
+  color: var(--r);
+}
+
+.breche-ultime {
+  color: #ffd76a;
+}
+
+.breche-question .jauge > .initiative {
+  background: linear-gradient(90deg, #3d8a58, var(--vert));
+}
+
+.breche-journal {
+  margin: 0.6rem 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 0.25rem;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+}
+
+.breche-journal li {
+  padding: 0.25rem 0.6rem;
+  border-left: 3px solid var(--bord);
+  background: var(--panneau-2);
+}
+
+.breche-journal .evt-joueur {
+  border-left-color: var(--vert);
+}
+
+.breche-journal .evt-ia {
+  border-left-color: var(--rouge);
+}
+
+/* La main */
+.breche-main {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.8rem;
+}
+
+.breche-main-carte {
+  display: grid;
+  justify-items: center;
+  gap: 0.35rem;
+  width: 9rem;
+  transition: transform 0.15s;
+}
+
+.breche-main-carte .carte {
+  width: 100%;
+}
+
+.breche-main-carte.choisie {
+  transform: translateY(-10px);
+}
+
+.breche-main-carte.choisie .carte {
+  box-shadow:
+    0 0 0 3px var(--ambre),
+    0 10px 26px rgba(240, 180, 60, 0.35);
+}
+
+.breche-fin-sites {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  flex-wrap: wrap;
+  margin: 0.8rem 0;
+}
+
+.titre-entrainement {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.titre-entrainement h2 {
+  margin: 0;
+}
+
+/* Le tutoriel */
+.tuto-fond {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.tuto {
+  width: min(560px, 100%);
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+  padding: 1.4rem 1.5rem;
+  background: var(--panneau);
+  border: 1px solid var(--bord);
+  border-top: 3px solid var(--rouge);
+  border-radius: 10px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.6);
+}
+
+.tuto h2 {
+  margin: 0.2rem 0 0.6rem;
+}
+
+.tuto-texte {
+  line-height: 1.6;
+}
+
+.tuto-roles {
+  margin: 0;
+  padding-left: 1.1rem;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.tuto-roles b {
+  color: var(--r, var(--texte));
+}
+
+.tuto-schema {
+  margin: 1rem 0 0.2rem;
+  padding: 1.1rem 0.9rem 0.9rem;
+  background: var(--fond);
+  border: 1px dashed var(--bord);
+  border-radius: 8px;
+  display: flex;
+  justify-content: center;
+}
+
+.tuto-points {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  margin: 1rem 0 0.6rem;
+}
+
+.tuto-points span {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--bord);
+}
+
+.tuto-points span.actif {
+  background: var(--rouge);
+}
+
+.tuto .actions {
+  justify-content: flex-end;
+}
+
+@media (max-width: 760px) {
+  .breche-camp {
+    grid-template-columns: 1fr;
+    gap: 0.6rem;
+    padding: 0.7rem;
+  }
+
+  .breche-identite {
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .breche-identite .discret {
+    font-size: 0.75rem;
+  }
+
+  .breche-dos {
+    margin: 0;
+  }
+
+  .cellules {
+    justify-content: center;
+  }
+
+  .cellule {
+    width: 4rem;
+    min-height: 6rem;
+  }
+
+  .breche-jouee {
+    width: 7rem;
+    justify-self: center;
+  }
+
+  .breche-main {
+    gap: 0.5rem;
+  }
+
+  .breche-main-carte {
+    width: calc((100% - 1rem) / 3);
+  }
+
+  .breche-badge {
+    font-size: 0.62rem;
+    padding: 0.1rem 0.35rem;
   }
 }

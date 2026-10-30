@@ -10,6 +10,7 @@ import { ADVERSAIRES, DUREE_QUESTION, INTEGRITE_MAX, MANCHES, deckAdversaire, de
 import { genererQuestion } from '../src/engine/quiz'
 import type { Langue } from '../src/types'
 import { Erreur, GRACE, base, joueur, rpc, texte, type Environnement } from './commun'
+import { ACTIONS_BRECHE, traiterBreche } from './breche'
 import { ACTIONS_JCJ, traiterJcj } from './jcj'
 
 export type { Environnement } from './commun'
@@ -42,8 +43,9 @@ export interface Etat {
 }
 
 async function lire(env: Environnement, idDuel: string, idJoueur: string): Promise<{ etat: Etat; version: number }> {
-  const r = await rpc<{ etat: Etat | null; version: number } | null>(env, 'duel_lire', { p_duel: idDuel, p_joueur: idJoueur })
-  if (!r?.etat) throw new Erreur(404, 'Duel introuvable ou déjà terminé')
+  const r = await rpc<{ etat: (Etat & { mode?: string }) | null; version: number } | null>(env, 'duel_lire', { p_duel: idDuel, p_joueur: idJoueur })
+  // Une Brèche de confinement ne se joue qu'avec ses propres actions (serveur/breche.ts)
+  if (!r?.etat || r.etat.mode) throw new Erreur(404, 'Duel introuvable ou déjà terminé')
   return { etat: r.etat, version: r.version }
 }
 
@@ -212,6 +214,10 @@ export async function traiter(req: Request, env: Environnement): Promise<Respons
       case 'repondre':
         return repondreJson(200, await repondre(env, idJoueur, corps, maintenant))
       default:
+        // Brèche de confinement contre l'IA : serveur/breche.ts
+        if (typeof corps.action === 'string' && ACTIONS_BRECHE.has(corps.action)) {
+          return repondreJson(200, await traiterBreche(env, idJoueur, corps.action, corps, maintenant))
+        }
         // Duels entre joueurs : serveur/jcj.ts
         if (typeof corps.action === 'string' && ACTIONS_JCJ.has(corps.action)) {
           return repondreJson(200, await traiterJcj(env, idJoueur, corps.action, corps, maintenant))

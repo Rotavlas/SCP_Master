@@ -4,6 +4,7 @@
  */
 import type { Base } from '../data/catalogue'
 import type { CarteTiree, TypeBooster } from '../engine/boosters'
+import type { Camp, Evenement, Role } from '../engine/breche'
 import type { Adversaire } from '../engine/duel'
 import type { IdVariante } from '../engine/variantes'
 import { appeler, appelerDuel, appliquerProfil, envoyerPreferences, type ProfilServeur } from './enLigne'
@@ -22,7 +23,15 @@ export async function tirerBooster(base: Base, type: TypeBooster, depuisStock: b
       if (!t.carte) notifier('Nouvelles fiches disponibles : rechargez la page pour les voir')
       return !!t.carte
     })
-  modifier((x) => appliquerProfil(ajouterCartes(x, r.cartes.map((c) => ({ id: c.id, variante: c.v }))), r.profil))
+  modifier((x) =>
+    appliquerProfil(
+      ajouterCartes(
+        x,
+        r.cartes.map((c) => ({ id: c.id, variante: c.v })),
+      ),
+      r.profil,
+    ),
+  )
   return cartes
 }
 
@@ -48,53 +57,49 @@ export async function recyclerTout(): Promise<number> {
 
 export type Issue = 'victoire' | 'defaite' | 'nul'
 
-export interface DuelOuvert {
-  id: string
-  /** Équipe enregistrée sur le serveur, dans l'ordre */
+// ---------- Brèche de confinement contre l'IA (serveur/breche.ts) ----------
+
+export interface VueBreche {
+  tour: number
   main: string[]
   cartesIA: number
-  pv: number
-  pvIA: number
+  joueur: Camp
+  ia: Camp
+  /** Qui voit la carte de l'autre avant de choisir, ce tour-ci */
+  initiative: 'joueur' | 'ia' | null
+  /** Avec l'initiative : la carte et la cible que l'IA a déjà engagées */
+  revele?: { carte: string; cible: number }
+  bonnes: number
 }
 
-export interface QuestionDuel {
-  manche: number
-  surMaCarte: boolean
+export interface QuestionBreche {
+  tour: number
   question: { intitule: string; document?: string; options: string[] }
   duree: number
-  /** Moment où l'IA répond, en secondes ; son choix n'est révélé qu'après la réponse */
   tempsIA: number
 }
 
-export interface ResultatManche {
+export interface ResultatBreche extends VueBreche {
   bonne: number
   choix: number | null
   temps: number
-  reponseIA: { choix: number; temps: number }
-  carteIA: string
-  degatsInfliges: number
-  degatsRecus: number
-  pv: number
-  pvIA: number
-  bonnes: number
-  manche: number
+  coupIA: { carte: string; cible: number; role: Role; juste: boolean; temps: number }
+  evenements: Evenement[]
   fin: { issue: Issue; credits: number; xp: number; profil: ProfilServeur } | null
 }
 
-/** Ouvre un duel avec l'équipe enregistrée (envoyée d'abord si elle vient de changer). */
-export async function debuterDuel(adversaire: Adversaire): Promise<DuelOuvert | null> {
+export async function debuterBreche(adversaire: Adversaire): Promise<(VueBreche & { id: string }) | null> {
   await envoyerPreferences()
-  return appelerDuel<DuelOuvert>('debuter', { niveau: adversaire.niveau })
+  return appelerDuel('breche_debuter', { niveau: adversaire.niveau })
 }
 
-export async function jouerCarte(idDuel: string, carte: string): Promise<QuestionDuel | null> {
-  return appelerDuel<QuestionDuel>('jouer', { id: idDuel, carte })
+export async function jouerBreche(id: string, carte: string, cible: number): Promise<QuestionBreche | null> {
+  return appelerDuel('breche_jouer', { id, carte, cible })
 }
 
-/** Le serveur chronomètre, corrige, fait répondre l'IA et verse la récompense en fin de duel. */
-export async function repondreDuel(idDuel: string, choix: number | null): Promise<ResultatManche | null> {
-  const r = await appelerDuel<ResultatManche>('repondre', { id: idDuel, choix })
-  if (r?.fin) {
+export async function repondreBreche(id: string, choix: number | null): Promise<ResultatBreche | null> {
+  const r = await appelerDuel<ResultatBreche>('breche_repondre', { id, choix })
+  if (r?.fin?.profil) {
     const profil = r.fin.profil
     modifier((x) => appliquerProfil(x, profil))
   }

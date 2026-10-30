@@ -13,6 +13,10 @@ import { chargerBase, type Base } from './data/catalogue'
 import { VARIANTES } from './engine/variantes'
 import { CREDITS_ILLUSTRATIONS, SIGNATURES } from './data/mythiques'
 import type { Carte as TCarte } from './types'
+import { brancherFauxServeur } from './atelierBreche'
+import { Breche } from './components/Breche'
+import { TutoBreche } from './components/TutoBreche'
+import { ADVERSAIRES } from './engine/duel'
 import './styles.css'
 
 // Les originaux (public/sunny/, public/photos/), pour comparer avec la fin de l'animation
@@ -45,9 +49,34 @@ function Voir({ id }: { id: string }) {
   )
 }
 
+/** atelier.html?breche : une Brèche de confinement contre un faux serveur local (src/atelierBreche.ts) */
+function EssaiBreche({ base }: { base: Base }) {
+  const [tuto, setTuto] = useState(false)
+  const [n, setN] = useState(0)
+  return (
+    <main className="contenu">
+      <div className="actions">
+        <button className="btn" onClick={() => setTuto(true)}>
+          Tutoriel
+        </button>
+        <button className="btn" onClick={() => setN(n + 1)}>
+          Nouvelle partie
+        </button>
+      </div>
+      {tuto && <TutoBreche onFermer={() => setTuto(false)} />}
+      <Breche key={n} base={base} adversaire={ADVERSAIRES[2]} onQuitter={() => setN(n + 1)} />
+    </main>
+  )
+}
+
 function Atelier({ base }: { base: Base }) {
-  const voir = new URLSearchParams(location.search).get('voir')
+  const params = new URLSearchParams(location.search)
+  const voir = params.get('voir')
   if (voir) return <Voir id={voir} />
+  if (params.has('breche')) {
+    brancherFauxServeur(base)
+    return <EssaiBreche base={base} />
+  }
   const mythiques = Object.keys(SIGNATURES)
     .map((id) => base.parId.get(id))
     .filter((c): c is TCarte => !!c)

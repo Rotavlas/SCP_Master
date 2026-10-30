@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url'
 
 const racine = fileURLToPath(new URL('..', import.meta.url))
 const { traiter } = await import('./.cache/duel.mjs')
+const R = await import('./.cache/breche.mjs')
 
 const db = new PGlite()
 await db.exec(`
@@ -102,7 +103,8 @@ async function test(nom, f) {
 // Une équipe de 5 cartes possédées pour A et B
 async function equiper(joueur) {
   const ids = (await admin("select id from public.cartes where k = 's' and ra = 2 order by random() limit 5")).rows.map((r) => r.id)
-  for (const id of ids) await admin(`insert into public.exemplaires (proprietaire, carte_id, numero_serie, origine) values ($1, $2, null, 'booster')`, [joueur, id])
+  for (const id of ids)
+    await admin(`insert into public.exemplaires (proprietaire, carte_id, numero_serie, origine) values ($1, $2, null, 'booster')`, [joueur, id])
   await admin('update public.profils set equipe = $2 where id = $1', [joueur, ids])
   return ids
 }
@@ -185,7 +187,7 @@ await test("la question n'envoie ni la bonne réponse ni le choix de l'IA", asyn
 await test("pas de deuxième question tant qu'on n'a pas répondu", async () => {
   assert.equal((await appel('jeton-A', { action: 'jouer', id: duel, carte: equipeA[1] })).statut, 409)
 })
-await test("un autre joueur ne peut ni lire ni répondre au duel", async () => {
+await test('un autre joueur ne peut ni lire ni répondre au duel', async () => {
   assert.equal((await appel('jeton-B', { action: 'repondre', id: duel, choix: 0 })).statut, 404)
 })
 await test('une bonne réponse inflige des dégâts calculés par le serveur', async () => {
@@ -269,10 +271,142 @@ await test('les questions existent aussi en VF', async () => {
   assert.equal(q.statut, 200, q.texte)
   assert.equal((await etatServeur(d.id)).langue, 'vf')
 })
-await test('CORS : seule l\'origine du jeu est autorisée', async () => {
+await test("CORS : seule l'origine du jeu est autorisée", async () => {
   const r = await traiter(new Request(`${URL_SUPABASE}/functions/v1/duel`, { method: 'OPTIONS', headers: { Origin: 'https://pirate.example' } }), env)
   assert.equal(r.status, 204)
   assert.equal(r.headers.get('Access-Control-Allow-Origin'), SITE)
+})
+
+console.log('Brèche de confinement : règles')
+const carteTest = (k, atk, def, extra = {}) => ({ id: `t-${k}-${atk}-${def}`, k, nm: 'Test', ra: 1, p: 1, atk, def, ...extra })
+const coup = (carte, cible = 0, juste = true) => ({ carte, cible, juste })
+const neuf = () => R.campNeuf()
+const I = R.INTEGRITE_CELLULE
+await test('chaque type a son rôle', async () => {
+  assert.deepEqual(
+    ['s', 'g', 'c', 'n', 'd', 'f', 'p', 'e', 'l', 'o'].map((k) => R.role({ k })),
+    ['attaque', 'attaque', 'attaque', 'attaque', 'attaque', 'defense', 'defense', 'defense', 'fortification', 'protocole'],
+  )
+  assert.equal(R.role({ k: 'p', id: 'entite:scarlet-king' }), 'attaque', 'les grandes entités font brèche')
+})
+await test('une brèche frappe la cellule visée, plus fort pour un Keter', async () => {
+  const safe = R.resoudre(neuf(), neuf(), coup(carteTest('s', 50, 0, { c: 'safe' }), 1), coup(carteTest('l', 0, 0)))
+  const keter = R.resoudre(neuf(), neuf(), coup(carteTest('s', 50, 0, { c: 'keter' }), 1), coup(carteTest('l', 0, 0)))
+  assert.equal(safe.ia.cellules[1], I - 45)
+  assert.equal(keter.ia.cellules[1], I - 60)
+  assert.equal(safe.ia.cellules[0], I, 'les autres cellules ne bougent pas')
+})
+await test("une mauvaise réponse ne donne que la moitié de l'effet", async () => {
+  const r = R.resoudre(neuf(), neuf(), coup(carteTest('s', 40, 0), 0, false), coup(carteTest('l', 0, 0)))
+  assert.equal(r.ia.cellules[0], I - 20)
+})
+await test('une garde absorbe, une FIM riposte avec ce qui reste', async () => {
+  const r = R.resoudre(neuf(), neuf(), coup(carteTest('s', 30, 0), 2), coup(carteTest('f', 0, 50), 2))
+  assert.equal(r.ia.cellules[2], I, 'garde plus forte que la brèche')
+  assert.equal(r.joueur.cellules[2], I - 10, 'riposte : (50 − 30) / 2')
+})
+await test("le personnel répare la cellule qu'il garde", async () => {
+  const camp = { cellules: [30, I, I], ultime: false }
+  const r = R.resoudre(neuf(), camp, coup(carteTest('s', 20, 0), 1), coup(carteTest('p', 0, 40), 0))
+  assert.equal(r.ia.cellules[0], 40)
+})
+await test("une FIM reconfine un SCP qu'elle a confiné dans le wiki", async () => {
+  const scp = carteTest('s', 99, 0, { c: 'keter', num: 'SCP-682' })
+  const fim = carteTest('f', 0, 10, { lie: ['SCP-096', 'SCP-682'] })
+  const r = R.resoudre(neuf(), neuf(), coup(scp, 0), coup(fim, 0))
+  assert.equal(r.ia.cellules[0], I)
+  assert.ok(r.evenements.some((e) => e.type === 'reconfinement'))
+})
+await test('un Site ouvre une quatrième cellule, pas une cinquième', async () => {
+  const r = R.resoudre(neuf(), neuf(), coup(carteTest('l', 0, 50)), coup(carteTest('l', 0, 50)))
+  assert.deepEqual(r.joueur.cellules, [I, I, I, 30])
+  const plein = { cellules: [10, I, I, I], ultime: false }
+  assert.equal(R.resoudre(plein, neuf(), coup(carteTest('l', 0, 50)), coup(carteTest('l', 0, 0))).joueur.cellules.length, 4)
+})
+await test('un Protocole affaiblit de moitié la carte adverse', async () => {
+  const r = R.resoudre(neuf(), neuf(), coup(carteTest('o', 0, 0)), coup(carteTest('s', 40, 0), 0))
+  assert.equal(r.joueur.cellules[0], I - 20)
+})
+await test('une cellule tombée ne se vise plus : la brèche va sur la plus abîmée', async () => {
+  const camp = { cellules: [0, 25, 50], ultime: false }
+  const r = R.resoudre(neuf(), camp, coup(carteTest('s', 10, 0), 0), coup(carteTest('l', 0, 0)))
+  assert.deepEqual(r.ia.cellules.slice(0, 3), [0, 15, 50])
+})
+await test("l'ultime d'une Mythique ignore la garde, une seule fois", async () => {
+  const mythique = carteTest('s', 40, 0, { ra: 5 })
+  const r = R.resoudre(neuf(), neuf(), coup(mythique, 0), coup(carteTest('f', 0, 90), 0))
+  assert.equal(r.ia.cellules[0], I - 60, '40 × 1,5 sans garde')
+  assert.equal(r.joueur.ultime, true)
+  const encore = R.resoudre(r.joueur, neuf(), coup(mythique, 0), coup(carteTest('l', 0, 0)))
+  assert.equal(encore.ia.cellules[0], I - 40)
+})
+await test("initiative : juste et en moins de 7 s, le plus rapide l'emporte", async () => {
+  assert.equal(R.initiative({ juste: true, temps: 3 }, { juste: true, temps: 5 }), 'joueur')
+  assert.equal(R.initiative({ juste: true, temps: 6 }, { juste: true, temps: 2 }), 'ia')
+  assert.equal(R.initiative({ juste: true, temps: 9 }, { juste: false, temps: 1 }), null)
+})
+await test("avec l'initiative, l'IA garde la cellule que le joueur attaque", async () => {
+  const scp = carteTest('s', 50, 0)
+  const main = [carteTest('f', 0, 60), carteTest('s', 30, 0)]
+  const c = R.choisirIA(main, neuf(), neuf(), { carte: scp, cible: 2 }, 1)
+  assert.equal(c.carte.k, 'f')
+  assert.equal(c.cible, 2)
+})
+
+console.log('Brèche de confinement : serveur')
+await admin(`update public.profils set langue = 'vo' where id = $1`, [B])
+await admin('delete from prive.duels_ia where joueur = $1', [B])
+await test("la partie s'ouvre sans montrer la main de l'IA", async () => {
+  const r = await appel('jeton-B', { action: 'breche_debuter', niveau: 1 })
+  assert.equal(r.statut, 200, r.texte)
+  assert.equal(r.corps.cartesIA, 5)
+  assert.deepEqual(r.corps.joueur.cellules, [80, 80, 80])
+  assert.ok(!/mainIA/.test(r.texte), r.texte)
+})
+await test('les actions classiques refusent une Brèche, et inversement', async () => {
+  const d = (await appel('jeton-B', { action: 'breche_debuter', niveau: 1 })).corps
+  assert.equal((await appel('jeton-B', { action: 'jouer', id: d.id, carte: d.main[0] })).statut, 404)
+  const classique = (await appel('jeton-B', { action: 'debuter', niveau: 1 })).corps
+  assert.equal((await appel('jeton-B', { action: 'breche_jouer', id: classique.id, carte: classique.main[0] })).statut, 404)
+})
+await test('une partie complète : la question porte sur sa carte, le serveur résout et récompense', async () => {
+  const d = (await appel('jeton-B', { action: 'breche_debuter', niveau: 1 })).corps
+  let r
+  for (const carte of d.main) {
+    const q = await appel('jeton-B', { action: 'breche_jouer', id: d.id, carte, cible: 0 })
+    assert.equal(q.statut, 200, q.texte)
+    assert.ok(!/"bonne"|"coupIA"|"mainIA"/.test(q.texte), "ni la réponse ni la carte de l'IA")
+    const etat = await etatServeur(d.id)
+    horloge += 2000
+    r = await appel('jeton-B', { action: 'breche_repondre', id: d.id, choix: etat.question.bonne })
+    assert.equal(r.statut, 200, r.texte)
+    assert.equal(r.corps.choix, r.corps.bonne)
+    // Juste en 2 s : l'initiative, sauf si l'IA a été plus rapide
+    if (!r.corps.fin && r.corps.initiative === 'joueur') assert.ok(r.corps.revele, "avec l'initiative, la carte de l'IA est montrée")
+    if (r.corps.fin) break
+  }
+  assert.ok(r.corps.fin, 'la partie se termine')
+  const j = r.corps.joueur.cellules.reduce((a, b) => a + b, 0)
+  const ia = r.corps.ia.cellules.reduce((a, b) => a + b, 0)
+  const attendu = r.corps.ia.cellules.every((x) => x <= 0) ? 'victoire' : j > ia ? 'victoire' : j < ia ? 'defaite' : 'nul'
+  assert.equal(r.corps.fin.issue, attendu)
+  assert.equal((await admin('select bonnes from prive.duels_ia where id = $1', [d.id])).rows[0].bonnes, r.corps.bonnes)
+})
+await test("avec l'initiative, la carte montrée est bien celle que l'IA joue", async () => {
+  for (let essai = 0; essai < 8; essai++) {
+    const d = (await appel('jeton-B', { action: 'breche_debuter', niveau: 1 })).corps
+    await appel('jeton-B', { action: 'breche_jouer', id: d.id, carte: d.main[0], cible: 0 })
+    horloge += 1000
+    const r = await appel('jeton-B', { action: 'breche_repondre', id: d.id, choix: (await etatServeur(d.id)).question.bonne })
+    if (r.corps.initiative !== 'joueur') continue
+    const montre = r.corps.revele.carte
+    await appel('jeton-B', { action: 'breche_jouer', id: d.id, carte: d.main[1], cible: 0 })
+    horloge += 1000
+    const r2 = await appel('jeton-B', { action: 'breche_repondre', id: d.id, choix: 0 })
+    assert.equal(r2.corps.coupIA.carte, montre)
+    return
+  }
+  assert.fail("l'initiative n'a jamais été prise en 8 parties")
 })
 
 console.log('Duels entre joueurs')
@@ -320,7 +454,7 @@ await test('la file classée apparie deux joueurs et ouvre le duel', async () =>
   assert.equal(a2.corps.duel.id, jcj, 'A retrouve le duel en relançant la file')
   assert.deepEqual(a2.corps.duel.main, equipeA)
 })
-await test("un troisième joueur ne peut ni lire ni jouer le duel", async () => {
+await test('un troisième joueur ne peut ni lire ni jouer le duel', async () => {
   assert.equal((await appel('jeton-C', { action: 'jcj_etat', id: jcj })).statut, 404)
   assert.equal((await appel('jeton-C', { action: 'jcj_jouer', id: jcj, carte: equipeA[0] })).statut, 404)
 })
@@ -330,7 +464,11 @@ await test("pas de question tant que les deux n'ont pas choisi, et jamais la bon
   assert.equal(a.corps.etat.choisi.a, true)
   assert.equal((await appel('jeton-A', { action: 'jcj_jouer', id: jcj, carte: equipeA[1] })).statut, 409, 'une seule carte par manche')
   const mainB = (await appel('jeton-B', { action: 'jcj_etat', id: jcj })).corps.main
-  assert.equal((await appel('jeton-B', { action: 'jcj_jouer', id: jcj, carte: equipeA[0] === mainB[0] ? 'scp-000' : equipeA[0] })).statut, 400, 'carte hors de sa main')
+  assert.equal(
+    (await appel('jeton-B', { action: 'jcj_jouer', id: jcj, carte: equipeA[0] === mainB[0] ? 'scp-000' : equipeA[0] })).statut,
+    400,
+    'carte hors de sa main',
+  )
   const b = await appel('jeton-B', { action: 'jcj_jouer', id: jcj, carte: mainB[0] })
   assert.equal(b.corps.etat.phase, 'question')
   assert.ok(!b.texte.includes('"bonne"'), 'la bonne réponse ne quitte pas le serveur')
@@ -355,7 +493,7 @@ await test('les deux répondent : le serveur corrige et applique les dégâts', 
   assert.equal(b.corps.etat.phase, 'choix')
   assert.equal(b.corps.main.length, 4, 'la carte jouée a quitté la main')
 })
-await test('délai de choix dépassé : la carte est jouée d\'office', async () => {
+await test("délai de choix dépassé : la carte est jouée d'office", async () => {
   horloge += 30_000
   const r = await appel('jeton-A', { action: 'jcj_etat', id: jcj })
   assert.equal(r.corps.etat.phase, 'question')
@@ -431,8 +569,9 @@ await test('les questions portent tour à tour sur la carte de chaque joueur', a
   assert.deepEqual(sujets, sujets[0] === 'a' ? ['a', 'b', 'a', 'b', 'a'] : ['b', 'a', 'b', 'a', 'b'])
   await appel('jeton-A', { action: 'jcj_etat', id })
 })
-await test("deux joueurs qui ouvrent le même duel en préparation au même instant : aucune erreur", async () => {
-  const id = (await admin(`insert into public.duels_jcj (joueur_a, joueur_b, classe, statut) values ($1, $2, false, 'preparation') returning id`, [A, B])).rows[0].id
+await test('deux joueurs qui ouvrent le même duel en préparation au même instant : aucune erreur', async () => {
+  const id = (await admin(`insert into public.duels_jcj (joueur_a, joueur_b, classe, statut) values ($1, $2, false, 'preparation') returning id`, [A, B]))
+    .rows[0].id
   const [a, b] = await Promise.all([appel('jeton-A', { action: 'jcj_etat', id }), appel('jeton-B', { action: 'jcj_etat', id })])
   assert.equal(a.statut, 200, a.texte)
   assert.equal(b.statut, 200, b.texte)
