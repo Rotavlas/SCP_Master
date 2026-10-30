@@ -23,7 +23,8 @@ const SOURCES = [
   { id: 'perso:o5-1', fichier: 'o5-1.png', fond: '#ffffff' },
   { id: 'perso:the-administrator', fichier: 'administrateur.png', fond: '#ffffff' },
   // SCP-173 : la photo d'origine, « Untitled 2004 » d'Izumi Kato (pas sous licence libre ; choix du créateur du jeu)
-  { id: 'scp-173', fichier: 'scp-173.png', dossier: 'photos', fond: '#0d0d0d' },
+  // La photo est en largeur : la carte la recadre sur la statue ([x, y, largeur, hauteur], format d'une carte)
+  { id: 'scp-173', fichier: 'scp-173.png', dossier: 'photos', fond: '#0d0d0d', cadre: [14, 0, 204, 286] },
   // SCP-2747, l'anafabula : « Lady in Thorns »
   { id: 'scp-2747', fichier: 'anafabula.png', fond: '#ffffff' },
   { id: 'perso:aaron-siegel', fichier: 'aaron-siegel.png', dossier: 'photos', fond: '#0d0d0d', caviarder: [[132, 116, 246, 152]] },
@@ -167,6 +168,6 @@ for (const s of SOURCES) {
       : { png: PNG.sync.read(readFileSync(fichier)), l: 0, h: 0 }
   mkdirSync(`${racine}public/${dossier}`, { recursive: true })
   writeFileSync(`${racine}public/${dossier}/${s.fichier}`, PNG.sync.write(png, { colorType: 2 }))
-  sortie[s.id] = { image: `${dossier}/${s.fichier}`, largeur: l || png.width, hauteur: h || png.height, fond: s.fond }
+  sortie[s.id] = { image: `${dossier}/${s.fichier}`, largeur: l || png.width, hauteur: h || png.height, fond: s.fond, ...(s.cadre && { cadre: s.cadre }) }
 }
 writeFileSync(`${racine}public/data/scenes.json`, JSON.stringify(sortie))

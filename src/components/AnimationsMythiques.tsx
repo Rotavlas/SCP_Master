@@ -374,6 +374,7 @@ const SIEGEL: SceneImmersive = {
 const CLIGNEMENTS = [2.3, 3.6, 4.8, 5.95]
 const STATUE: SceneImmersive = {
   nom: 'scp-173',
+  cadreCarte: [14, 0, 204, 286],
   son: { ambiance: 'neon', secoue: 'raclement' },
   image: 'photos/scp-173.png',
   retour: 7.2,

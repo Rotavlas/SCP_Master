@@ -218,14 +218,14 @@ await test('recycle les doublons standard et garde un exemplaire', async () => {
   const garde = (await admin(`select numero_serie from public.exemplaires where proprietaire = '${A}' and carte_id = 'scp-096'`)).rows[0].numero_serie
   assert.equal(garde, 901, 'le plus petit numéro de série est conservé')
 })
-await test('avec une variante rare, tous les standard sont recyclables', async () => {
+await test("une variante rare ne compte pas comme l'exemplaire gardé : le dernier standard reste", async () => {
   await admin(`insert into public.exemplaires (proprietaire, carte_id, variante, numero_serie, origine) values ('${A}', 'scp-096', 'holo', 900, 'booster')`)
   const r = await valeur(A, "select public.recycler_doublons('scp-096')")
-  assert.ok(r.gain > 0)
-  const restants = (await admin(`select variante from public.exemplaires where proprietaire = '${A}' and carte_id = 'scp-096'`)).rows
+  assert.equal(r.gain, 0)
+  const restants = (await admin(`select variante from public.exemplaires where proprietaire = '${A}' and carte_id = 'scp-096' order by variante`)).rows
   assert.deepEqual(
     restants.map((x) => x.variante),
-    ['holo'],
+    ['holo', 'std'],
   )
 })
 
@@ -469,11 +469,11 @@ await test('brûlage groupé : les doublons gardent un exemplaire, « un » brû
   await donner(B, 'scp-096', 1)
   await donner(B, 'scp-096', 1, 'holo')
   const ra = (await admin("select ra from public.cartes where id = 'scp-173'")).rows[0].ra
-  const attendus = (await possede(B, 'scp-173', 'std')) - 1 + (await possede(B, 'scp-096', 'std'))
+  const attendus = (await possede(B, 'scp-173', 'std')) - 1 + (await possede(B, 'scp-096', 'std')) - 1
   const r = await valeur(B, "select public.bruler_lot(array['scp-173', 'scp-096'], 'doublons')")
-  // scp-096 : l'exemplaire holo compte comme celui qu'on garde, le standard part
+  // scp-096 : on garde toujours un exemplaire standard, la variante holo ne compte pas comme l'exemplaire gardé
   assert.equal(await possede(B, 'scp-173', 'std'), 1)
-  assert.equal(await possede(B, 'scp-096', 'std'), 0)
+  assert.equal(await possede(B, 'scp-096', 'std'), 1)
   assert.equal(await possede(B, 'scp-096', 'holo'), 1)
   assert.equal(r.detruits, attendus)
   assert.equal((await valeur(B, "select public.bruler_lot(array['scp-173'], 'un')")).gain, [5, 12, 35, 90, 300, 2500][ra])

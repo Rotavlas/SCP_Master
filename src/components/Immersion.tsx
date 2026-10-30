@@ -51,6 +51,8 @@ export interface SceneImmersive {
   avant?: ReactNode
   /** La toile n'apparaît qu'à cet instant (une avant-scène la précède) */
   debutToile?: number
+  /** Recadrage de la carte [x, y, largeur, hauteur] : le retour se pose exactement sur ce cadre (SCP-173) */
+  cadreCarte?: [number, number, number, number]
   /** Le son : une ambiance (state/sons.ts), des sons à des instants donnés ; les secousses font un impact
    * (ou un raclement), sauf `secoue: false` */
   son?: { ambiance: string; evenements?: [number, () => void][]; secoue?: 'impact' | 'raclement' | false }
@@ -414,9 +416,11 @@ export function Immersion({ id, scene, fige }: { id: string; scene: SceneImmersi
           const carte = cadreCarte(L, H)
           const r = lisse(Math.min(1, Math.max(0, (t - scene.retour) / RETOUR)))
           if (r > 0) {
-            const zCarte = Math.min(carte.l / l, carte.h / h) / s0
-            cx += (l / 2 - cx) * r
-            cy += (h / 2 - cy) * r
+            // La carte montre l'image entière, ou son recadrage (qui remplit alors tout le cadre)
+            const [rx, ry, rl, rh] = scene.cadreCarte ?? [0, 0, l, h]
+            const zCarte = (scene.cadreCarte ? Math.max(carte.l / rl, carte.h / rh) : Math.min(carte.l / l, carte.h / h)) / s0
+            cx += (rx + rl / 2 - cx) * r
+            cy += (ry + rh / 2 - cy) * r
             zoom += (zCarte - zoom) * r
           }
           // Secousses

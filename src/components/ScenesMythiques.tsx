@@ -43,6 +43,8 @@ export interface Trace {
   hauteur: number
   /** Couleur autour de l'image, quand ses proportions ne sont pas celles de la carte */
   fond: string
+  /** Recadrage pour la carte [x, y, largeur, hauteur], quand l'image n'est pas au format d'une carte */
+  cadre?: [number, number, number, number]
 }
 
 let traces: Promise<Record<string, Trace>> | null = null
@@ -76,7 +78,12 @@ function SceneSunny({ id }: { id: string }) {
   if (!trace) return <svg className={`scene-mythique sm-${classe(id)}`} viewBox="0 0 200 280" aria-hidden="true" />
   const { largeur: l, hauteur: h } = trace
   return (
-    <svg className={`scene-mythique sm-${classe(id)}`} viewBox={`0 0 ${l} ${h}`} preserveAspectRatio="xMidYMid meet" aria-hidden="true">
+    <svg
+      className={`scene-mythique sm-${classe(id)}`}
+      viewBox={trace.cadre ? trace.cadre.join(' ') : `0 0 ${l} ${h}`}
+      preserveAspectRatio={trace.cadre ? 'xMidYMid slice' : 'xMidYMid meet'}
+      aria-hidden="true"
+    >
       <rect x={-l} y={-h} width={l * 3} height={h * 3} fill={trace.fond} />
       <image href={urlImage(trace)} width={l} height={h} />
       <g className="sv">{VIVANTS[id]?.(u)}</g>

@@ -194,6 +194,8 @@ export function Carte({
       >
         <div className="cm-cadre">
           <SceneMythique id={carte.id} />
+          {/* Le calque d'une variante : papier jauni, dorure, bandes noires… posé sur l'image, sous les textes */}
+          {variante !== 'std' && <div className="carte-calque" aria-hidden="true" />}
           <div className="cm-voile" aria-hidden="true" />
           <header className="cm-haut">
             <span>{caviardee && !carte.num ? '██████' : entete(carte)}</span>
@@ -267,6 +269,7 @@ export function Carte({
               </div>
             )}
           </div>
+          {variante !== 'std' && <div className="carte-calque" aria-hidden="true" />}
           <header className="cl-haut">
             <span className="cl-num">{caviardee && !carte.num ? '██████' : entete(carte)}</span>
             <span className="cl-sceau" title="Légendaire">

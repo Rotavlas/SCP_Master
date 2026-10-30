@@ -38,7 +38,6 @@ export interface Sauvegarde {
   offresRecues: number
 }
 
-
 function neuve(): Sauvegarde {
   return {
     version: 2,
@@ -163,13 +162,13 @@ export function exemplairesStandard(s: Sauvegarde, id: string): number {
 }
 
 /**
- * Doublons recyclables : les exemplaires standard, hors souvenirs importés,
- * en gardant toujours au moins un exemplaire de la carte. Même règle que prive.recycler() côté serveur.
+ * Doublons recyclables : les exemplaires standard, hors souvenirs importés, en gardant toujours un exemplaire
+ * standard (une variante ne compte jamais comme l'exemplaire gardé). Même règle que prive.recycler() côté serveur.
  */
 export function doublonsRecyclables(s: Sauvegarde, id: string): number {
-  const recyclables = exemplairesStandard(s, id) - (s.souvenirs[id] ?? 0)
-  const autres = (s.collection[id] ?? 0) - recyclables
-  return Math.max(0, autres >= 1 ? recyclables : recyclables - 1)
+  const standard = exemplairesStandard(s, id)
+  const recyclables = standard - (s.souvenirs[id] ?? 0)
+  return Math.max(0, Math.min(recyclables, standard - 1))
 }
 
 export function recyclerDoublons(s: Sauvegarde, id: string): Sauvegarde {

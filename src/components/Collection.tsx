@@ -1,6 +1,7 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { CLASSES, ORDRE_TYPES, RARETES, TYPES, type Base } from '../data/catalogue'
 import { VALEUR_RECYCLAGE } from '../engine/boosters'
+import { VARIANTES, type IdVariante } from '../engine/variantes'
 import { recyclerTout } from '../state/actions'
 import { brulerLot, type ModeBrulage } from '../state/marche'
 import { TAILLE_DECK, doublonsRecyclables, modifier, useSauvegarde, varianteAffichee } from '../state/sauvegarde'
@@ -21,6 +22,51 @@ const TRIS: Record<Tri, (a: TCarte, b: TCarte) => number> = {
   confinement: (a, b) => b.def - a.def,
 }
 
+const POSSESSIONS: [Possession, string][] = [
+  ['possedees', 'Possédées'],
+  ['toutes', 'Toutes'],
+  ['manquantes', 'Manquantes'],
+  ['nouvelles', 'Nouvelles'],
+  ['favoris', 'Favoris'],
+  ['doublons', 'Doublons'],
+  ['variantes', 'Variantes'],
+  ['souhaits', 'Souhaits'],
+]
+
+interface Filtres {
+  possession: Possession
+  /** Types et raretés retenus (vide : tous) */
+  types: Set<TypeFiche>
+  raretes: Set<number>
+  classe: Classe | 'toutes'
+  serie: number | 'toutes'
+  variante: IdVariante | 'toutes'
+  tri: Tri
+  inverse: boolean
+}
+
+const FILTRES_DEFAUT: Filtres = {
+  possession: 'possedees',
+  types: new Set(),
+  raretes: new Set(),
+  classe: 'toutes',
+  serie: 'toutes',
+  variante: 'toutes',
+  tri: 'numero',
+  inverse: false,
+}
+const CLE_FILTRES = 'scp-filtres-archives'
+
+function lireFiltres(): Filtres {
+  try {
+    const x = JSON.parse(localStorage.getItem(CLE_FILTRES) ?? 'null')
+    if (!x) return FILTRES_DEFAUT
+    return { ...FILTRES_DEFAUT, ...x, types: new Set(x.types ?? []), raretes: new Set(x.raretes ?? []) }
+  } catch {
+    return FILTRES_DEFAUT
+  }
+}
+
 /** Les 5 cartes possédées les plus fortes, pour composer l'équipe en un clic. */
 export function meilleureEquipe(base: Base, collection: Record<string, number>): string[] {
   return Object.keys(collection)
@@ -33,37 +79,44 @@ export function meilleureEquipe(base: Base, collection: Record<string, number>):
 
 export function Collection({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id: string) => void }) {
   const s = useSauvegarde()
+  // Les filtres sont retenus sur l'appareil d'une visite à l'autre (sauf la recherche)
+  const [f, setF] = useState<Filtres>(lireFiltres)
+  const { possession, types, raretes, classe, serie, variante, tri, inverse } = f
   const [recherche, setRecherche] = useState('')
-  const [possession, setPossession] = useState<Possession>('possedees')
-  const [type, setType] = useState<TypeFiche | 'tous'>('tous')
-  const [rarete, setRarete] = useState<number | 'toutes'>('toutes')
-  const [classe, setClasse] = useState<Classe | 'toutes'>('toutes')
-  const [serie, setSerie] = useState<number | 'toutes'>('toutes')
-  const [tri, setTri] = useState<Tri>('numero')
+  const [plus, setPlus] = useState(classe !== 'toutes' || serie !== 'toutes' || variante !== 'toutes')
+  useEffect(() => {
+    try {
+      localStorage.setItem(CLE_FILTRES, JSON.stringify({ ...f, types: [...f.types], raretes: [...f.raretes] }))
+    } catch {
+      // Filtres non mémorisés (navigation privée) : ils valent pour cette visite
+    }
+  }, [f])
   const [page, setPage] = useState(0)
   // Sélection multiple : null hors du mode sélection
   const [selection, setSelection] = useState<Set<string> | null>(null)
   const [occupe, setOccupe] = useState(false)
 
-  const filtrees = useMemo(() => {
+  // Une carte passe-t-elle les filtres ? `sauf` ignore une dimension (pour compter les cartes de chaque pastille)
+  const garde = useMemo(() => {
     const r = recherche.trim().toLowerCase()
     const chiffres = r.replace(/^scp-?/, '')
     const favoris = new Set(s.favoris)
     const nouvelles = new Set(s.nouvelles)
     const souhaits = new Set(s.souhaits)
-    const liste = base.cartes.filter((c) => {
+    return (c: TCarte, sauf?: 'types' | 'raretes') => {
       const q = s.collection[c.id] ?? 0
       if (possession === 'possedees' && !q) return false
       if (possession === 'manquantes' && q) return false
       if (possession === 'nouvelles' && !nouvelles.has(c.id)) return false
       if (possession === 'favoris' && !favoris.has(c.id)) return false
-      if (possession === 'doublons' && q < 2) return false
+      if (possession === 'doublons' && doublonsRecyclables(s, c.id) === 0) return false
       if (possession === 'variantes' && !s.variantes[c.id]) return false
       if (possession === 'souhaits' && !souhaits.has(c.id)) return false
-      if (type !== 'tous' && c.k !== type) return false
-      if (rarete !== 'toutes' && c.ra !== rarete) return false
+      if (sauf !== 'types' && types.size && !types.has(c.k)) return false
+      if (sauf !== 'raretes' && raretes.size && !raretes.has(c.ra)) return false
       if (classe !== 'toutes' && c.c !== classe) return false
       if (serie !== 'toutes' && c.s !== serie) return false
+      if (variante !== 'toutes' && !s.variantes[c.id]?.[variante]) return false
       if (r) {
         const num = (c.num ?? '').toLowerCase()
         if (/^\d+$/.test(chiffres)) return c.k === 's' && (String(c.n).startsWith(chiffres.replace(/^0+(?=\d)/, '')) || num.includes(r))
@@ -72,17 +125,48 @@ export function Collection({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id
         return num.includes(r) || visible.toLowerCase().includes(r)
       }
       return true
-    })
-    return tri === 'numero' ? liste : [...liste].sort(TRIS[tri])
-  }, [base, s.collection, s.favoris, s.nouvelles, s.souhaits, s.variantes, recherche, possession, type, rarete, classe, serie, tri])
+    }
+  }, [s, recherche, possession, types, raretes, classe, serie, variante])
+
+  const filtrees = useMemo(() => {
+    const liste = base.cartes.filter((c) => garde(c))
+    if (tri === 'numero') return inverse ? [...liste].reverse() : liste
+    const triee = [...liste].sort(TRIS[tri])
+    return inverse ? triee.reverse() : triee
+  }, [base, garde, tri, inverse])
+
+  // Le nombre de cartes derrière chaque pastille de type et de rareté, les autres filtres appliqués
+  const comptes = useMemo(() => {
+    const parType: Partial<Record<TypeFiche, number>> = {}
+    const parRarete: number[] = [0, 0, 0, 0, 0, 0]
+    for (const c of base.cartes) {
+      if (garde(c, 'types')) parType[c.k] = (parType[c.k] ?? 0) + 1
+      if (garde(c, 'raretes')) parRarete[c.ra]++
+    }
+    return { parType, parRarete }
+  }, [base, garde])
+
+  const changer = (partiel: Partial<Filtres>) => {
+    setF((x) => ({ ...x, ...partiel }))
+    setPage(0)
+  }
+  const basculerDans = <T,>(ensemble: Set<T>, v: T) => {
+    const suivant = new Set(ensemble)
+    if (suivant.has(v)) suivant.delete(v)
+    else suivant.add(v)
+    return suivant
+  }
+  const actifs =
+    (possession !== 'possedees' ? 1 : 0) +
+    types.size +
+    raretes.size +
+    (classe !== 'toutes' ? 1 : 0) +
+    (serie !== 'toutes' ? 1 : 0) +
+    (variante !== 'toutes' ? 1 : 0)
 
   const pages = Math.max(1, Math.ceil(filtrees.length / PAR_PAGE))
   const pageCourante = Math.min(page, pages - 1)
   const visibles = filtrees.slice(pageCourante * PAR_PAGE, (pageCourante + 1) * PAR_PAGE)
-  const filtre = <T,>(f: (v: T) => void) => (v: T) => {
-    f(v)
-    setPage(0)
-  }
 
   const valeurDoublons = Object.keys(s.collection).reduce((total, id) => {
     const c = base.parId.get(id)
@@ -120,7 +204,15 @@ export function Collection({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id
         <div className="equipe-emplacements">
           {Array.from({ length: TAILLE_DECK }, (_, i) =>
             equipe[i] ? (
-              <Carte key={equipe[i].id} carte={equipe[i]} base={base} taille="p" variante={varianteAffichee(s, equipe[i].id)} inclinable={false} onClick={() => ouvrirCarte(equipe[i].id)} />
+              <Carte
+                key={equipe[i].id}
+                carte={equipe[i]}
+                base={base}
+                taille="p"
+                variante={varianteAffichee(s, equipe[i].id)}
+                inclinable={false}
+                onClick={() => ouvrirCarte(equipe[i].id)}
+              />
             ) : (
               <div key={i} className="emplacement-vide">
                 Vide
@@ -134,7 +226,7 @@ export function Collection({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id
           </button>
           {valeurDoublons > 0 && (
             <BoutonConfirme
-              question={`Recycler tous les doublons contre ${valeurDoublons} ₵ ? Un exemplaire de chaque carte et les variantes rares sont gardés.`}
+              question={`Recycler tous les doublons contre ${valeurDoublons} ₵ ? Un exemplaire standard de chaque carte et toutes les variantes rares sont gardés.`}
               confirmer="Recycler"
               onConfirme={() => void recyclerTout()}
             >
@@ -144,63 +236,132 @@ export function Collection({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id
         </div>
       </div>
 
-      <div className="filtres">
-        <input type="search" placeholder="Numéro, surnom ou tag…" value={recherche} onChange={(e) => filtre(setRecherche)(e.target.value)} />
-        <select value={possession} onChange={(e) => filtre(setPossession)(e.target.value as Possession)}>
-          <option value="possedees">Possédées</option>
-          <option value="toutes">Toutes</option>
-          <option value="manquantes">Manquantes</option>
-          <option value="nouvelles">Nouvelles ({s.nouvelles.length})</option>
-          <option value="favoris">Favoris</option>
-          <option value="doublons">Doublons</option>
-          <option value="variantes">Variantes rares</option>
-          <option value="souhaits">Liste de souhaits ({s.souhaits.length})</option>
-        </select>
-        <select value={type} onChange={(e) => filtre(setType)(e.target.value as TypeFiche | 'tous')}>
-          <option value="tous">Tous types</option>
-          {ORDRE_TYPES.map((k) => (
-            <option key={k} value={k}>
-              {TYPES[k].pluriel}
-            </option>
+      <div className="filtres-archives">
+        <div className="filtres-recherche">
+          <input
+            type="search"
+            placeholder="Numéro, surnom ou tag…"
+            value={recherche}
+            onChange={(e) => {
+              setRecherche(e.target.value)
+              setPage(0)
+            }}
+          />
+          {recherche && (
+            <button className="btn-vider" onClick={() => setRecherche('')} aria-label="Vider la recherche">
+              ✕
+            </button>
+          )}
+        </div>
+
+        <div className="pastilles pastilles-defilantes" role="radiogroup" aria-label="Quelles cartes">
+          {POSSESSIONS.map(([id, nom]) => (
+            <button
+              key={id}
+              role="radio"
+              aria-checked={possession === id}
+              className={`pastille-filtre ${possession === id ? 'active' : ''}`}
+              onClick={() => changer({ possession: id })}
+            >
+              {nom}
+              {id === 'nouvelles' && s.nouvelles.length > 0 && <small>{s.nouvelles.length}</small>}
+              {id === 'souhaits' && s.souhaits.length > 0 && <small>{s.souhaits.length}</small>}
+            </button>
           ))}
-        </select>
-        <select value={rarete} onChange={(e) => filtre(setRarete)(e.target.value === 'toutes' ? 'toutes' : Number(e.target.value))}>
-          <option value="toutes">Toutes raretés</option>
+        </div>
+
+        <div className="pastilles" aria-label="Raretés (plusieurs possibles)">
           {RARETES.map((r, i) => (
-            <option key={r.nom} value={i}>
+            <button
+              key={r.nom}
+              aria-pressed={raretes.has(i)}
+              className={`pastille-filtre pastille-rarete ${raretes.has(i) ? 'active' : ''}`}
+              style={{ ['--r' as string]: r.couleur }}
+              disabled={!comptes.parRarete[i] && !raretes.has(i)}
+              onClick={() => changer({ raretes: basculerDans(raretes, i) })}
+            >
+              <i aria-hidden="true" />
               {r.nom}
-            </option>
+              <small>{comptes.parRarete[i].toLocaleString('fr-FR')}</small>
+            </button>
           ))}
-        </select>
-        {(type === 'tous' || type === 's') && (
-          <>
-        <select value={classe} onChange={(e) => filtre(setClasse)(e.target.value as Classe | 'toutes')}>
-          <option value="toutes">Toutes classes</option>
-          {Object.entries(CLASSES)
-            .filter(([k]) => base.cartes.some((c) => c.c === k))
-            .map(([k, v]) => (
-              <option key={k} value={k}>
-                {v.nom}
-              </option>
-            ))}
-        </select>
-        <select value={serie} onChange={(e) => filtre(setSerie)(e.target.value === 'toutes' ? 'toutes' : Number(e.target.value))}>
-          <option value="toutes">Toutes séries</option>
-          {Array.from({ length: 11 }, (_, i) => (
-            <option key={i} value={i}>
-              {i === 0 ? 'SCP-001' : `Série ${i} (${i === 1 ? '001' : (i - 1) * 1000}–${i * 1000 - 1})`}
-            </option>
+        </div>
+
+        <div className="pastilles" aria-label="Types (plusieurs possibles)">
+          {ORDRE_TYPES.map((k) => (
+            <button
+              key={k}
+              aria-pressed={types.has(k)}
+              className={`pastille-filtre pastille-rarete ${types.has(k) ? 'active' : ''}`}
+              style={{ ['--r' as string]: TYPES[k].couleur }}
+              disabled={!comptes.parType[k] && !types.has(k)}
+              onClick={() => changer({ types: basculerDans(types, k) })}
+            >
+              <i aria-hidden="true" />
+              {TYPES[k].pluriel}
+              <small>{(comptes.parType[k] ?? 0).toLocaleString('fr-FR')}</small>
+            </button>
           ))}
-        </select>
-          </>
+        </div>
+
+        <div className="filtres-bas">
+          <button className="btn btn-lien" aria-expanded={plus} onClick={() => setPlus(!plus)}>
+            {plus ? '▾' : '▸'} Plus de filtres
+          </button>
+          <span className="tri">
+            <select value={tri} onChange={(e) => changer({ tri: e.target.value as Tri })} aria-label="Trier par">
+              <option value="numero">Tri : numéro</option>
+              <option value="rarete">Tri : rareté</option>
+              <option value="popularite">Tri : popularité</option>
+              <option value="menace">Tri : menace</option>
+              <option value="confinement">Tri : confinement</option>
+            </select>
+            <button
+              className="btn btn-sens"
+              onClick={() => changer({ inverse: !inverse })}
+              aria-label={inverse ? 'Ordre inversé' : 'Ordre normal'}
+              title="Inverser l'ordre"
+            >
+              {inverse ? '↑' : '↓'}
+            </button>
+          </span>
+          {actifs > 0 && (
+            <button className="btn btn-lien" onClick={() => changer({ ...FILTRES_DEFAUT, tri, inverse })}>
+              Réinitialiser les filtres ({actifs})
+            </button>
+          )}
+        </div>
+
+        {plus && (
+          <div className="filtres">
+            <select value={classe} onChange={(e) => changer({ classe: e.target.value as Classe | 'toutes' })} aria-label="Classe">
+              <option value="toutes">Toutes classes</option>
+              {Object.entries(CLASSES)
+                .filter(([k]) => base.cartes.some((c) => c.c === k))
+                .map(([k, v]) => (
+                  <option key={k} value={k}>
+                    {v.nom}
+                  </option>
+                ))}
+            </select>
+            <select value={serie} onChange={(e) => changer({ serie: e.target.value === 'toutes' ? 'toutes' : Number(e.target.value) })} aria-label="Série">
+              <option value="toutes">Toutes séries</option>
+              {Array.from({ length: 11 }, (_, i) => (
+                <option key={i} value={i}>
+                  {i === 0 ? 'SCP-001' : `Série ${i} (${i === 1 ? '001' : (i - 1) * 1000}–${i * 1000 - 1})`}
+                </option>
+              ))}
+            </select>
+            <select value={variante} onChange={(e) => changer({ variante: e.target.value as IdVariante | 'toutes' })} aria-label="Variante possédée">
+              <option value="toutes">Toutes variantes</option>
+              {VARIANTES.filter((v) => v.id !== 'std').map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.nom}
+                </option>
+              ))}
+            </select>
+          </div>
         )}
-        <select value={tri} onChange={(e) => setTri(e.target.value as Tri)}>
-          <option value="numero">Tri : numéro</option>
-          <option value="rarete">Tri : rareté</option>
-          <option value="popularite">Tri : popularité</option>
-          <option value="menace">Tri : menace</option>
-          <option value="confinement">Tri : confinement</option>
-        </select>
       </div>
 
       <div className="resultat-ligne">
@@ -231,11 +392,7 @@ export function Collection({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id
           <button className="btn" disabled={!choisies.length} onClick={() => setSelection(new Set())}>
             Vider
           </button>
-          <button
-            className="btn"
-            disabled={!choisies.length}
-            onClick={() => modifier((x) => ({ ...x, favoris: [...new Set([...x.favoris, ...choisies])] }))}
-          >
+          <button className="btn" disabled={!choisies.length} onClick={() => modifier((x) => ({ ...x, favoris: [...new Set([...x.favoris, ...choisies])] }))}>
             Ajouter aux favoris
           </button>
           <button
@@ -247,7 +404,7 @@ export function Collection({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id
           </button>
           <BoutonConfirme
             disabled={!choisies.length || occupe || gainDoublons === 0}
-            question={`Brûler les doublons standard de ${choisies.length} dossier${choisies.length > 1 ? 's' : ''} ? Un exemplaire de chaque est gardé.`}
+            question={`Brûler les doublons standard de ${choisies.length} dossier${choisies.length > 1 ? 's' : ''} ? Un exemplaire standard de chaque et les variantes sont gardés.`}
             confirmer={`Brûler (+${gainDoublons.toLocaleString('fr-FR')} ₵)`}
             onConfirme={() => void brulerSelection('doublons')}
           >

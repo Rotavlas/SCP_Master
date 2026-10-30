@@ -7071,9 +7071,15 @@ select,
 }
 
 /* ---------- Variantes sur les cadres pleine page (Légendaire, Mythique) ----------
-   Le cadre doré des Légendaires (déclaré plus haut) masquait le fond des variantes ; la Mythique n'affichait
-   aucune variante. Chacune se voit maintenant : le liseré prend la couleur de la variante, l'image et le
-   bandeau du bas changent comme sur les autres cartes. */
+   Les filtres d'image ne suffisent pas (un dessin noir et blanc ne jaunit pas) : un calque (.carte-calque) se pose
+   sur l'image, sous les textes, et la transforme vraiment. Le liseré prend la couleur de la variante. */
+.carte-calque {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+/* Holographique : irisation qui suit le pointeur */
 .carte-legendaire.variante-holo,
 .carte-mythique.variante-holo {
   background: linear-gradient(125deg, #ff9a9e, #fad0c4, #a1c4fd, #c2e9fb, #d4fc79, #96e6a1, #fbc2eb);
@@ -7081,54 +7087,95 @@ select,
   animation: irise 6s linear infinite;
 }
 
-.carte-mythique.variante-holo .carte-holo {
-  opacity: 0.32;
+.variante-holo .carte-calque {
   mix-blend-mode: color-dodge;
-  inset: 4px;
-  border-radius: 9px;
+  opacity: 0.35;
   background:
-    radial-gradient(circle at var(--mx) var(--my), rgba(255, 255, 255, 0.55), transparent 45%),
+    radial-gradient(circle at var(--mx, 50%) var(--my, 50%), rgba(255, 255, 255, 0.6), transparent 45%),
     repeating-linear-gradient(115deg, #ff6b6b 0%, #ffd93d 8%, #6bff95 16%, #4dd2ff 24%, #b36bff 32%, #ff6b6b 40%);
   background-size:
     100% 100%,
     300% 300%;
   background-position:
     center,
-    var(--mx) var(--my);
+    var(--mx, 50%) var(--my, 50%);
 }
 
-/* Expurgée : image noircie, tampon de l'Éthique */
-.carte-legendaire.variante-exp .cl-visuel img,
-.carte-mythique.variante-exp .scene-mythique {
-  filter: grayscale(1) contrast(1.4) brightness(0.8);
-}
-
+/* Expurgée : des bandes noires caviardent l'image, le tampon rouge de l'Éthique par-dessus */
 .carte-legendaire.variante-exp,
 .carte-mythique.variante-exp {
   background: linear-gradient(145deg, #5a1e18, #e04a3c 50%, #3a120e);
 }
 
-/* Archive d'origine : liseré cuivré, image sépia, bandeau en papier jauni tapé à la machine */
+.carte-legendaire.variante-exp .cl-visuel img {
+  filter: grayscale(1) contrast(1.3) brightness(0.85);
+}
+
+.variante-exp .carte-calque {
+  background:
+    linear-gradient(#050505, #050505) 14% 20% / 64% 7% no-repeat,
+    linear-gradient(#050505, #050505) 78% 31% / 42% 6% no-repeat,
+    linear-gradient(#050505, #050505) 20% 44% / 72% 7% no-repeat,
+    linear-gradient(#050505, #050505) 60% 55% / 50% 6% no-repeat;
+}
+
+.carte-legendaire .tampon-expurge,
+.carte-mythique .tampon-expurge {
+  top: 36%;
+  z-index: 2;
+  mix-blend-mode: normal;
+  background: rgba(250, 245, 235, 0.92);
+  font-size: 10cqw;
+  box-shadow: 0 0 0 0.6cqw rgba(250, 245, 235, 0.92);
+}
+
+/* Archive d'origine : le dessin sur un vieux papier jauni, taché de café, assombri sur les bords, tamponné */
 .carte-legendaire.variante-arch,
 .carte-mythique.variante-arch {
-  background: linear-gradient(145deg, #b89a64, #7c6034);
+  background: linear-gradient(145deg, #8a6a3c, #4e3618);
   animation: none;
 }
 
-.carte-legendaire.variante-arch .cl-visuel img,
-.carte-mythique.variante-arch .scene-mythique {
-  filter: sepia(1) contrast(1.1) brightness(0.92);
+.carte-legendaire.variante-arch .cl-visuel img {
+  filter: sepia(1) contrast(1.15) brightness(0.95);
+}
+
+.variante-arch .carte-calque {
+  mix-blend-mode: multiply;
+  background:
+    radial-gradient(circle at 76% 26%, transparent 6.5%, rgba(120, 66, 18, 0.45) 7%, rgba(120, 66, 18, 0.2) 8%, transparent 9.5%),
+    radial-gradient(circle at 22% 70%, rgba(120, 66, 18, 0.22), transparent 14%),
+    radial-gradient(ellipse at 50% 45%, transparent 45%, rgba(80, 45, 12, 0.6) 100%),
+    repeating-linear-gradient(0deg, rgba(90, 60, 20, 0.06) 0 1px, transparent 1px 3px), linear-gradient(170deg, #f1ddae, #dcbc80);
+}
+
+.variante-arch .carte-calque::after {
+  content: 'ARCHIVÉ · 19██';
+  position: absolute;
+  top: 13%;
+  left: 6%;
+  padding: 0.4cqw 1.6cqw;
+  border: 0.5cqw solid #8e2416;
+  color: #8e2416;
+  font-family: var(--machine);
+  font-size: 4.2cqw;
+  letter-spacing: 0.08em;
+  rotate: -7deg;
 }
 
 .carte-legendaire.variante-arch .cl-bas {
-  background: linear-gradient(180deg, rgba(226, 207, 159, 0.92), #e2cf9f 30%);
-  border-top-color: #7c6034;
+  background: linear-gradient(180deg, rgba(226, 207, 159, 0.94), #e2cf9f 30%);
+  border-top-color: #6b4c22;
   color: #3a2a12;
   font-family: var(--machine);
 }
 
+.carte-mythique.variante-arch .cm-voile {
+  background: linear-gradient(180deg, rgba(60, 38, 14, 0.5) 0%, transparent 15%, transparent 58%, rgba(60, 38, 14, 0.92) 76%);
+}
+
 .carte-mythique.variante-arch .cm-bas {
-  color: #f1e2bd;
+  color: #f6e7c4;
   font-family: var(--machine);
 }
 
@@ -7152,19 +7199,36 @@ select,
     -2px 0 #2de2ff;
 }
 
-/* Sceau O5 : dorure qui tourne, sceau d'or, image dorée */
+/* Sceau O5 : l'image passe à l'or (le blanc devient or, le noir reste noir), un reflet la traverse,
+   un sceau de cire rouge frappé « O5 » */
 .carte-legendaire.variante-o5,
 .carte-mythique.variante-o5 {
   background: conic-gradient(from var(--angle-or, 0deg), #f9e39a, #b8892b, #fff2c2, #8d6517, #f9e39a);
   animation: dorure 5s linear infinite;
   box-shadow:
     0 6px 18px rgba(0, 0, 0, 0.45),
-    0 0 22px rgba(244, 197, 66, 0.55);
+    0 0 26px rgba(244, 197, 66, 0.65);
 }
 
-.carte-legendaire.variante-o5 .cl-visuel img,
-.carte-mythique.variante-o5 .scene-mythique {
-  filter: sepia(0.6) saturate(1.4) contrast(1.1);
+.variante-o5 .carte-calque {
+  mix-blend-mode: multiply;
+  background: linear-gradient(160deg, #fff4c9, #f0c24a 45%, #a87916);
+}
+
+.variante-o5 .carte-calque::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  mix-blend-mode: screen;
+  background: linear-gradient(115deg, transparent 30%, rgba(255, 244, 201, 0.55) 45%, transparent 60%) -150% 0 / 250% 100% no-repeat;
+  animation: reflet-or 4s ease-in-out infinite;
+}
+
+@keyframes reflet-or {
+  60%,
+  100% {
+    background-position: 250% 0;
+  }
 }
 
 .carte-legendaire.variante-o5 .cl-bas {
@@ -7173,7 +7237,140 @@ select,
   color: #f2d27a;
 }
 
-/* Sur une Mythique, le sceau O5 et le tampon descendent sous l'en-tête et le sceau Ω */
+.carte-legendaire .sceau-o5,
 .carte-mythique .sceau-o5 {
-  top: 12cqw;
+  top: auto;
+  left: auto;
+  right: 5cqw;
+  bottom: 36%;
+  z-index: 2;
+  width: 19cqw;
+  height: 19cqw;
+  font-size: 6.5cqw;
+  color: #f9e39a;
+  background: radial-gradient(circle at 35% 30%, #d0463a, #8a1a12 60%, #5c0e09);
+  border: 0.6cqw dashed rgba(249, 227, 154, 0.55);
+  box-shadow:
+    0 3px 8px rgba(0, 0, 0, 0.6),
+    inset 0 0 2cqw rgba(0, 0, 0, 0.45);
+  text-shadow: 0 1px 0 #5c0e09;
+  rotate: -10deg;
+}
+
+/* ---------- Filtres des archives : recherche, pastilles à choix multiples, panneau « Plus de filtres » ---------- */
+.filtres-archives {
+  display: grid;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+}
+
+.filtres-recherche {
+  position: relative;
+}
+
+.filtres-recherche input {
+  width: 100%;
+  padding-right: 2.4rem;
+}
+
+.btn-vider {
+  position: absolute;
+  top: 50%;
+  right: 0.3rem;
+  translate: 0 -50%;
+  width: 2rem;
+  height: 2rem;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  color: var(--discret);
+}
+
+.pastilles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.pastilles-defilantes {
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
+  padding-bottom: 2px;
+}
+
+.pastille-filtre {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-shrink: 0;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--bord);
+  border-radius: 99px;
+  background: var(--panneau);
+  color: var(--discret);
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.pastille-filtre small {
+  opacity: 0.7;
+  font-size: 0.68rem;
+}
+
+.pastille-filtre i {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--r, var(--discret));
+}
+
+.pastille-filtre:hover:not(:disabled) {
+  color: var(--texte);
+  border-color: var(--discret);
+}
+
+.pastille-filtre.active {
+  color: var(--texte);
+  border-color: var(--r, var(--rouge));
+  background: color-mix(in srgb, var(--r, var(--rouge)) 18%, var(--panneau));
+}
+
+.pastille-filtre:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.filtres-bas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+.filtres-bas .tri {
+  display: inline-flex;
+  gap: 0.3rem;
+  margin-left: auto;
+}
+
+.btn-sens {
+  min-width: 2.4rem;
+}
+
+@media (max-width: 760px) {
+  .pastilles:not(.pastilles-defilantes) {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .pastille-filtre {
+    padding: 0.4rem 0.75rem;
+  }
+
+  .filtres-bas .tri {
+    margin-left: 0;
+  }
 }
