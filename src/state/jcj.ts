@@ -5,6 +5,10 @@
 import { useEffect, useRef, useSyncExternalStore } from 'react'
 import { appeler, appelerDuel, appliquerProfil, idUtilisateur, supabase, type ProfilServeur } from './enLigne'
 import { modifier, notifier } from './sauvegarde'
+import type { EtatRecoJcj } from '../../serveur/jcjReco'
+
+export type { EtatRecoJcj }
+export const estRecoJcj = (e: EtatJcj | EtatRecoJcj): e is EtatRecoJcj => (e as EtatRecoJcj).mode === 'reco'
 
 export type Cote = 'a' | 'b'
 type ParCote<T> = Record<Cote, T>
@@ -39,7 +43,8 @@ export interface VueDuel {
   statut: 'invitation' | 'preparation' | 'en_cours' | 'termine' | 'annule'
   moi: { pseudo: string; elo: number }
   adversaire: { pseudo: string; elo: number }
-  etat: EtatJcj
+  /** Le Reconfinement (duels ouverts depuis le 30 octobre) ou le quiz classique (duels commencés avant) */
+  etat: EtatJcj | EtatRecoJcj
   main: string[]
   maCarte: string | null
   gains: { credits: number; xp: number; elo: number } | null
@@ -86,7 +91,8 @@ export async function repondreDefi(id: string, accepter: boolean) {
 }
 export const etatDuel = async (id: string) => appliquer(await appelerDuel<VueDuel>('jcj_etat', { id }))
 export const jouerCarteJcj = async (id: string, carte: string) => appliquer(await appelerDuel<VueDuel>('jcj_jouer', { id, carte }))
-export const repondreJcj = async (id: string, choix: number) => appliquer(await appelerDuel<VueDuel>('jcj_repondre', { id, choix }))
+export const repondreJcj = async (id: string, choix: number, regarde = false) => appliquer(await appelerDuel<VueDuel>('jcj_repondre', { id, choix, regarde }))
+export const manifesterEnDuel = async (id: string) => appliquer(await appelerDuel<VueDuel>('jcj_manifester', { id }))
 export const abandonner = async (id: string) => appliquer(await appelerDuel<VueDuel>('jcj_abandonner', { id }))
 
 /** Suit un duel en direct : à chaque écriture du serveur, `relire` est appelé (regroupé). */

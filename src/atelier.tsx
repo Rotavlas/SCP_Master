@@ -16,6 +16,8 @@ import type { Carte as TCarte } from './types'
 import { brancherServeurLocal } from './atelierServeur'
 import { Breche } from './components/Breche'
 import { DuelEclair } from './components/DuelEclair'
+import { DuelJcj } from './components/DuelJcj'
+import { entrerFile } from './state/jcj'
 import { Reconfinement } from './components/Reconfinement'
 import { Tuto, TutoBreche } from './components/TutoBreche'
 import { ETAPES_ECLAIR, ETAPES_RECO } from './components/TutoModes'
@@ -58,6 +60,15 @@ function Voir({ id }: { id: string }) {
  * atelier.html?mode=reco|breche|eclair : une confrontation contre l'IA, jouée avec le vrai code du serveur en local
  * (src/atelierServeur.ts) ; &equipe=id1,id2… pour changer l'équipe de démonstration, &niveau=1…5 pour l'adversaire.
  */
+/** atelier.html?mode=jcj : un Reconfinement entre joueurs, contre un adversaire simulé (src/atelierServeur.ts) */
+function EssaiJcj({ base }: { base: Base }) {
+  const [id, setId] = useState<string | null>(null)
+  useEffect(() => {
+    void entrerFile().then((r) => setId(r?.duel?.id ?? null))
+  }, [])
+  return <main className="contenu">{id ? <DuelJcj id={id} base={base} onQuitter={() => location.reload()} ouvrirProfil={() => undefined} /> : '…'}</main>
+}
+
 function EssaiMode({ base, mode }: { base: Base; mode: string }) {
   const [tuto, setTuto] = useState(false)
   const [n, setN] = useState(0)
@@ -155,7 +166,7 @@ function Atelier({ base }: { base: Base }) {
   if (mode === 'alterations') return <PlancheAlterations />
   if (mode) {
     brancherServeurLocal(params.get('equipe')?.split(','))
-    return <EssaiMode base={base} mode={mode} />
+    return mode === 'jcj' ? <EssaiJcj base={base} /> : <EssaiMode base={base} mode={mode} />
   }
   const mythiques = Object.keys(SIGNATURES)
     .map((id) => base.parId.get(id))

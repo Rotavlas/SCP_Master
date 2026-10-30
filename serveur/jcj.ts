@@ -11,6 +11,7 @@ import { DUREE_QUESTION, INTEGRITE_MAX, MANCHES, degats } from '../src/engine/du
 import { genererQuestion } from '../src/engine/quiz'
 import type { Langue } from '../src/types'
 import { Erreur, GRACE, base, rpc, texte, type Environnement } from './commun'
+import { appliquerDelaisReco, choisirReco, estReco, etatInitialReco, manifesterJcj, repondreReco, type EtatRecoJcj, type SecretRecoJcj } from './jcjReco'
 
 export type Cote = 'a' | 'b'
 type ParCote<T> = Record<Cote, T>
@@ -67,8 +68,8 @@ interface Lu {
   pseudoB: string
   eloA: number
   eloB: number
-  etat: EtatPublic | Record<string, never>
-  secret: EtatSecret | null
+  etat: EtatPublic | EtatRecoJcj | Record<string, never>
+  secret: EtatSecret | SecretRecoJcj | null
   version: number
   resultat: ParCote<{ credits: number; xp: number; elo: number }> | null
 }
@@ -178,7 +179,7 @@ function resoudre(etat: EtatPublic, secret: EtatSecret, b: Base, maintenant: num
 }
 
 export function choisir(etat: EtatPublic, secret: EtatSecret, cote: Cote, idCarte: string, b: Base, maintenant: number) {
-  if (etat.phase !== 'choix') throw new Erreur(409, 'Ce n\'est pas le moment de choisir une carte')
+  if (etat.phase !== 'choix') throw new Erreur(409, "Ce n'est pas le moment de choisir une carte")
   if (etat.choisi[cote]) throw new Erreur(409, 'Carte déjà choisie pour cette manche')
   if (!restantes(etat, secret, cote).includes(idCarte)) throw new Erreur(400, "Cette carte n'est plus dans votre main")
   secret.carte[cote] = idCarte
@@ -191,8 +192,7 @@ export function repondre(etat: EtatPublic, secret: EtatSecret, cote: Cote, choix
   if (etat.repondu[cote]) throw new Erreur(409, 'Vous avez déjà répondu')
   const ecoule = (maintenant - secret.debut) / 1000
   // Hors délai ou réponse mal formée : comme si le temps était écoulé
-  const valide =
-    typeof choix === 'number' && Number.isInteger(choix) && choix >= 0 && choix < etat.question.options.length && ecoule <= DUREE_QUESTION + GRACE
+  const valide = typeof choix === 'number' && Number.isInteger(choix) && choix >= 0 && choix < etat.question.options.length && ecoule <= DUREE_QUESTION + GRACE
   secret.reponses[cote] = { choix: valide ? (choix as number) : null, temps: Math.min(DUREE_QUESTION, ecoule) }
   etat.repondu[cote] = true
   if (etat.repondu.a && etat.repondu.b) resoudre(etat, secret, b, maintenant)
@@ -234,7 +234,9 @@ async function lire(env: Environnement, idDuel: string, idJoueur: string): Promi
 async function initialiser(env: Environnement, prep: Preparation, maintenant: number) {
   const b = await base(env, prep.langue)
   if ([...prep.equipeA, ...prep.equipeB].some((id) => !b.parId.has(id))) throw new Erreur(409, 'Nouvelles fiches disponibles : rechargez la page')
-  const { etat, secret } = etatInitial(prep, maintenant)
+  // Les nouveaux duels se jouent en Reconfinement (serveur/jcjReco.ts) ; le quiz classique ne sert plus qu'aux
+  // duels commencés avant
+  const { etat, secret } = etatInitialReco({ a: prep.equipeA, b: prep.equipeB }, prep.langue, b, maintenant)
   // Écriture refusée : l'autre joueur l'a initialisé au même instant (défi accepté pendant que le lanceur
   // ouvrait le duel). Son état fait foi, la relecture qui suit le récupère.
   await rpc<boolean>(env, 'jcj_ecrire', { p_duel: prep.id, p_version: 0, p_etat: etat, p_secret: secret })
@@ -242,8 +244,24 @@ async function initialiser(env: Environnement, prep: Preparation, maintenant: nu
 
 /** Ce que voit un joueur : l'état public, sa propre main restante, et ses gains si le duel est fini. */
 function vue(lu: Lu & { cote: Cote }, id: string) {
-  const etat = lu.etat as EtatPublic
   const moi = lu.cote
+  if (estReco(lu.etat)) {
+    const secret = lu.secret as SecretRecoJcj | null
+    return {
+      id,
+      cote: moi,
+      classe: lu.classe,
+      statut: lu.statut,
+      moi: { pseudo: moi === 'a' ? lu.pseudoA : lu.pseudoB, elo: moi === 'a' ? lu.eloA : lu.eloB },
+      adversaire: { pseudo: moi === 'a' ? lu.pseudoB : lu.pseudoA, elo: moi === 'a' ? lu.eloB : lu.eloA },
+      etat: lu.etat,
+      main: lu.etat.mains[moi],
+      maCarte: secret?.choix[moi] ?? null,
+      gains: lu.resultat?.[moi] ?? null,
+    }
+  }
+  const etat = lu.etat as EtatPublic
+  const secretClassique = lu.secret as EtatSecret | null
   return {
     id,
     cote: moi,
@@ -252,13 +270,13 @@ function vue(lu: Lu & { cote: Cote }, id: string) {
     moi: { pseudo: moi === 'a' ? lu.pseudoA : lu.pseudoB, elo: moi === 'a' ? lu.eloA : lu.eloB },
     adversaire: { pseudo: moi === 'a' ? lu.pseudoB : lu.pseudoA, elo: moi === 'a' ? lu.eloB : lu.eloA },
     etat,
-    main: lu.secret && etat.jouees ? lu.secret.mains[moi].filter((c) => !etat.jouees[moi].includes(c)) : [],
-    maCarte: lu.secret?.carte[moi] ?? null,
+    main: secretClassique && etat.jouees ? secretClassique.mains[moi].filter((c) => !etat.jouees[moi].includes(c)) : [],
+    maCarte: secretClassique?.carte[moi] ?? null,
     gains: lu.resultat?.[moi] ?? null,
   }
 }
 
-type Modification = (etat: EtatPublic, secret: EtatSecret, cote: Cote, b: Base) => boolean | void
+type Modification = (etat: EtatPublic | EtatRecoJcj, secret: EtatSecret | SecretRecoJcj, cote: Cote, b: Base) => boolean | void
 
 /**
  * Lit le duel, applique les délais dépassés puis la modification demandée, et écrit. Si l'autre joueur a écrit
@@ -268,10 +286,10 @@ async function modifier(env: Environnement, idDuel: string, idJoueur: string, ma
   for (let essai = 0; essai < 4; essai++) {
     const lu = await lire(env, idDuel, idJoueur)
     if (lu.statut !== 'en_cours' || !lu.secret) return { lu, profil: null }
-    const etat = structuredClone(lu.etat as EtatPublic)
+    const etat = structuredClone(lu.etat as EtatPublic | EtatRecoJcj)
     const secret = structuredClone(lu.secret)
     const b = await base(env, secret.langue)
-    let change = appliquerDelais(etat, secret, b, maintenant)
+    let change = estReco(etat) ? appliquerDelaisReco(etat, secret as SecretRecoJcj, b, maintenant) : appliquerDelais(etat, secret as EtatSecret, b, maintenant)
     if (action && etat.phase !== 'fin') change = action(etat, secret, lu.cote, b) !== false || change
     if (!change) return { lu, profil: null }
     etat.maintenant = maintenant
@@ -298,7 +316,17 @@ async function modifier(env: Environnement, idDuel: string, idJoueur: string, ma
 
 // ---------- Actions ----------
 
-export const ACTIONS_JCJ = new Set(['jcj_file', 'jcj_quitter', 'jcj_defier', 'jcj_repondre_defi', 'jcj_etat', 'jcj_jouer', 'jcj_repondre', 'jcj_abandonner'])
+export const ACTIONS_JCJ = new Set([
+  'jcj_file',
+  'jcj_quitter',
+  'jcj_defier',
+  'jcj_repondre_defi',
+  'jcj_etat',
+  'jcj_jouer',
+  'jcj_repondre',
+  'jcj_manifester',
+  'jcj_abandonner',
+])
 
 async function etatDuel(env: Environnement, idDuel: string, idJoueur: string, maintenant: number) {
   let lu = await lire(env, idDuel, idJoueur)
@@ -347,11 +375,26 @@ export async function traiterJcj(env: Environnement, idJoueur: string, action: s
       return etatDuel(env, idDuel, idJoueur, maintenant)
     case 'jcj_jouer': {
       const idCarte = texte(corps.carte)
-      const { lu, profil } = await modifier(env, idDuel, idJoueur, maintenant, (etat, secret, cote, b) => choisir(etat, secret, cote, idCarte, b, maintenant))
+      const { lu, profil } = await modifier(env, idDuel, idJoueur, maintenant, (etat, secret, cote, b) =>
+        estReco(etat)
+          ? choisirReco(etat, secret as SecretRecoJcj, cote, idCarte, b, maintenant)
+          : choisir(etat, secret as EtatSecret, cote, idCarte, b, maintenant),
+      )
       return { ...vue(lu, idDuel), profil }
     }
     case 'jcj_repondre': {
-      const { lu, profil } = await modifier(env, idDuel, idJoueur, maintenant, (etat, secret, cote, b) => repondre(etat, secret, cote, corps.choix, b, maintenant))
+      const { lu, profil } = await modifier(env, idDuel, idJoueur, maintenant, (etat, secret, cote, b) =>
+        estReco(etat)
+          ? repondreReco(etat, secret as SecretRecoJcj, cote, corps.choix, corps.regarde === true, b, maintenant)
+          : repondre(etat, secret as EtatSecret, cote, corps.choix, b, maintenant),
+      )
+      return { ...vue(lu, idDuel), profil }
+    }
+    case 'jcj_manifester': {
+      const { lu, profil } = await modifier(env, idDuel, idJoueur, maintenant, (etat, secret, cote) => {
+        if (!estReco(etat)) throw new Erreur(409, 'Pas de Manifestation dans ce duel')
+        manifesterJcj(etat, secret as SecretRecoJcj, cote)
+      })
       return { ...vue(lu, idDuel), profil }
     }
     case 'jcj_abandonner': {

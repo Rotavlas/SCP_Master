@@ -13,6 +13,8 @@ const sorties = [
   ['src/engine/breche.ts', 'outils/.cache/breche.mjs'],
   ['src/engine/reconfinement.ts', 'outils/.cache/reconfinement.mjs'],
   ['src/engine/effets.ts', 'outils/.cache/effets.mjs'],
+  // Le quiz classique entre joueurs, pour tester les duels commencés avant le Reconfinement
+  ['serveur/jcj.ts', 'outils/.cache/jcj.mjs'],
 ]
 for (const [entree, fichier] of sorties) {
   await build({

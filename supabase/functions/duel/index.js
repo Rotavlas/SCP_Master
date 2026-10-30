@@ -919,7 +919,7 @@ const nom$1 = (c) => c.num ?? c.nm;
 * Résout un tour : les deux coups agissent en même temps. Ordre : protocoles, gardes, brèches (et ripostes),
 * réparations, nouvelles cellules. Ne modifie pas les camps reçus.
 */
-function resoudre$2(joueur, ia, coupJoueur, coupIA) {
+function resoudre$3(joueur, ia, coupJoueur, coupIA) {
 	const camps = {
 		joueur: {
 			...joueur,
@@ -1300,7 +1300,7 @@ async function repondre$3(env, idJoueur, corps, maintenant) {
 	const b = await base(env, etat.langue);
 	const carte = b.parId.get(etat.coup.carte);
 	const carteIA = b.parId.get(etat.coupIA.carte);
-	const r = resoudre$2(etat.joueur, etat.ia, {
+	const r = resoudre$3(etat.joueur, etat.ia, {
 		carte,
 		cible: etat.coup.cible,
 		juste
@@ -1378,381 +1378,6 @@ async function traiterBreche(env, idJoueur, action, corps, maintenant) {
 		case "breche_jouer": return jouer$2(env, idJoueur, corps, maintenant);
 		default: return repondre$3(env, idJoueur, corps, maintenant);
 	}
-}
-const autre = (c) => c === "a" ? "b" : "a";
-const COTES = ["a", "b"];
-function etatInitial(prep, maintenant) {
-	return {
-		etat: {
-			manche: 1,
-			phase: "choix",
-			echeance: maintenant + 2e4,
-			maintenant,
-			pv: {
-				a: 100,
-				b: 100
-			},
-			jouees: {
-				a: [],
-				b: []
-			},
-			choisi: {
-				a: false,
-				b: false
-			},
-			repondu: {
-				a: false,
-				b: false
-			}
-		},
-		secret: {
-			langue: prep.langue,
-			mains: {
-				a: prep.equipeA,
-				b: prep.equipeB
-			},
-			premier: Math.random() < .5 ? "a" : "b",
-			carte: {},
-			reponses: {}
-		}
-	};
-}
-const restantes = (etat, secret, cote) => secret.mains[cote].filter((id) => !etat.jouees[cote].includes(id));
-/** Côté dont la carte fait l'objet de la question : chacun son tour (3 manches contre 2 sur un duel complet). */
-function sujetDeLaManche(secret, manche) {
-	const premier = secret.premier ?? "a";
-	return manche % 2 === 1 ? premier : autre(premier);
-}
-/** Les deux cartes sont choisies : même question pour les deux joueurs, sur l'une des deux cartes. */
-function lancerQuestion(etat, secret, b, maintenant) {
-	const carte = {
-		a: b.parId.get(secret.carte.a),
-		b: b.parId.get(secret.carte.b)
-	};
-	const surCarteDe = sujetDeLaManche(secret, etat.manche);
-	const q = genererQuestion(b, carte[surCarteDe], carte[autre(surCarteDe)], false);
-	etat.phase = "question";
-	etat.question = {
-		intitule: q.intitule,
-		document: q.document,
-		options: q.options,
-		surCarteDe
-	};
-	etat.repondu = {
-		a: false,
-		b: false
-	};
-	etat.echeance = maintenant + 2e4;
-	secret.question = { bonne: q.bonne };
-	secret.debut = maintenant;
-	secret.reponses = {};
-}
-/** Fin de manche : dégâts, cartes jouées, puis manche suivante ou fin du duel. */
-function resoudre$1(etat, secret, b, maintenant) {
-	const q = etat.question;
-	const bonne = secret.question.bonne;
-	const rep = {
-		a: secret.reponses.a,
-		b: secret.reponses.b
-	};
-	const carte = {
-		a: b.parId.get(secret.carte.a),
-		b: b.parId.get(secret.carte.b)
-	};
-	const ok = {
-		a: rep.a.choix === bonne,
-		b: rep.b.choix === bonne
-	};
-	const tousDeux = ok.a && ok.b;
-	const inflige = {
-		a: ok.a ? degats(carte.a, carte.b, rep.a.temps, tousDeux && rep.a.temps < rep.b.temps) : 0,
-		b: ok.b ? degats(carte.b, carte.a, rep.b.temps, tousDeux && rep.b.temps < rep.a.temps) : 0
-	};
-	etat.pv = {
-		a: etat.pv.a - inflige.b,
-		b: etat.pv.b - inflige.a
-	};
-	etat.jouees = {
-		a: [...etat.jouees.a, carte.a.id],
-		b: [...etat.jouees.b, carte.b.id]
-	};
-	etat.dernier = {
-		manche: etat.manche,
-		intitule: q.intitule,
-		options: q.options,
-		bonne,
-		choix: {
-			a: rep.a.choix,
-			b: rep.b.choix
-		},
-		temps: {
-			a: rep.a.temps,
-			b: rep.b.temps
-		},
-		degats: {
-			a: inflige.b,
-			b: inflige.a
-		},
-		cartes: {
-			a: carte.a.id,
-			b: carte.b.id
-		}
-	};
-	etat.question = void 0;
-	secret.question = void 0;
-	secret.debut = void 0;
-	secret.carte = {};
-	secret.reponses = {};
-	if (etat.manche >= 5 || etat.pv.a <= 0 || etat.pv.b <= 0) {
-		etat.phase = "fin";
-		etat.fin = { issue: etat.pv.a > etat.pv.b ? "a" : etat.pv.a < etat.pv.b ? "b" : "nul" };
-		return;
-	}
-	etat.manche++;
-	etat.phase = "choix";
-	etat.choisi = {
-		a: false,
-		b: false
-	};
-	etat.repondu = {
-		a: false,
-		b: false
-	};
-	etat.echeance = maintenant + 24e3;
-}
-function choisir(etat, secret, cote, idCarte, b, maintenant) {
-	if (etat.phase !== "choix") throw new Erreur(409, "Ce n'est pas le moment de choisir une carte");
-	if (etat.choisi[cote]) throw new Erreur(409, "Carte déjà choisie pour cette manche");
-	if (!restantes(etat, secret, cote).includes(idCarte)) throw new Erreur(400, "Cette carte n'est plus dans votre main");
-	secret.carte[cote] = idCarte;
-	etat.choisi[cote] = true;
-	if (etat.choisi.a && etat.choisi.b) lancerQuestion(etat, secret, b, maintenant);
-}
-function repondre$2(etat, secret, cote, choix, b, maintenant) {
-	if (etat.phase !== "question" || !etat.question || secret.debut === void 0) throw new Erreur(409, "Aucune question en cours");
-	if (etat.repondu[cote]) throw new Erreur(409, "Vous avez déjà répondu");
-	const ecoule = (maintenant - secret.debut) / 1e3;
-	const valide = typeof choix === "number" && Number.isInteger(choix) && choix >= 0 && choix < etat.question.options.length && ecoule <= 23;
-	secret.reponses[cote] = {
-		choix: valide ? choix : null,
-		temps: Math.min(20, ecoule)
-	};
-	etat.repondu[cote] = true;
-	if (etat.repondu.a && etat.repondu.b) resoudre$1(etat, secret, b, maintenant);
-}
-/** Applique les délais dépassés : carte jouée d'office, question sans réponse. Renvoie true si l'état a changé. */
-function appliquerDelais(etat, secret, b, maintenant) {
-	if (etat.phase === "choix" && maintenant > etat.echeance) {
-		for (const c of COTES) if (!etat.choisi[c]) {
-			secret.carte[c] = restantes(etat, secret, c)[0];
-			etat.choisi[c] = true;
-		}
-		lancerQuestion(etat, secret, b, maintenant);
-		return true;
-	}
-	if (etat.phase === "question" && maintenant > etat.echeance + 3e3) {
-		for (const c of COTES) if (!etat.repondu[c]) {
-			secret.reponses[c] = {
-				choix: null,
-				temps: 20
-			};
-			etat.repondu[c] = true;
-		}
-		resoudre$1(etat, secret, b, maintenant);
-		return true;
-	}
-	return false;
-}
-async function lire$2(env, idDuel, idJoueur) {
-	const lu = await rpc(env, "jcj_lire", {
-		p_duel: idDuel,
-		p_joueur: idJoueur
-	});
-	if (!lu) throw new Erreur(404, "Duel introuvable");
-	return {
-		...lu,
-		cote: lu.joueurA === idJoueur ? "a" : "b"
-	};
-}
-async function initialiser(env, prep, maintenant) {
-	const b = await base(env, prep.langue);
-	if ([...prep.equipeA, ...prep.equipeB].some((id) => !b.parId.has(id))) throw new Erreur(409, "Nouvelles fiches disponibles : rechargez la page");
-	const { etat, secret } = etatInitial(prep, maintenant);
-	await rpc(env, "jcj_ecrire", {
-		p_duel: prep.id,
-		p_version: 0,
-		p_etat: etat,
-		p_secret: secret
-	});
-}
-/** Ce que voit un joueur : l'état public, sa propre main restante, et ses gains si le duel est fini. */
-function vue(lu, id) {
-	const etat = lu.etat;
-	const moi = lu.cote;
-	return {
-		id,
-		cote: moi,
-		classe: lu.classe,
-		statut: lu.statut,
-		moi: {
-			pseudo: moi === "a" ? lu.pseudoA : lu.pseudoB,
-			elo: moi === "a" ? lu.eloA : lu.eloB
-		},
-		adversaire: {
-			pseudo: moi === "a" ? lu.pseudoB : lu.pseudoA,
-			elo: moi === "a" ? lu.eloB : lu.eloA
-		},
-		etat,
-		main: lu.secret && etat.jouees ? lu.secret.mains[moi].filter((c) => !etat.jouees[moi].includes(c)) : [],
-		maCarte: lu.secret?.carte[moi] ?? null,
-		gains: lu.resultat?.[moi] ?? null
-	};
-}
-/**
-* Lit le duel, applique les délais dépassés puis la modification demandée, et écrit. Si l'autre joueur a écrit
-* entre-temps (version changée), on relit et on recommence. Un duel qui se termine est clos ici : Elo et gains.
-*/
-async function modifier(env, idDuel, idJoueur, maintenant, action) {
-	for (let essai = 0; essai < 4; essai++) {
-		const lu = await lire$2(env, idDuel, idJoueur);
-		if (lu.statut !== "en_cours" || !lu.secret) return {
-			lu,
-			profil: null
-		};
-		const etat = structuredClone(lu.etat);
-		const secret = structuredClone(lu.secret);
-		const b = await base(env, secret.langue);
-		let change = appliquerDelais(etat, secret, b, maintenant);
-		if (action && etat.phase !== "fin") change = action(etat, secret, lu.cote, b) !== false || change;
-		if (!change) return {
-			lu,
-			profil: null
-		};
-		etat.maintenant = maintenant;
-		if (etat.phase === "fin") try {
-			const gains = await rpc(env, "jcj_clore", {
-				p_duel: idDuel,
-				p_version: lu.version,
-				p_etat: etat,
-				p_issue: etat.fin.issue
-			});
-			return {
-				lu: await lire$2(env, idDuel, idJoueur),
-				profil: gains[lu.cote].profil
-			};
-		} catch (e) {
-			if (essai < 3 && e instanceof Erreur && /déjà terminé/.test(e.message)) continue;
-			throw e;
-		}
-		if (await rpc(env, "jcj_ecrire", {
-			p_duel: idDuel,
-			p_version: lu.version,
-			p_etat: etat,
-			p_secret: secret
-		})) return {
-			lu: {
-				...lu,
-				etat,
-				secret,
-				version: lu.version + 1
-			},
-			profil: null
-		};
-	}
-	throw new Erreur(409, "Le duel a changé entre-temps : réessayez");
-}
-const ACTIONS_JCJ = /* @__PURE__ */ new Set([
-	"jcj_file",
-	"jcj_quitter",
-	"jcj_defier",
-	"jcj_repondre_defi",
-	"jcj_etat",
-	"jcj_jouer",
-	"jcj_repondre",
-	"jcj_abandonner"
-]);
-async function etatDuel(env, idDuel, idJoueur, maintenant) {
-	let lu = await lire$2(env, idDuel, idJoueur);
-	if (lu.statut === "preparation" && lu.version === 0) {
-		try {
-			await initialiser(env, await rpc(env, "jcj_preparer", {
-				p_duel: idDuel,
-				p_joueur: idJoueur
-			}), maintenant);
-		} catch (e) {
-			if (!(e instanceof Erreur && e.statut === 409)) throw e;
-		}
-		lu = await lire$2(env, idDuel, idJoueur);
-	}
-	const { lu: apres, profil } = await modifier(env, idDuel, idJoueur, maintenant);
-	return {
-		...vue(apres, idDuel),
-		profil
-	};
-}
-async function traiterJcj(env, idJoueur, action, corps, maintenant) {
-	const idDuel = texte(corps.id);
-	switch (action) {
-		case "jcj_file": {
-			const r = await rpc(env, "jcj_entrer_file", { p_joueur: idJoueur });
-			if (r.preparer) {
-				await initialiser(env, r.preparer, maintenant);
-				return { duel: await etatDuel(env, r.preparer.id, idJoueur, maintenant) };
-			}
-			if (r.enCours) return { duel: await etatDuel(env, r.enCours, idJoueur, maintenant) };
-			return {
-				attente: true,
-				enFile: r.enFile ?? 1
-			};
-		}
-		case "jcj_quitter":
-			await rpc(env, "jcj_quitter_file", { p_joueur: idJoueur });
-			return { ok: true };
-		case "jcj_defier": return rpc(env, "jcj_defier", {
-			p_joueur: idJoueur,
-			p_pseudo: texte(corps.pseudo)
-		});
-		case "jcj_repondre_defi": {
-			const r = await rpc(env, "jcj_repondre_defi", {
-				p_joueur: idJoueur,
-				p_duel: idDuel,
-				p_accepter: corps.accepter === true
-			});
-			if (!r.preparer) return { refuse: true };
-			await initialiser(env, r.preparer, maintenant);
-			return { duel: await etatDuel(env, idDuel, idJoueur, maintenant) };
-		}
-		case "jcj_etat": return etatDuel(env, idDuel, idJoueur, maintenant);
-		case "jcj_jouer": {
-			const idCarte = texte(corps.carte);
-			const { lu, profil } = await modifier(env, idDuel, idJoueur, maintenant, (etat, secret, cote, b) => choisir(etat, secret, cote, idCarte, b, maintenant));
-			return {
-				...vue(lu, idDuel),
-				profil
-			};
-		}
-		case "jcj_repondre": {
-			const { lu, profil } = await modifier(env, idDuel, idJoueur, maintenant, (etat, secret, cote, b) => repondre$2(etat, secret, cote, corps.choix, b, maintenant));
-			return {
-				...vue(lu, idDuel),
-				profil
-			};
-		}
-		case "jcj_abandonner": {
-			const { lu, profil } = await modifier(env, idDuel, idJoueur, maintenant, (etat, _secret, cote) => {
-				etat.phase = "fin";
-				etat.fin = {
-					issue: autre(cote),
-					abandon: cote
-				};
-			});
-			return {
-				...vue(lu, idDuel),
-				profil
-			};
-		}
-	}
-	throw new Erreur(400, "Action inconnue");
 }
 const nature = (c) => c.id.startsWith("entite:") || [
 	"s",
@@ -2012,6 +1637,657 @@ function choisirIAReco(main, camp, finesse, hasard = Math.random) {
 	});
 	notes.sort((a, b) => b.v - a.v);
 	return notes[0].c;
+}
+// serveur/jcjReco.ts
+const autre$1 = (c) => c === "a" ? "b" : "a";
+const COTES$1 = ["a", "b"];
+/** Le moteur parle de « joueur » et d'« ia » : ici, a et b */
+const cote = (x) => x === "joueur" ? "a" : "b";
+const camp = (c) => c === "a" ? "joueur" : "ia";
+const estReco = (etat) => etat?.mode === "reco";
+function etatInitialReco(equipes, langue, b, maintenant) {
+	return {
+		etat: {
+			mode: "reco",
+			tour: 1,
+			phase: "choix",
+			echeance: maintenant + 25e3,
+			maintenant,
+			camps: {
+				a: campReco(),
+				b: campReco()
+			},
+			mains: {
+				a: [...equipes.a],
+				b: [...equipes.b]
+			},
+			manifestations: {
+				a: manifestationDe(equipes.a.map((id) => b.parId.get(id))),
+				b: manifestationDe(equipes.b.map((id) => b.parId.get(id)))
+			},
+			choisi: {
+				a: false,
+				b: false
+			},
+			repondu: {
+				a: false,
+				b: false
+			}
+		},
+		secret: {
+			langue,
+			choix: {},
+			bonnes: {},
+			recos: {},
+			reponses: {}
+		}
+	};
+}
+function aRetirer$1(options, bonne, n) {
+	const mauvaises = options.map((_, i) => i).filter((i) => i !== bonne);
+	const retirees = [];
+	while (retirees.length < n && mauvaises.length) retirees.push(mauvaises.splice(Math.floor(Math.random() * mauvaises.length), 1)[0]);
+	return retirees;
+}
+/** Les deux cartes sont choisies : on les révèle et chacun reçoit son reconfinement */
+function lancer(etat, secret, b, maintenant) {
+	const cartes = {
+		a: secret.choix.a,
+		b: secret.choix.b
+	};
+	etat.cartes = cartes;
+	etat.recos = {};
+	secret.recos = {};
+	secret.bonnes = {};
+	secret.reponses = {};
+	let duree = 0;
+	for (const x of COTES$1) {
+		const anomalie = b.parId.get(cartes[autre$1(x)]);
+		if (nature(anomalie) !== "anomalie") continue;
+		const r = preparerReconfinement(anomalie, etat.camps[x], b.parId.get(cartes[x]));
+		secret.recos[x] = r;
+		const pub = {
+			effet: r.effet,
+			alteree: r.alteree,
+			actif: r.actif,
+			auto: r.auto
+		};
+		if (!r.auto) {
+			const q = questionReconfinement(b, anomalie);
+			pub.question = {
+				intitule: q.intitule,
+				document: q.document,
+				options: q.options,
+				retirees: aRetirer$1(q.options, q.bonne, r.retirees),
+				duree: r.duree
+			};
+			secret.bonnes[x] = q.bonne;
+			duree = Math.max(duree, r.duree);
+		}
+		etat.recos[x] = pub;
+	}
+	etat.repondu = {
+		a: secret.bonnes.a === void 0,
+		b: secret.bonnes.b === void 0
+	};
+	if (etat.repondu.a && etat.repondu.b) return resoudre$2(etat, secret, b, maintenant);
+	etat.phase = "question";
+	etat.echeance = maintenant + duree * 1e3;
+	secret.debut = maintenant;
+}
+/** Fin du tour : libérations, soutiens, jauges, contagion ; puis tour suivant ou fin du duel */
+function resoudre$2(etat, secret, b, maintenant) {
+	const cartes = etat.cartes;
+	const C = {
+		joueur: { ...etat.camps.a },
+		ia: { ...etat.camps.b }
+	};
+	const mains = {
+		joueur: etat.mains.a.filter((x) => x !== cartes.a),
+		ia: etat.mains.b.filter((x) => x !== cartes.b)
+	};
+	const ev = [];
+	const consommes = {
+		joueur: {},
+		ia: {}
+	};
+	for (const x of COTES$1) {
+		const c = b.parId.get(cartes[x]);
+		if (nature(c) === "soutien" && soutien(c) === "site") {
+			const v = Math.round(c.def * .4);
+			C[camp(x)].integrite = Math.min(150, C[camp(x)].integrite + v);
+			ev.push({
+				camp: camp(x),
+				type: "soin",
+				valeur: v,
+				texte: `${c.num ?? c.nm} renforce le Site : +${v}`
+			});
+		}
+	}
+	const reponses = {};
+	for (const x of COTES$1) {
+		const y = autre$1(x);
+		const r = secret.recos[y];
+		if (!r) continue;
+		const anomalie = b.parId.get(cartes[x]);
+		const rep = secret.reponses[y];
+		const bonne = secret.bonnes[y];
+		const issue = r.auto ? {
+			reconfinee: r.auto === "reussite",
+			temps: 0
+		} : {
+			reconfinee: !!rep && rep.choix === bonne,
+			temps: rep?.temps ?? r.duree,
+			regarde: rep?.regarde
+		};
+		if (!r.auto && bonne !== void 0) reponses[y] = {
+			choix: rep?.choix ?? null,
+			bonne,
+			temps: issue.temps
+		};
+		const { poche } = appliquerLiberation(camp(x), C, anomalie, r, issue, ev);
+		if (poche && mains[camp(y)].length) mains[camp(y)].splice(Math.floor(Math.random() * mains[camp(y)].length), 1);
+		if (issue.reconfinee) mains[camp(x)].push(anomalie.id);
+		if (!r.auto) remplir(C[camp(y)], gainReponse(issue.reconfinee, issue.temps));
+		for (const k of [
+			"reconfinementsAuto",
+			"questionsCourtes",
+			"echecsAuto",
+			"questionsFaciles"
+		]) consommes[camp(y)][k] = true;
+	}
+	finDeTour(C, consommes, ev);
+	etat.camps = {
+		a: C.joueur,
+		b: C.ia
+	};
+	etat.mains = {
+		a: mains.joueur,
+		b: mains.ia
+	};
+	etat.dernier = {
+		tour: etat.tour,
+		cartes,
+		evenements: ev.map((e) => ({
+			...e,
+			cote: cote(e.camp)
+		})),
+		reponses
+	};
+	etat.recos = void 0;
+	etat.cartes = void 0;
+	secret.choix = {};
+	secret.bonnes = {};
+	secret.recos = {};
+	secret.reponses = {};
+	secret.debut = void 0;
+	if (termine(etat.tour, C.joueur, C.ia) || !mains.joueur.length || !mains.ia.length) {
+		const issue = issueReco(C.joueur, C.ia);
+		etat.phase = "fin";
+		etat.fin = { issue: issue === "victoire" ? "a" : issue === "defaite" ? "b" : "nul" };
+		return;
+	}
+	etat.tour++;
+	etat.phase = "choix";
+	etat.choisi = {
+		a: false,
+		b: false
+	};
+	etat.repondu = {
+		a: false,
+		b: false
+	};
+	etat.echeance = maintenant + 3e4;
+}
+function choisirReco(etat, secret, c, idCarte, b, maintenant) {
+	if (etat.phase !== "choix") throw new Erreur(409, "Ce n'est pas le moment de jouer une carte");
+	if (etat.choisi[c]) throw new Erreur(409, "Carte déjà jouée pour ce tour");
+	if (!etat.mains[c].includes(idCarte)) throw new Erreur(400, "Cette carte n'est plus dans votre main");
+	secret.choix[c] = idCarte;
+	etat.choisi[c] = true;
+	if (etat.choisi.a && etat.choisi.b) lancer(etat, secret, b, maintenant);
+}
+function repondreReco(etat, secret, c, choix, regarde, b, maintenant) {
+	const q = etat.recos?.[c]?.question;
+	if (etat.phase !== "question" || !q || secret.debut === void 0) throw new Erreur(409, "Aucun reconfinement en cours");
+	if (etat.repondu[c]) throw new Erreur(409, "Vous avez déjà répondu");
+	const ecoule = (maintenant - secret.debut) / 1e3;
+	const valide = typeof choix === "number" && Number.isInteger(choix) && choix >= 0 && choix < q.options.length && !q.retirees.includes(choix) && ecoule <= q.duree + 3;
+	secret.reponses[c] = {
+		choix: valide ? choix : null,
+		temps: Math.min(q.duree, ecoule),
+		regarde
+	};
+	etat.repondu[c] = true;
+	if (etat.repondu.a && etat.repondu.b) resoudre$2(etat, secret, b, maintenant);
+}
+function manifesterJcj(etat, secret, c) {
+	if (etat.phase !== "choix") throw new Erreur(409, "Pas pendant un reconfinement");
+	if (etat.camps[c].manifeste || etat.camps[c].manifestation < 100) throw new Erreur(409, "La jauge de Manifestation n’est pas pleine");
+	const C = {
+		joueur: { ...etat.camps.a },
+		ia: { ...etat.camps.b }
+	};
+	const garde = (x) => etat.mains[x].filter((id) => id !== secret.choix[x]);
+	const mains = {
+		joueur: garde("a"),
+		ia: garde("b")
+	};
+	manifester(etat.manifestations[c], camp(c), C, mains);
+	for (const x of COTES$1) if (secret.choix[x]) mains[camp(x)].push(secret.choix[x]);
+	etat.camps = {
+		a: C.joueur,
+		b: C.ia
+	};
+	etat.mains = {
+		a: mains.joueur,
+		b: mains.ia
+	};
+	etat.manifestee = {
+		cote: c,
+		m: etat.manifestations[c],
+		n: (etat.manifestee?.n ?? 0) + 1
+	};
+}
+/** Les délais dépassés : carte jouée d'office, reconfinement sans réponse. Renvoie true si l'état a changé. */
+function appliquerDelaisReco(etat, secret, b, maintenant) {
+	if (etat.phase === "choix" && maintenant > etat.echeance) {
+		for (const c of COTES$1) if (!etat.choisi[c]) {
+			secret.choix[c] = etat.mains[c][0];
+			etat.choisi[c] = true;
+		}
+		lancer(etat, secret, b, maintenant);
+		return true;
+	}
+	if (etat.phase === "question" && maintenant > etat.echeance + 3e3) {
+		for (const c of COTES$1) if (!etat.repondu[c]) {
+			secret.reponses[c] = {
+				choix: null,
+				temps: etat.recos?.[c]?.question?.duree ?? 20,
+				regarde: false
+			};
+			etat.repondu[c] = true;
+		}
+		resoudre$2(etat, secret, b, maintenant);
+		return true;
+	}
+	return false;
+}
+// serveur/jcj.ts
+const autre = (c) => c === "a" ? "b" : "a";
+const COTES = ["a", "b"];
+const restantes = (etat, secret, cote) => secret.mains[cote].filter((id) => !etat.jouees[cote].includes(id));
+/** Côté dont la carte fait l'objet de la question : chacun son tour (3 manches contre 2 sur un duel complet). */
+function sujetDeLaManche(secret, manche) {
+	const premier = secret.premier ?? "a";
+	return manche % 2 === 1 ? premier : autre(premier);
+}
+/** Les deux cartes sont choisies : même question pour les deux joueurs, sur l'une des deux cartes. */
+function lancerQuestion(etat, secret, b, maintenant) {
+	const carte = {
+		a: b.parId.get(secret.carte.a),
+		b: b.parId.get(secret.carte.b)
+	};
+	const surCarteDe = sujetDeLaManche(secret, etat.manche);
+	const q = genererQuestion(b, carte[surCarteDe], carte[autre(surCarteDe)], false);
+	etat.phase = "question";
+	etat.question = {
+		intitule: q.intitule,
+		document: q.document,
+		options: q.options,
+		surCarteDe
+	};
+	etat.repondu = {
+		a: false,
+		b: false
+	};
+	etat.echeance = maintenant + 2e4;
+	secret.question = { bonne: q.bonne };
+	secret.debut = maintenant;
+	secret.reponses = {};
+}
+/** Fin de manche : dégâts, cartes jouées, puis manche suivante ou fin du duel. */
+function resoudre$1(etat, secret, b, maintenant) {
+	const q = etat.question;
+	const bonne = secret.question.bonne;
+	const rep = {
+		a: secret.reponses.a,
+		b: secret.reponses.b
+	};
+	const carte = {
+		a: b.parId.get(secret.carte.a),
+		b: b.parId.get(secret.carte.b)
+	};
+	const ok = {
+		a: rep.a.choix === bonne,
+		b: rep.b.choix === bonne
+	};
+	const tousDeux = ok.a && ok.b;
+	const inflige = {
+		a: ok.a ? degats(carte.a, carte.b, rep.a.temps, tousDeux && rep.a.temps < rep.b.temps) : 0,
+		b: ok.b ? degats(carte.b, carte.a, rep.b.temps, tousDeux && rep.b.temps < rep.a.temps) : 0
+	};
+	etat.pv = {
+		a: etat.pv.a - inflige.b,
+		b: etat.pv.b - inflige.a
+	};
+	etat.jouees = {
+		a: [...etat.jouees.a, carte.a.id],
+		b: [...etat.jouees.b, carte.b.id]
+	};
+	etat.dernier = {
+		manche: etat.manche,
+		intitule: q.intitule,
+		options: q.options,
+		bonne,
+		choix: {
+			a: rep.a.choix,
+			b: rep.b.choix
+		},
+		temps: {
+			a: rep.a.temps,
+			b: rep.b.temps
+		},
+		degats: {
+			a: inflige.b,
+			b: inflige.a
+		},
+		cartes: {
+			a: carte.a.id,
+			b: carte.b.id
+		}
+	};
+	etat.question = void 0;
+	secret.question = void 0;
+	secret.debut = void 0;
+	secret.carte = {};
+	secret.reponses = {};
+	if (etat.manche >= 5 || etat.pv.a <= 0 || etat.pv.b <= 0) {
+		etat.phase = "fin";
+		etat.fin = { issue: etat.pv.a > etat.pv.b ? "a" : etat.pv.a < etat.pv.b ? "b" : "nul" };
+		return;
+	}
+	etat.manche++;
+	etat.phase = "choix";
+	etat.choisi = {
+		a: false,
+		b: false
+	};
+	etat.repondu = {
+		a: false,
+		b: false
+	};
+	etat.echeance = maintenant + 24e3;
+}
+function choisir(etat, secret, cote, idCarte, b, maintenant) {
+	if (etat.phase !== "choix") throw new Erreur(409, "Ce n'est pas le moment de choisir une carte");
+	if (etat.choisi[cote]) throw new Erreur(409, "Carte déjà choisie pour cette manche");
+	if (!restantes(etat, secret, cote).includes(idCarte)) throw new Erreur(400, "Cette carte n'est plus dans votre main");
+	secret.carte[cote] = idCarte;
+	etat.choisi[cote] = true;
+	if (etat.choisi.a && etat.choisi.b) lancerQuestion(etat, secret, b, maintenant);
+}
+function repondre$2(etat, secret, cote, choix, b, maintenant) {
+	if (etat.phase !== "question" || !etat.question || secret.debut === void 0) throw new Erreur(409, "Aucune question en cours");
+	if (etat.repondu[cote]) throw new Erreur(409, "Vous avez déjà répondu");
+	const ecoule = (maintenant - secret.debut) / 1e3;
+	const valide = typeof choix === "number" && Number.isInteger(choix) && choix >= 0 && choix < etat.question.options.length && ecoule <= 23;
+	secret.reponses[cote] = {
+		choix: valide ? choix : null,
+		temps: Math.min(20, ecoule)
+	};
+	etat.repondu[cote] = true;
+	if (etat.repondu.a && etat.repondu.b) resoudre$1(etat, secret, b, maintenant);
+}
+/** Applique les délais dépassés : carte jouée d'office, question sans réponse. Renvoie true si l'état a changé. */
+function appliquerDelais(etat, secret, b, maintenant) {
+	if (etat.phase === "choix" && maintenant > etat.echeance) {
+		for (const c of COTES) if (!etat.choisi[c]) {
+			secret.carte[c] = restantes(etat, secret, c)[0];
+			etat.choisi[c] = true;
+		}
+		lancerQuestion(etat, secret, b, maintenant);
+		return true;
+	}
+	if (etat.phase === "question" && maintenant > etat.echeance + 3e3) {
+		for (const c of COTES) if (!etat.repondu[c]) {
+			secret.reponses[c] = {
+				choix: null,
+				temps: 20
+			};
+			etat.repondu[c] = true;
+		}
+		resoudre$1(etat, secret, b, maintenant);
+		return true;
+	}
+	return false;
+}
+async function lire$2(env, idDuel, idJoueur) {
+	const lu = await rpc(env, "jcj_lire", {
+		p_duel: idDuel,
+		p_joueur: idJoueur
+	});
+	if (!lu) throw new Erreur(404, "Duel introuvable");
+	return {
+		...lu,
+		cote: lu.joueurA === idJoueur ? "a" : "b"
+	};
+}
+async function initialiser(env, prep, maintenant) {
+	const b = await base(env, prep.langue);
+	if ([...prep.equipeA, ...prep.equipeB].some((id) => !b.parId.has(id))) throw new Erreur(409, "Nouvelles fiches disponibles : rechargez la page");
+	const { etat, secret } = etatInitialReco({
+		a: prep.equipeA,
+		b: prep.equipeB
+	}, prep.langue, b, maintenant);
+	await rpc(env, "jcj_ecrire", {
+		p_duel: prep.id,
+		p_version: 0,
+		p_etat: etat,
+		p_secret: secret
+	});
+}
+/** Ce que voit un joueur : l'état public, sa propre main restante, et ses gains si le duel est fini. */
+function vue(lu, id) {
+	const moi = lu.cote;
+	if (estReco(lu.etat)) {
+		const secret = lu.secret;
+		return {
+			id,
+			cote: moi,
+			classe: lu.classe,
+			statut: lu.statut,
+			moi: {
+				pseudo: moi === "a" ? lu.pseudoA : lu.pseudoB,
+				elo: moi === "a" ? lu.eloA : lu.eloB
+			},
+			adversaire: {
+				pseudo: moi === "a" ? lu.pseudoB : lu.pseudoA,
+				elo: moi === "a" ? lu.eloB : lu.eloA
+			},
+			etat: lu.etat,
+			main: lu.etat.mains[moi],
+			maCarte: secret?.choix[moi] ?? null,
+			gains: lu.resultat?.[moi] ?? null
+		};
+	}
+	const etat = lu.etat;
+	const secretClassique = lu.secret;
+	return {
+		id,
+		cote: moi,
+		classe: lu.classe,
+		statut: lu.statut,
+		moi: {
+			pseudo: moi === "a" ? lu.pseudoA : lu.pseudoB,
+			elo: moi === "a" ? lu.eloA : lu.eloB
+		},
+		adversaire: {
+			pseudo: moi === "a" ? lu.pseudoB : lu.pseudoA,
+			elo: moi === "a" ? lu.eloB : lu.eloA
+		},
+		etat,
+		main: secretClassique && etat.jouees ? secretClassique.mains[moi].filter((c) => !etat.jouees[moi].includes(c)) : [],
+		maCarte: secretClassique?.carte[moi] ?? null,
+		gains: lu.resultat?.[moi] ?? null
+	};
+}
+/**
+* Lit le duel, applique les délais dépassés puis la modification demandée, et écrit. Si l'autre joueur a écrit
+* entre-temps (version changée), on relit et on recommence. Un duel qui se termine est clos ici : Elo et gains.
+*/
+async function modifier(env, idDuel, idJoueur, maintenant, action) {
+	for (let essai = 0; essai < 4; essai++) {
+		const lu = await lire$2(env, idDuel, idJoueur);
+		if (lu.statut !== "en_cours" || !lu.secret) return {
+			lu,
+			profil: null
+		};
+		const etat = structuredClone(lu.etat);
+		const secret = structuredClone(lu.secret);
+		const b = await base(env, secret.langue);
+		let change = estReco(etat) ? appliquerDelaisReco(etat, secret, b, maintenant) : appliquerDelais(etat, secret, b, maintenant);
+		if (action && etat.phase !== "fin") change = action(etat, secret, lu.cote, b) !== false || change;
+		if (!change) return {
+			lu,
+			profil: null
+		};
+		etat.maintenant = maintenant;
+		if (etat.phase === "fin") try {
+			const gains = await rpc(env, "jcj_clore", {
+				p_duel: idDuel,
+				p_version: lu.version,
+				p_etat: etat,
+				p_issue: etat.fin.issue
+			});
+			return {
+				lu: await lire$2(env, idDuel, idJoueur),
+				profil: gains[lu.cote].profil
+			};
+		} catch (e) {
+			if (essai < 3 && e instanceof Erreur && /déjà terminé/.test(e.message)) continue;
+			throw e;
+		}
+		if (await rpc(env, "jcj_ecrire", {
+			p_duel: idDuel,
+			p_version: lu.version,
+			p_etat: etat,
+			p_secret: secret
+		})) return {
+			lu: {
+				...lu,
+				etat,
+				secret,
+				version: lu.version + 1
+			},
+			profil: null
+		};
+	}
+	throw new Erreur(409, "Le duel a changé entre-temps : réessayez");
+}
+const ACTIONS_JCJ = /* @__PURE__ */ new Set([
+	"jcj_file",
+	"jcj_quitter",
+	"jcj_defier",
+	"jcj_repondre_defi",
+	"jcj_etat",
+	"jcj_jouer",
+	"jcj_repondre",
+	"jcj_manifester",
+	"jcj_abandonner"
+]);
+async function etatDuel(env, idDuel, idJoueur, maintenant) {
+	let lu = await lire$2(env, idDuel, idJoueur);
+	if (lu.statut === "preparation" && lu.version === 0) {
+		try {
+			await initialiser(env, await rpc(env, "jcj_preparer", {
+				p_duel: idDuel,
+				p_joueur: idJoueur
+			}), maintenant);
+		} catch (e) {
+			if (!(e instanceof Erreur && e.statut === 409)) throw e;
+		}
+		lu = await lire$2(env, idDuel, idJoueur);
+	}
+	const { lu: apres, profil } = await modifier(env, idDuel, idJoueur, maintenant);
+	return {
+		...vue(apres, idDuel),
+		profil
+	};
+}
+async function traiterJcj(env, idJoueur, action, corps, maintenant) {
+	const idDuel = texte(corps.id);
+	switch (action) {
+		case "jcj_file": {
+			const r = await rpc(env, "jcj_entrer_file", { p_joueur: idJoueur });
+			if (r.preparer) {
+				await initialiser(env, r.preparer, maintenant);
+				return { duel: await etatDuel(env, r.preparer.id, idJoueur, maintenant) };
+			}
+			if (r.enCours) return { duel: await etatDuel(env, r.enCours, idJoueur, maintenant) };
+			return {
+				attente: true,
+				enFile: r.enFile ?? 1
+			};
+		}
+		case "jcj_quitter":
+			await rpc(env, "jcj_quitter_file", { p_joueur: idJoueur });
+			return { ok: true };
+		case "jcj_defier": return rpc(env, "jcj_defier", {
+			p_joueur: idJoueur,
+			p_pseudo: texte(corps.pseudo)
+		});
+		case "jcj_repondre_defi": {
+			const r = await rpc(env, "jcj_repondre_defi", {
+				p_joueur: idJoueur,
+				p_duel: idDuel,
+				p_accepter: corps.accepter === true
+			});
+			if (!r.preparer) return { refuse: true };
+			await initialiser(env, r.preparer, maintenant);
+			return { duel: await etatDuel(env, idDuel, idJoueur, maintenant) };
+		}
+		case "jcj_etat": return etatDuel(env, idDuel, idJoueur, maintenant);
+		case "jcj_jouer": {
+			const idCarte = texte(corps.carte);
+			const { lu, profil } = await modifier(env, idDuel, idJoueur, maintenant, (etat, secret, cote, b) => estReco(etat) ? choisirReco(etat, secret, cote, idCarte, b, maintenant) : choisir(etat, secret, cote, idCarte, b, maintenant));
+			return {
+				...vue(lu, idDuel),
+				profil
+			};
+		}
+		case "jcj_repondre": {
+			const { lu, profil } = await modifier(env, idDuel, idJoueur, maintenant, (etat, secret, cote, b) => estReco(etat) ? repondreReco(etat, secret, cote, corps.choix, corps.regarde === true, b, maintenant) : repondre$2(etat, secret, cote, corps.choix, b, maintenant));
+			return {
+				...vue(lu, idDuel),
+				profil
+			};
+		}
+		case "jcj_manifester": {
+			const { lu, profil } = await modifier(env, idDuel, idJoueur, maintenant, (etat, secret, cote) => {
+				if (!estReco(etat)) throw new Erreur(409, "Pas de Manifestation dans ce duel");
+				manifesterJcj(etat, secret, cote);
+			});
+			return {
+				...vue(lu, idDuel),
+				profil
+			};
+		}
+		case "jcj_abandonner": {
+			const { lu, profil } = await modifier(env, idDuel, idJoueur, maintenant, (etat, _secret, cote) => {
+				etat.phase = "fin";
+				etat.fin = {
+					issue: autre(cote),
+					abandon: cote
+				};
+			});
+			return {
+				...vue(lu, idDuel),
+				profil
+			};
+		}
+	}
+	throw new Erreur(400, "Action inconnue");
 }
 // serveur/reconfinement.ts
 const ACTIONS_RECO = /* @__PURE__ */ new Set([

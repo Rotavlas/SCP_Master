@@ -2,11 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Base } from '../data/catalogue'
 import { DUREE_QUESTION, INTEGRITE_MAX, MANCHES } from '../engine/duel'
 import { rechargerEtat } from '../state/enLigne'
-import { abandonner, etatDuel, jouerCarteJcj, repondreJcj, useDirectDuel, type Cote, type VueDuel } from '../state/jcj'
+import { abandonner, estRecoJcj, etatDuel, jouerCarteJcj, repondreJcj, useDirectDuel, type Cote, type VueDuel } from '../state/jcj'
 import { useSauvegarde, varianteAffichee } from '../state/sauvegarde'
 import type { Carte as TCarte } from '../types'
 import { Carte } from './Carte'
 import { BoutonConfirme } from './Confirmer'
+import { ReconfinementJcj } from './ReconfinementJcj'
 
 const LETTRES = ['A', 'B', 'C', 'D']
 /** Marge du serveur après la fin d'une question (serveur/commun.ts, GRACE) */
@@ -87,6 +88,11 @@ export function DuelJcj({ id, base, onQuitter, ouvrirProfil }: { id: string; bas
   const moi: Cote = vue.cote
   const lui: Cote = moi === 'a' ? 'b' : 'a'
   const restant = Math.max(0, (e.echeance - (maintenant + decalage)) / 1000)
+  // Les duels ouverts depuis le 30 octobre se jouent en Reconfinement
+  if (estRecoJcj(e))
+    return (
+      <ReconfinementJcj vue={vue} etat={e} base={base} restant={restant} envoi={envoi} envoyer={envoyer} onQuitter={onQuitter} ouvrirProfil={ouvrirProfil} />
+    )
   const main = vue.main.map((c) => base.parId.get(c)).filter((c): c is TCarte => !!c)
   const d = e.dernier
   const carte = (idCarte?: string) => (idCarte ? base.parId.get(idCarte) : undefined)
@@ -114,7 +120,8 @@ export function DuelJcj({ id, base, onQuitter, ouvrirProfil }: { id: string; bas
               </p>
               <p className="discret">
                 Vous : {d.choix[moi] === d.bonne ? `juste en ${d.temps[moi].toFixed(1)} s` : d.choix[moi] === null ? 'pas de réponse' : 'faux'} ·{' '}
-                {vue.adversaire.pseudo} : {d.choix[lui] === d.bonne ? `juste en ${d.temps[lui].toFixed(1)} s` : d.choix[lui] === null ? 'pas de réponse' : 'faux'}
+                {vue.adversaire.pseudo} :{' '}
+                {d.choix[lui] === d.bonne ? `juste en ${d.temps[lui].toFixed(1)} s` : d.choix[lui] === null ? 'pas de réponse' : 'faux'}
               </p>
             </div>
             <MiniCarte carte={carte(d.cartes[lui])} base={base} degats={d.degats[lui]} />
@@ -129,13 +136,23 @@ export function DuelJcj({ id, base, onQuitter, ouvrirProfil }: { id: string; bas
               <p className="dossier-entete">Choisissez la carte à engager · {Math.ceil(restant)} s</p>
               <div className="rangee-cartes">
                 {main.map((c) => (
-                  <Carte key={c.id} carte={c} base={base} taille="p" variante={varianteAffichee(s, c.id)} caviardee onClick={envoi ? undefined : () => void envoyer(() => jouerCarteJcj(id, c.id))} />
+                  <Carte
+                    key={c.id}
+                    carte={c}
+                    base={base}
+                    taille="p"
+                    variante={varianteAffichee(s, c.id)}
+                    caviardee
+                    onClick={envoi ? undefined : () => void envoyer(() => jouerCarteJcj(id, c.id))}
+                  />
                 ))}
               </div>
               {e.choisi[lui] && <p className="discret">{vue.adversaire.pseudo} a déjà choisi sa carte.</p>}
             </>
           ) : (
-            <p className="attente-adversaire">Carte engagée. En attente de {vue.adversaire.pseudo}… ({Math.ceil(restant)} s)</p>
+            <p className="attente-adversaire">
+              Carte engagée. En attente de {vue.adversaire.pseudo}… ({Math.ceil(restant)} s)
+            </p>
           )}
           <Chrono restant={restant} total={e.manche === 1 && !d ? 20 : 24} />
         </div>

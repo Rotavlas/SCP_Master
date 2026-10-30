@@ -106,6 +106,9 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
   const [suspense, setSuspense] = useState(false)
   const [sortie, setSortie] = useState(false)
   const [protocole, setProtocole] = useState(false)
+  // « Tout voir » : les Légendaires et Mythiques encore cachées passent quand même leur cinématique, l'une après
+  // l'autre, avant le bilan
+  const [rafale, setRafale] = useState<number[] | null>(null)
   // Avant cet instant, les clics sur la pile sont ignorés
   const verrou = useRef(0)
   const glisse = useRef<{ x: number; largeur: number } | null>(null)
@@ -161,7 +164,7 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
   }, [index, tirage])
 
   const avancer = useCallback(() => {
-    if (etape !== 'pile' || suspense || sortie || protocole) return
+    if (etape !== 'pile' || suspense || sortie || protocole || rafale) return
     // Deux clics dans la même image arrivent avant le nouvel état : le verrou, lui, est immédiat
     if (Date.now() < verrou.current) return
     verrou.current = Date.now() + 450
@@ -186,7 +189,33 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
       if (index >= tirage.cartes.length - 1) setEtape('bilan')
       else setIndex(index + 1)
     }, 380)
-  }, [etape, suspense, sortie, protocole, revelee, index, tirage, reveler])
+  }, [etape, suspense, sortie, protocole, rafale, revelee, index, tirage, reveler])
+
+  function toutVoir() {
+    const debut = revelee ? index + 1 : index
+    const fortes = tirage.cartes.map((_, i) => i).filter((i) => i >= debut && tirage.cartes[i].carte.ra >= 4)
+    if (fortes.length) setRafale(fortes)
+    else setEtape('bilan')
+  }
+
+  // La rafale finie, le bilan
+  useEffect(() => {
+    if (rafale && !rafale.length) {
+      setRafale(null)
+      setEtape('bilan')
+    }
+  }, [rafale])
+
+  /** Une cinématique de la rafale s'achève : son annonce, puis la suivante */
+  function finRafale() {
+    const t = rafale && tirage.cartes[rafale[0]]
+    if (t) {
+      jouer.retourner(t.carte.ra, t.variante !== 'std')
+      if (t.carte.ra === 5) notifier(`Mythique : ${designation(t.carte)}${t.numero ? `, exemplaire n° ${t.numero}` : ''}`, 'rare')
+      else notifier(`Légendaire : ${designation(t.carte)}`, 'rare')
+    }
+    setRafale((r) => r && r.slice(1))
+  }
 
   useEffect(() => {
     const touche = (e: KeyboardEvent) => {
@@ -271,6 +300,9 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
           {tirage.type.nom} · fiche {index + 1}/{tirage.cartes.length}
         </p>
         {protocole && <Protocole carte={carte} onFini={reveler} />}
+        {rafale && rafale.length > 0 && (
+          <Protocole key={rafale[0]} carte={base.parId.get(tirage.cartes[rafale[0]].carte.id) ?? tirage.cartes[rafale[0]].carte} onFini={finRafale} />
+        )}
         <div
           className={`scene ${revelee && carte.ra >= 4 ? 'secousse-ecran' : ''}`}
           onClick={avancer}
@@ -315,7 +347,7 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
           )}
         </div>
         <p className="consigne">{revelee ? 'Cliquez pour passer à la suivante' : 'Cliquez pour retourner la carte'}</p>
-        <button className="btn btn-discret" onClick={() => setEtape('bilan')}>
+        <button className="btn btn-discret" onClick={toutVoir} disabled={protocole || !!rafale}>
           Tout voir
         </button>
       </section>

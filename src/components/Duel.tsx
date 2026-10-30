@@ -333,8 +333,8 @@ function HallJcj({
         <p className="dossier-entete">Confrontation entre agents</p>
         <h2>Duel classé</h2>
         <p className="discret">
-          Même question pour les deux agents, au même moment : le plus juste et le plus rapide frappe. Chaque duel classé fait gagner ou perdre de l'Elo, et
-          rapporte des crédits (120 ₵ la victoire).
+          Un Reconfinement en direct : chacun libère ses anomalies chez l'autre et reconfine celles qui arrivent, mains sur la table, jusqu'à la Manifestation
+          des Mythiques. Chaque duel classé fait gagner ou perdre de l'Elo, et rapporte des crédits (120 ₵ la victoire).
         </p>
         <div className="stats-jcj">
           <div>
@@ -416,7 +416,7 @@ function HallJcj({
           </>
         )}
         <h3>Défier un ami</h3>
-        <p className="discret">Duel amical : sans Elo ni crédits, pour le plaisir (et 15 XP).</p>
+        <p className="discret">Reconfinement amical : sans Elo ni crédits, pour le plaisir (et 15 XP).</p>
         {!tableau ? (
           <p className="discret">Chargement…</p>
         ) : tableau.amisEnLigne.length === 0 ? (

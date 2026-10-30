@@ -350,7 +350,7 @@ export function Reconfinement({ base, adversaire, onQuitter }: { base: Base; adv
 const favorable = (e: Evenement) => (['breche', 'poison', 'poche'].includes(e.type) ? e.camp === 'ia' : e.camp === 'joueur')
 
 /** Un Site : intégrité, contamination, jauge de Manifestation, effets en cours, main adverse */
-function SiteReco({
+export function SiteReco({
   camp,
   titre,
   sousTitre,
