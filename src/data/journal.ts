@@ -12,14 +12,15 @@ export interface Entree {
 export const JOURNAL: Entree[] = [
   {
     date: '2026-10-30',
-    titre: 'La Brèche de confinement',
+    titre: 'Trois façons d’affronter l’IA',
     points: [
-      'Les confrontations contre l’IA deviennent un vrai jeu de plateau : chaque agent protège un Site de 3 cellules, et fait tomber celles de l’adversaire en 5 tours.',
-      'Les cartes se posent sur la table : glissez-les de votre main jusqu’à leur cible. Elles restent sur la cellule qu’elles ont frappée ou gardée, et les tours passés se rangent en tranches.',
-      'Chaque carte a un rôle selon son type : les SCP et les grandes entités font brèche (un Keter frappe plus fort qu’un Safe), les FIM et le personnel gardent une cellule, les Sites en ouvrent une nouvelle, les Protocoles affaiblissent la carte adverse.',
-      'La question porte sur votre propre carte : juste, elle agit pleinement ; fausse, à moitié. Juste en moins de 7 secondes, vous prenez l’initiative et voyez la carte adverse avant de choisir la vôtre.',
-      'Une FIM reconfine aussitôt un SCP qu’elle a confiné dans le wiki ; la première Mythique engagée déclenche son ultime.',
-      'Un tutoriel en six fiches s’ouvre avant la première partie, et à tout moment avec « Comment jouer ? ».',
+      'Dans Confrontation, choisissez votre mode contre l’IA : Reconfinement, Brèche de confinement ou Duel éclair. Chacun a son tutoriel, montré avant la première partie et à tout moment avec « Comment jouer ? ».',
+      'Reconfinement : chaque tour, libérez une anomalie chez l’adversaire ou jouez un soutien. Pour arrêter celle qui s’échappe chez vous, reconfinez-la en répondant à une question sur elle, souvent sur ses vraies procédures de confinement.',
+      'Les anomalies ont enfin leurs effets : SCP-173 ferme vos paupières et frappe plus fort si vous tardez, SCP-096 est voilé et punit qui le regarde, SCP-055 efface la question, SCP-682 blesse même reconfiné, SCP-106 emporte une carte… Les autres agissent selon leurs tags : réponses brouillées (mémétiques), question qui s’efface (antimémétiques), temps réduit (temporelles), éclairs, tremblements, contagion, hostilité.',
+      'Les soutiens aident à reconfiner : une FIM retire une mauvaise réponse (et reconfine d’office un SCP qu’elle a confiné dans le wiki), le personnel donne du temps et dissipe l’effet, un Protocole le neutralise, un Site renforce.',
+      'La Manifestation : chaque bon reconfinement remplit une jauge d’or. Pleine, elle libère la Mythique de votre équipe, sa cinématique et son pouvoir : les chaînes du Roi écarlate, Patmos-Omega, la Main droite rouge, le Veto d’O5-1…',
+      'Brèche de confinement : un plateau de 3 cellules où l’on pose ses cartes en les glissant ; les SCP font brèche, les FIM et le personnel gardent, les Sites fortifient, les Protocoles affaiblissent. Juste en moins de 7 secondes, vous voyez la carte adverse avant de jouer.',
+      'Duel éclair : le quiz classique en cinq manches, troublé par les anomalies de chaque camp ; vous sentez l’effet de la carte adverse avant de la voir.',
       'Le journal quitte les onglets : il est à côté de la cloche, avec un point rouge quand il y a du nouveau.',
     ],
   },

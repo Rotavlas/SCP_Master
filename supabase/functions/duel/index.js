@@ -121,6 +121,237 @@ function degats(attaquant, defenseur, temps, plusRapide) {
 	const course = plusRapide ? 1.15 : 1;
 	return Math.max(8, Math.round(base * vitesse * course));
 }
+const FAMILLES = [
+	{
+		tags: ["antimemetic"],
+		effet: {
+			id: "antimemetique",
+			nom: "Antimémétique",
+			icone: "◌",
+			texte: "La question s’efface de votre mémoire au bout de 3 secondes.",
+			alteration: "antimemetique"
+		}
+	},
+	{
+		tags: [
+			"memetic",
+			"cognitohazard",
+			"infohazard",
+			"mind-affecting",
+			"compulsion",
+			"memory-affecting"
+		],
+		effet: {
+			id: "memetique",
+			nom: "Mémétique",
+			icone: "≋",
+			texte: "Les réponses se brouillent sous vos yeux.",
+			alteration: "memetique"
+		}
+	},
+	{
+		tags: [
+			"temporal",
+			"loop",
+			"predictive"
+		],
+		effet: {
+			id: "temporel",
+			nom: "Temporel",
+			icone: "⧗",
+			texte: `Le temps file : 12 secondes pour répondre.`,
+			alteration: "temporel"
+		}
+	},
+	{
+		tags: [
+			"reality-bending",
+			"probability",
+			"ectoentropic"
+		],
+		effet: {
+			id: "realite",
+			nom: "Altération de la réalité",
+			icone: "⟁",
+			texte: "La réalité vacille : deux réponses échangent leur place.",
+			alteration: "realite"
+		}
+	},
+	{
+		tags: [
+			"teleportation",
+			"portal",
+			"spatial",
+			"extradimensional"
+		],
+		effet: {
+			id: "spatial",
+			nom: "Spatial",
+			icone: "⤧",
+			texte: "Les réponses se téléportent pendant que vous lisez.",
+			alteration: "spatial"
+		}
+	},
+	{
+		tags: [
+			"contagion",
+			"biohazard",
+			"parasitic",
+			"self-replicating",
+			"airborne",
+			"transmission"
+		],
+		effet: {
+			id: "contagion",
+			nom: "Contagion",
+			icone: "☣",
+			texte: "En cas de brèche, le Site perd 4 points à chaque tour suivant.",
+			poison: 4
+		}
+	},
+	{
+		tags: [
+			"hostile",
+			"predatory",
+			"k-class-scenario",
+			"weapon"
+		],
+		effet: {
+			id: "hostile",
+			nom: "Hostile",
+			icone: "⚔",
+			texte: "Sa brèche frappe une fois et demie plus fort.",
+			force: 1.5
+		}
+	},
+	{
+		tags: [
+			"self-repairing",
+			"indestructible",
+			"adaptive",
+			"regeneration",
+			"reanimation"
+		],
+		effet: {
+			id: "tenace",
+			nom: "Indestructible",
+			icone: "⛊",
+			texte: "Même reconfinée, elle inflige 40 % de ses dégâts.",
+			tenace: .4
+		}
+	},
+	{
+		tags: [
+			"visual",
+			"light",
+			"observational",
+			"hallucination"
+		],
+		effet: {
+			id: "visuel",
+			nom: "Visuel",
+			icone: "✺",
+			texte: "Des éclairs aveuglants traversent la question.",
+			alteration: "visuel"
+		}
+	},
+	{
+		tags: [
+			"auditory",
+			"acoustic",
+			"musical",
+			"audio"
+		],
+		effet: {
+			id: "sonore",
+			nom: "Sonore",
+			icone: "♪",
+			texte: "Un son insoutenable fait trembler la question.",
+			alteration: "sonore"
+		}
+	}
+];
+/** Les grandes figures, écrites à la main */
+const SIGNATURES = {
+	"scp-173": {
+		id: "scp-173",
+		nom: "Ne clignez pas",
+		icone: "◉",
+		texte: "L’écran se ferme par instants. Plus vous tardez à répondre, plus il frappe fort.",
+		alteration: "clignement",
+		special: "lent"
+	},
+	"scp-096": {
+		id: "scp-096",
+		nom: "Ne regardez pas",
+		icone: "◐",
+		texte: "Son image est voilée. La regarder aide à répondre, mais une erreur après l’avoir vu triple ses dégâts.",
+		alteration: "visage",
+		special: "visage"
+	},
+	"scp-682": {
+		id: "scp-682",
+		nom: "Adaptation",
+		icone: "⛊",
+		texte: "Il s’adapte : même reconfiné, il inflige 60 % de ses dégâts.",
+		force: 1.3,
+		tenace: .6
+	},
+	"scp-055": {
+		id: "scp-055",
+		nom: "Ce que ce n’est pas",
+		icone: "◌",
+		texte: "Il est antimémétique : l’intitulé de la question n’apparaît jamais.",
+		alteration: "effacement"
+	},
+	"scp-106": {
+		id: "scp-106",
+		nom: "Dimension de poche",
+		icone: "◼",
+		texte: "En cas de brèche, il emporte une carte de la main adverse.",
+		special: "poche"
+	},
+	"scp-049": {
+		id: "scp-049",
+		nom: "Le remède",
+		icone: "✚",
+		texte: "En cas de brèche, il « soigne » : votre Site regagne 15 points.",
+		special: "remede"
+	},
+	"scp-999": {
+		id: "scp-999",
+		nom: "Chatouilles",
+		icone: "♥",
+		texte: "Inoffensif : il ne fait aucun dégât, mais votre Site regagne 20 points.",
+		special: "inoffensif"
+	},
+	"scp-2747": {
+		id: "scp-2747",
+		nom: "Anafabula",
+		icone: "¶",
+		texte: "Elle efface la page qui la raconte : l’intitulé de la question disparaît.",
+		alteration: "effacement"
+	},
+	"entite:scarlet-king": {
+		id: "scarlet-king",
+		nom: "Le Roi écarlate",
+		icone: "♛",
+		texte: "Ses chaînes frappent deux fois plus fort.",
+		force: 2
+	}
+};
+const SANS_EFFET = {
+	id: "aucun",
+	nom: "Sans effet notable",
+	icone: "·",
+	texte: "Elle ne compte que sur sa Menace."
+};
+function effetDe(c) {
+	const signature = SIGNATURES[c.id];
+	if (signature) return signature;
+	const tags = new Set(c.t ?? []);
+	return FAMILLES.find((f) => f.tags.some((t) => tags.has(t)))?.effet ?? SANS_EFFET;
+}
 // src/data/catalogue.ts
 const RARETES = [
 	{
@@ -546,6 +777,25 @@ function genererQuestion(base, sujet, autre, cachee) {
 	}
 	return construire(sujet, `Quelle est la rareté de ${designation(sujet)} ?`, RARETES_TEXTE[sujet.ra], RARETES_TEXTE, 0);
 }
+/** Début d'un extrait de procédures, coupé proprement, sa désignation caviardée */
+function extraitProcedures(c, longueur = 150) {
+	const t = caviarder(c.q ?? "", c).replace(/\s+/g, " ").trim();
+	if (t.length <= longueur) return t;
+	const coupe = t.slice(0, longueur);
+	return `${coupe.slice(0, Math.max(coupe.lastIndexOf(" "), longueur - 20))}…`;
+}
+/**
+* La question pour reconfiner une anomalie qui s'échappe (Reconfinement) : la carte est visible, donc pas de
+* question qui la nomme. Une fois sur deux, quand elle a des procédures, reconnaître les siennes parmi d'autres.
+*/
+function questionReconfinement(base, anomalie) {
+	if (anomalie.q && anomalie.q.length >= 80 && Math.random() < .5) {
+		const leurres = voisines(base, anomalie, 6, [], (c) => !!c.q && c.q.length >= 80 && memeLangue(anomalie)(c)).map((c) => extraitProcedures(c));
+		const q = construire(anomalie, `Quelles procédures reconfinent ${designation(anomalie)} ?`, extraitProcedures(anomalie), leurres, 2);
+		if (q) return q;
+	}
+	return genererQuestion(base, anomalie, anomalie, false);
+}
 // serveur/commun.ts
 /**
 * Outils communs aux duels arbitrés par le serveur (contre l'IA et entre joueurs) : catalogue des cartes,
@@ -647,7 +897,7 @@ const forceClasse = (c) => c.c ? FORCE_CLASSE[c.c] ?? 1 : 1;
 /** Une Mythique est l'ultime de sa main : une fois par partie, elle agit une fois et demie et ignore les gardes */
 const estUltime = (c) => c.ra === 5;
 /** Une FIM a confiné ce SCP dans le wiki (ses liens sont des désignations : « SCP-173 ») */
-const aConfine = (fim, scp) => fim.k === "f" && !!scp.num && !!fim.lie?.includes(scp.num);
+const aConfine$1 = (fim, scp) => fim.k === "f" && !!scp.num && !!fim.lie?.includes(scp.num);
 const campNeuf = () => ({
 	cellules: Array(3).fill(80),
 	ultime: false
@@ -664,12 +914,12 @@ function plusFaible(c) {
 }
 /** Puissance d'une carte une fois la question passée */
 const justesse = (coup) => coup.juste ? 1 : .5;
-const nom = (c) => c.num ?? c.nm;
+const nom$1 = (c) => c.num ?? c.nm;
 /**
 * Résout un tour : les deux coups agissent en même temps. Ordre : protocoles, gardes, brèches (et ripostes),
 * réparations, nouvelles cellules. Ne modifie pas les camps reçus.
 */
-function resoudre$1(joueur, ia, coupJoueur, coupIA) {
+function resoudre$2(joueur, ia, coupJoueur, coupIA) {
 	const camps = {
 		joueur: {
 			...joueur,
@@ -697,7 +947,7 @@ function resoudre$1(joueur, ia, coupJoueur, coupIA) {
 		evenements.push({
 			camp: x,
 			type: "ultime",
-			texte: `${nom(coups[x].carte)} : ultime déclenché`
+			texte: `${nom$1(coups[x].carte)} : ultime déclenché`
 		});
 	}
 	const facteur = {
@@ -711,7 +961,7 @@ function resoudre$1(joueur, ia, coupJoueur, coupIA) {
 		evenements.push({
 			camp: x,
 			type: "protocole",
-			texte: `${nom(coups[x].carte)} affaiblit ${nom(coups[autre(x)].carte)} (×${affaiblissement})`
+			texte: `${nom$1(coups[x].carte)} affaiblit ${nom$1(coups[autre(x)].carte)} (×${affaiblissement})`
 		});
 	}
 	const garde = {
@@ -729,7 +979,7 @@ function resoudre$1(joueur, ia, coupJoueur, coupIA) {
 			type: "garde",
 			cellule: ultime[x] ? void 0 : cellules[0],
 			valeur,
-			texte: `${nom(c.carte)} garde ${ultime[x] ? "toutes les cellules" : `la cellule ${cellules[0] + 1}`} (${valeur})`
+			texte: `${nom$1(c.carte)} garde ${ultime[x] ? "toutes les cellules" : `la cellule ${cellules[0] + 1}`} (${valeur})`
 		});
 	}
 	const degats = [];
@@ -741,12 +991,12 @@ function resoudre$1(joueur, ia, coupJoueur, coupIA) {
 		if (i < 0) continue;
 		const brut = Math.round(c.carte.atk * forceClasse(c.carte) * facteur[x]);
 		const defenseur = coups[y];
-		if (role(defenseur.carte) === "defense" && garde[y].has(i) && aConfine(defenseur.carte, c.carte)) {
+		if (role(defenseur.carte) === "defense" && garde[y].has(i) && aConfine$1(defenseur.carte, c.carte)) {
 			evenements.push({
 				camp: y,
 				type: "reconfinement",
 				cellule: i,
-				texte: `${nom(defenseur.carte)} reconnaît ${nom(c.carte)} et le reconfine`
+				texte: `${nom$1(defenseur.carte)} reconnaît ${nom$1(c.carte)} et le reconfine`
 			});
 			continue;
 		}
@@ -762,7 +1012,7 @@ function resoudre$1(joueur, ia, coupJoueur, coupIA) {
 			type: "breche",
 			cellule: i,
 			valeur,
-			texte: bouclier ? `${nom(c.carte)} frappe la cellule ${i + 1} : ${brut} − ${bouclier} gardés = ${valeur}` : `${nom(c.carte)} frappe la cellule ${i + 1} : ${valeur}`
+			texte: bouclier ? `${nom$1(c.carte)} frappe la cellule ${i + 1} : ${brut} − ${bouclier} gardés = ${valeur}` : `${nom$1(c.carte)} frappe la cellule ${i + 1} : ${valeur}`
 		});
 		if (role(defenseur.carte) === "defense" && defenseur.carte.k === "f" && bouclier > brut) {
 			const j = cible(camps[x], i);
@@ -778,7 +1028,7 @@ function resoudre$1(joueur, ia, coupJoueur, coupIA) {
 					type: "riposte",
 					cellule: j,
 					valeur: riposte,
-					texte: `${nom(defenseur.carte)} riposte sur la cellule ${j + 1} : ${riposte}`
+					texte: `${nom$1(defenseur.carte)} riposte sur la cellule ${j + 1} : ${riposte}`
 				});
 			}
 		}
@@ -802,7 +1052,7 @@ function resoudre$1(joueur, ia, coupJoueur, coupIA) {
 			type: "reparation",
 			cellule: soin.i,
 			valeur: v,
-			texte: `${nom(c.carte)} répare la cellule ${soin.i + 1} : +${v}`
+			texte: `${nom$1(c.carte)} répare la cellule ${soin.i + 1} : +${v}`
 		});
 	}
 	for (const x of ordre) {
@@ -817,7 +1067,7 @@ function resoudre$1(joueur, ia, coupJoueur, coupIA) {
 				type: "cellule",
 				cellule: i,
 				valeur: camps[x].cellules[i],
-				texte: `${nom(c.carte)} ouvre la cellule ${i + 1} (${camps[x].cellules[i]})`
+				texte: `${nom$1(c.carte)} ouvre la cellule ${i + 1} (${camps[x].cellules[i]})`
 			});
 		} else {
 			const i = plusFaible(camps[x]);
@@ -828,7 +1078,7 @@ function resoudre$1(joueur, ia, coupJoueur, coupIA) {
 				type: "reparation",
 				cellule: i,
 				valeur: camps[x].cellules[i] - avant,
-				texte: `${nom(c.carte)} répare la cellule ${i + 1} : +${camps[x].cellules[i] - avant}`
+				texte: `${nom$1(c.carte)} répare la cellule ${i + 1} : +${camps[x].cellules[i] - avant}`
 			});
 		}
 	}
@@ -875,7 +1125,7 @@ function choisirIA(main, campIA, campJoueur, vu, finesse, hasard = Math.random) 
 		} else if (r === "defense") {
 			cibleChoisie = vu && role(vu.carte) === "attaque" ? cible(campIA, vu.cible) : plusFaible(campIA);
 			valeur = carte.def * (vu ? role(vu.carte) === "attaque" ? 1.6 : .3 : .8);
-			if (vu && aConfine(carte, vu.carte)) valeur += 100;
+			if (vu && aConfine$1(carte, vu.carte)) valeur += 100;
 		} else if (r === "fortification") valeur = campIA.cellules.length < 4 || campIA.cellules.some((x) => x < 40) ? carte.def * .9 : 10;
 		else valeur = vu ? role(vu.carte) === "attaque" ? vu.carte.atk * .8 : 15 : 35;
 		if (estUltime(carte) && !campIA.ultime) valeur *= 1.5;
@@ -904,7 +1154,7 @@ const ACTIONS_BRECHE = /* @__PURE__ */ new Set([
 	"breche_jouer",
 	"breche_repondre"
 ]);
-async function lire$2(env, id, joueur) {
+async function lire$3(env, id, joueur) {
 	const r = await rpc(env, "duel_lire", {
 		p_duel: id,
 		p_joueur: joueur
@@ -915,7 +1165,7 @@ async function lire$2(env, id, joueur) {
 		version: r.version
 	};
 }
-async function ecrire$1(env, id, joueur, version, etat) {
+async function ecrire$2(env, id, joueur, version, etat) {
 	if (!await rpc(env, "duel_ecrire", {
 		p_duel: id,
 		p_joueur: joueur,
@@ -923,7 +1173,7 @@ async function ecrire$1(env, id, joueur, version, etat) {
 		p_etat: etat
 	})) throw new Erreur(409, "La confrontation a changé entre-temps : rechargez la page");
 }
-const adversaireDe = (niveau) => ADVERSAIRES.find((a) => a.niveau === niveau);
+const adversaireDe$1 = (niveau) => ADVERSAIRES.find((a) => a.niveau === niveau);
 /** Avec l'initiative du joueur, l'IA s'engage d'avance, sans voir son coup */
 async function preparerTour(env, etat) {
 	if (etat.initiative !== "joueur") return {
@@ -931,7 +1181,7 @@ async function preparerTour(env, etat) {
 		coupIA: void 0
 	};
 	const b = await base(env, etat.langue);
-	const c = choisirIA(etat.mainIA.map((id) => b.parId.get(id)), etat.ia, etat.joueur, null, adversaireDe(etat.niveau).precision);
+	const c = choisirIA(etat.mainIA.map((id) => b.parId.get(id)), etat.ia, etat.joueur, null, adversaireDe$1(etat.niveau).precision);
 	return {
 		...etat,
 		coupIA: {
@@ -941,7 +1191,7 @@ async function preparerTour(env, etat) {
 	};
 }
 /** Ce que le navigateur peut savoir de la partie */
-function vuePublique(etat) {
+function vuePublique$1(etat) {
 	return {
 		tour: etat.tour,
 		main: etat.main,
@@ -953,7 +1203,7 @@ function vuePublique(etat) {
 		bonnes: etat.bonnes
 	};
 }
-async function debuter$1(env, idJoueur, corps) {
+async function debuter$2(env, idJoueur, corps) {
 	const adversaire = ADVERSAIRES.find((a) => a.niveau === corps.niveau);
 	if (!adversaire) throw new Erreur(400, "Adversaire inconnu");
 	const prep = await rpc(env, "duel_preparer", {
@@ -975,21 +1225,21 @@ async function debuter$1(env, idJoueur, corps) {
 		phase: "choix",
 		initiative: null
 	};
-	await ecrire$1(env, prep.id, idJoueur, 0, etat);
+	await ecrire$2(env, prep.id, idJoueur, 0, etat);
 	return {
 		id: prep.id,
-		...vuePublique(etat)
+		...vuePublique$1(etat)
 	};
 }
-async function jouer$1(env, idJoueur, corps, maintenant) {
+async function jouer$2(env, idJoueur, corps, maintenant) {
 	const id = texte(corps.id);
-	const { etat, version } = await lire$2(env, id, idJoueur);
+	const { etat, version } = await lire$3(env, id, idJoueur);
 	if (etat.phase !== "choix") throw new Erreur(409, "Une question attend déjà votre réponse");
 	const idCarte = texte(corps.carte);
 	if (!etat.main.includes(idCarte)) throw new Erreur(400, "Cette carte n'est plus dans votre main");
 	const cible = typeof corps.cible === "number" && Number.isInteger(corps.cible) ? corps.cible : 0;
 	const b = await base(env, etat.langue);
-	const adversaire = adversaireDe(etat.niveau);
+	const adversaire = adversaireDe$1(etat.niveau);
 	const carte = b.parId.get(idCarte);
 	const coupIA = etat.coupIA ?? (() => {
 		const c = choisirIA(etat.mainIA.map((x) => b.parId.get(x)), etat.ia, etat.joueur, etat.initiative === "ia" ? {
@@ -1005,7 +1255,7 @@ async function jouer$1(env, idJoueur, corps, maintenant) {
 	const q = genererQuestion(b, carte, carteIA, false);
 	const qIA = genererQuestion(b, carteIA, carte, false);
 	const reponseIA = reponseAdversaire(adversaire, qIA);
-	await ecrire$1(env, id, idJoueur, version, {
+	await ecrire$2(env, id, idJoueur, version, {
 		...etat,
 		phase: "question",
 		coup: {
@@ -1036,9 +1286,9 @@ async function jouer$1(env, idJoueur, corps, maintenant) {
 		tempsIA: reponseIA.temps
 	};
 }
-async function repondre$2(env, idJoueur, corps, maintenant) {
+async function repondre$3(env, idJoueur, corps, maintenant) {
 	const id = texte(corps.id);
-	const { etat, version } = await lire$2(env, id, idJoueur);
+	const { etat, version } = await lire$3(env, id, idJoueur);
 	if (etat.phase !== "question" || !etat.question || !etat.coup || !etat.coupIA || !etat.reponseIA || etat.debut === void 0) throw new Erreur(409, "Aucune question en cours");
 	const q = etat.question;
 	const ecoule = (maintenant - etat.debut) / 1e3;
@@ -1050,7 +1300,7 @@ async function repondre$2(env, idJoueur, corps, maintenant) {
 	const b = await base(env, etat.langue);
 	const carte = b.parId.get(etat.coup.carte);
 	const carteIA = b.parId.get(etat.coupIA.carte);
-	const r = resoudre$1(etat.joueur, etat.ia, {
+	const r = resoudre$2(etat.joueur, etat.ia, {
 		carte,
 		cible: etat.coup.cible,
 		juste
@@ -1096,10 +1346,10 @@ async function repondre$2(env, idJoueur, corps, maintenant) {
 	};
 	if (!terminee$1(etat.tour, r.joueur, r.ia)) {
 		const pret = await preparerTour(env, suivant);
-		await ecrire$1(env, id, idJoueur, version, pret);
+		await ecrire$2(env, id, idJoueur, version, pret);
 		return {
 			...resultat,
-			...vuePublique(pret),
+			...vuePublique$1(pret),
 			fin: null
 		};
 	}
@@ -1115,7 +1365,7 @@ async function repondre$2(env, idJoueur, corps, maintenant) {
 	});
 	return {
 		...resultat,
-		...vuePublique(suivant),
+		...vuePublique$1(suivant),
 		fin: {
 			issue: issue$1,
 			...gains
@@ -1124,9 +1374,9 @@ async function repondre$2(env, idJoueur, corps, maintenant) {
 }
 async function traiterBreche(env, idJoueur, action, corps, maintenant) {
 	switch (action) {
-		case "breche_debuter": return debuter$1(env, idJoueur, corps);
-		case "breche_jouer": return jouer$1(env, idJoueur, corps, maintenant);
-		default: return repondre$2(env, idJoueur, corps, maintenant);
+		case "breche_debuter": return debuter$2(env, idJoueur, corps);
+		case "breche_jouer": return jouer$2(env, idJoueur, corps, maintenant);
+		default: return repondre$3(env, idJoueur, corps, maintenant);
 	}
 }
 const autre = (c) => c === "a" ? "b" : "a";
@@ -1198,7 +1448,7 @@ function lancerQuestion(etat, secret, b, maintenant) {
 	secret.reponses = {};
 }
 /** Fin de manche : dégâts, cartes jouées, puis manche suivante ou fin du duel. */
-function resoudre(etat, secret, b, maintenant) {
+function resoudre$1(etat, secret, b, maintenant) {
 	const q = etat.question;
 	const bonne = secret.question.bonne;
 	const rep = {
@@ -1278,7 +1528,7 @@ function choisir(etat, secret, cote, idCarte, b, maintenant) {
 	etat.choisi[cote] = true;
 	if (etat.choisi.a && etat.choisi.b) lancerQuestion(etat, secret, b, maintenant);
 }
-function repondre$1(etat, secret, cote, choix, b, maintenant) {
+function repondre$2(etat, secret, cote, choix, b, maintenant) {
 	if (etat.phase !== "question" || !etat.question || secret.debut === void 0) throw new Erreur(409, "Aucune question en cours");
 	if (etat.repondu[cote]) throw new Erreur(409, "Vous avez déjà répondu");
 	const ecoule = (maintenant - secret.debut) / 1e3;
@@ -1288,7 +1538,7 @@ function repondre$1(etat, secret, cote, choix, b, maintenant) {
 		temps: Math.min(20, ecoule)
 	};
 	etat.repondu[cote] = true;
-	if (etat.repondu.a && etat.repondu.b) resoudre(etat, secret, b, maintenant);
+	if (etat.repondu.a && etat.repondu.b) resoudre$1(etat, secret, b, maintenant);
 }
 /** Applique les délais dépassés : carte jouée d'office, question sans réponse. Renvoie true si l'état a changé. */
 function appliquerDelais(etat, secret, b, maintenant) {
@@ -1308,12 +1558,12 @@ function appliquerDelais(etat, secret, b, maintenant) {
 			};
 			etat.repondu[c] = true;
 		}
-		resoudre(etat, secret, b, maintenant);
+		resoudre$1(etat, secret, b, maintenant);
 		return true;
 	}
 	return false;
 }
-async function lire$1(env, idDuel, idJoueur) {
+async function lire$2(env, idDuel, idJoueur) {
 	const lu = await rpc(env, "jcj_lire", {
 		p_duel: idDuel,
 		p_joueur: idJoueur
@@ -1364,7 +1614,7 @@ function vue(lu, id) {
 */
 async function modifier(env, idDuel, idJoueur, maintenant, action) {
 	for (let essai = 0; essai < 4; essai++) {
-		const lu = await lire$1(env, idDuel, idJoueur);
+		const lu = await lire$2(env, idDuel, idJoueur);
 		if (lu.statut !== "en_cours" || !lu.secret) return {
 			lu,
 			profil: null
@@ -1387,7 +1637,7 @@ async function modifier(env, idDuel, idJoueur, maintenant, action) {
 				p_issue: etat.fin.issue
 			});
 			return {
-				lu: await lire$1(env, idDuel, idJoueur),
+				lu: await lire$2(env, idDuel, idJoueur),
 				profil: gains[lu.cote].profil
 			};
 		} catch (e) {
@@ -1422,7 +1672,7 @@ const ACTIONS_JCJ = /* @__PURE__ */ new Set([
 	"jcj_abandonner"
 ]);
 async function etatDuel(env, idDuel, idJoueur, maintenant) {
-	let lu = await lire$1(env, idDuel, idJoueur);
+	let lu = await lire$2(env, idDuel, idJoueur);
 	if (lu.statut === "preparation" && lu.version === 0) {
 		try {
 			await initialiser(env, await rpc(env, "jcj_preparer", {
@@ -1432,7 +1682,7 @@ async function etatDuel(env, idDuel, idJoueur, maintenant) {
 		} catch (e) {
 			if (!(e instanceof Erreur && e.statut === 409)) throw e;
 		}
-		lu = await lire$1(env, idDuel, idJoueur);
+		lu = await lire$2(env, idDuel, idJoueur);
 	}
 	const { lu: apres, profil } = await modifier(env, idDuel, idJoueur, maintenant);
 	return {
@@ -1482,7 +1732,7 @@ async function traiterJcj(env, idJoueur, action, corps, maintenant) {
 			};
 		}
 		case "jcj_repondre": {
-			const { lu, profil } = await modifier(env, idDuel, idJoueur, maintenant, (etat, secret, cote, b) => repondre$1(etat, secret, cote, corps.choix, b, maintenant));
+			const { lu, profil } = await modifier(env, idDuel, idJoueur, maintenant, (etat, secret, cote, b) => repondre$2(etat, secret, cote, corps.choix, b, maintenant));
 			return {
 				...vue(lu, idDuel),
 				profil
@@ -1503,6 +1753,603 @@ async function traiterJcj(env, idJoueur, action, corps, maintenant) {
 		}
 	}
 	throw new Erreur(400, "Action inconnue");
+}
+const nature = (c) => c.id.startsWith("entite:") || [
+	"s",
+	"g",
+	"c",
+	"n",
+	"d"
+].includes(c.k) ? "anomalie" : "soutien";
+function soutien(c) {
+	return c.k === "f" ? "fim" : c.k === "l" ? "site" : c.k === "o" ? "protocole" : "personnel";
+}
+const campReco = () => ({
+	integrite: 100,
+	manifestation: 0,
+	poison: 0,
+	manifeste: false,
+	reconfinementsAuto: 0,
+	questionsCourtes: 0,
+	echecsAuto: 0,
+	questionsFaciles: 0
+});
+/** Une FIM a confiné ce SCP dans le wiki (ses liens sont des désignations : « SCP-173 ») */
+const aConfine = (fim, a) => fim.k === "f" && !!a.num && !!fim.lie?.includes(a.num);
+function preparerReconfinement(anomalie, defenseur, soutienDefenseur) {
+	const effet = effetDe(anomalie);
+	const s = soutienDefenseur && nature(soutienDefenseur) === "soutien" ? soutien(soutienDefenseur) : null;
+	const neutralise = s === "protocole";
+	const dissipe = neutralise || s === "personnel";
+	let duree = 20;
+	if (effet.alteration === "temporel" && !dissipe) duree = 12;
+	if (defenseur.questionsCourtes > 0) duree = 8;
+	if (s === "personnel") duree += 8;
+	const retirees = Math.min(2, (s === "fim" ? soutienDefenseur.ra >= 3 ? 2 : 1 : 0) + (defenseur.questionsFaciles > 0 ? 2 : 0));
+	const auto = defenseur.reconfinementsAuto > 0 || s === "fim" && aConfine(soutienDefenseur, anomalie) ? "reussite" : defenseur.echecsAuto > 0 ? "echec" : null;
+	return {
+		effet,
+		alteree: !dissipe && !!effet.alteration,
+		actif: !neutralise,
+		duree,
+		retirees,
+		auto,
+		attenuation: neutralise ? .5 : 1
+	};
+}
+const DEGATS_BASE = .5;
+/** Dégâts d'une anomalie qui fait brèche, ou de ce qu'elle inflige malgré tout une fois reconfinée */
+function degatsAnomalie(a, r, issue) {
+	const e = r.effet;
+	if (r.actif && e.special === "inoffensif") return 0;
+	let d = a.atk * DEGATS_BASE * r.attenuation;
+	if (r.actif) {
+		d *= e.force ?? 1;
+		if (e.special === "lent") d *= .6 + Math.min(issue.temps, 20) / 20;
+		if (e.special === "visage" && issue.regarde && !issue.reconfinee) d *= 3;
+	}
+	if (issue.reconfinee) d *= r.actif ? e.tenace ?? 0 : 0;
+	return Math.round(d);
+}
+const nom = (c) => c.num ?? c.nm;
+/**
+* Applique la libération d'une anomalie de `auteur` chez `cible` (camps modifiés en place) ; renvoie les cartes
+* à retirer de la main de la cible (dimension de poche).
+*/
+function appliquerLiberation(auteur, camps, anomalie, r, issue, evenements) {
+	const cible = auteur === "joueur" ? "ia" : "joueur";
+	const e = r.effet;
+	const d = degatsAnomalie(anomalie, r, issue);
+	if (issue.reconfinee) evenements.push({
+		camp: cible,
+		type: "reconfinement",
+		valeur: d,
+		texte: d ? `${nom(anomalie)} est reconfiné, mais inflige ${d}` : `${nom(anomalie)} est reconfiné`
+	});
+	else if (d > 0 || !(r.actif && e.special === "inoffensif")) evenements.push({
+		camp: cible,
+		type: "breche",
+		valeur: d,
+		texte: `${nom(anomalie)} fait brèche : ${d}`
+	});
+	camps[cible].integrite = Math.max(0, camps[cible].integrite - d);
+	let poche = false;
+	if (r.actif && !issue.reconfinee) {
+		if (e.poison) {
+			camps[cible].poison += e.poison;
+			evenements.push({
+				camp: cible,
+				type: "poison",
+				valeur: e.poison,
+				texte: `Contamination : ${e.poison} par tour`
+			});
+		}
+		if (e.special === "remede" || e.special === "inoffensif") {
+			const soin = e.special === "remede" ? 15 : 20;
+			camps[auteur].integrite = Math.min(100, camps[auteur].integrite + soin);
+			evenements.push({
+				camp: auteur,
+				type: "soin",
+				valeur: soin,
+				texte: `${nom(anomalie)} : +${soin}`
+			});
+		}
+		if (e.special === "poche") {
+			poche = true;
+			evenements.push({
+				camp: cible,
+				type: "poche",
+				texte: `${nom(anomalie)} emporte une carte dans sa dimension de poche`
+			});
+		}
+	}
+	if (!issue.reconfinee) remplir(camps[auteur], 15);
+	return { poche };
+}
+/** Une bonne réponse remplit la jauge, davantage si elle est rapide */
+function gainReponse(juste, temps) {
+	return juste ? temps <= 7 ? 35 : 25 : 0;
+}
+function remplir(camp, n) {
+	if (!camp.manifeste) camp.manifestation = Math.min(100, camp.manifestation + n);
+}
+const termine = (tour, joueur, ia) => tour >= 5 || joueur.integrite <= 0 || ia.integrite <= 0;
+function issueReco(joueur, ia) {
+	if (joueur.integrite <= 0 && ia.integrite > 0) return "defaite";
+	if (ia.integrite <= 0 && joueur.integrite > 0) return "victoire";
+	return joueur.integrite > ia.integrite ? "victoire" : joueur.integrite < ia.integrite ? "defaite" : "nul";
+}
+const URGENCE = {
+	id: "urgence",
+	nom: "Protocole d’urgence O5",
+	texte: "Le Conseil intervient : votre Site regagne 20 points."
+};
+const MANIFESTATIONS = {
+	"entite:scarlet-king": {
+		id: "chaines",
+		nom: "Les chaînes du Roi",
+		texte: "Deux cartes de la main adverse sont enchaînées jusqu’à la fin de la partie."
+	},
+	"dr-clef-s-proposal": {
+		id: "patmos",
+		nom: "Procédure Patmos-Omega",
+		texte: "Le Site adverse perd 30 points et sa jauge retombe à zéro."
+	},
+	"fim:alpha-1": {
+		id: "main-rouge",
+		nom: "La Main droite rouge",
+		texte: "Vos deux prochains reconfinements réussissent d’office."
+	},
+	"perso:the-administrator": {
+		id: "reecriture",
+		nom: "Réécriture",
+		texte: "Votre Site regagne 35 points et toute contamination disparaît."
+	},
+	"perso:o5-1": {
+		id: "veto",
+		nom: "Veto",
+		texte: "Le Site adverse perd 15 points, et votre prochain reconfinement réussit d’office."
+	},
+	"perso:aaron-siegel": {
+		id: "revelation",
+		nom: "Révélation",
+		texte: "La main adverse est révélée, et vos deux prochaines questions n’ont plus que deux réponses."
+	},
+	"scp-173": {
+		id: "clignement",
+		nom: "Clignement",
+		texte: "Les deux prochaines questions adverses n’ont que 8 secondes."
+	},
+	"scp-2747": {
+		id: "effacement",
+		nom: "Effacement",
+		texte: "L’adversaire rate d’office son prochain reconfinement : la page est effacée."
+	}
+};
+/** La Manifestation d'une équipe : celle de sa première Mythique, sinon le Protocole d'urgence */
+function manifestationDe(equipe) {
+	const m = equipe.find((c) => c.ra === 5 && MANIFESTATIONS[c.id]);
+	return m ? {
+		...MANIFESTATIONS[m.id],
+		carte: m.id
+	} : URGENCE;
+}
+/** Applique une Manifestation (camps et mains modifiés en place) */
+function manifester(m, auteur, camps, mains, hasard = Math.random) {
+	const adverse = auteur === "joueur" ? "ia" : "joueur";
+	const moi = camps[auteur];
+	const lui = camps[adverse];
+	moi.manifeste = true;
+	moi.manifestation = 0;
+	const ev = [{
+		camp: auteur,
+		type: "manifestation",
+		texte: `${m.nom} : ${m.texte}`
+	}];
+	switch (m.id) {
+		case "chaines":
+			for (let i = 0; i < 2 && mains[adverse].length > 1; i++) mains[adverse].splice(Math.floor(hasard() * mains[adverse].length), 1);
+			break;
+		case "patmos":
+			lui.integrite = Math.max(0, lui.integrite - 30);
+			lui.manifestation = 0;
+			break;
+		case "main-rouge":
+			moi.reconfinementsAuto += 2;
+			break;
+		case "reecriture":
+			moi.integrite = Math.min(100, moi.integrite + 35);
+			moi.poison = 0;
+			break;
+		case "veto":
+			lui.integrite = Math.max(0, lui.integrite - 15);
+			moi.reconfinementsAuto += 1;
+			break;
+		case "revelation":
+			moi.questionsFaciles += 2;
+			break;
+		case "clignement":
+			lui.questionsCourtes += 2;
+			break;
+		case "effacement":
+			lui.echecsAuto += 1;
+			break;
+		default: moi.integrite = Math.min(100, moi.integrite + 20);
+	}
+	return ev;
+}
+/** Fin de tour : la contagion ronge, les effets à durée s'usent */
+function finDeTour(camps, consommes, ev) {
+	for (const x of ["joueur", "ia"]) {
+		const c = camps[x];
+		if (c.poison > 0 && c.integrite > 0) {
+			c.integrite = Math.max(0, c.integrite - c.poison);
+			ev.push({
+				camp: x,
+				type: "poison",
+				valeur: c.poison,
+				texte: `La contamination ronge le Site : −${c.poison}`
+			});
+		}
+		for (const k of [
+			"reconfinementsAuto",
+			"questionsCourtes",
+			"echecsAuto",
+			"questionsFaciles"
+		]) if (consommes[x][k] && c[k] > 0) c[k]--;
+	}
+}
+/** Le choix de l'IA : une anomalie le plus souvent, un soutien quand elle est en danger ou devine une grosse menace */
+function choisirIAReco(main, camp, finesse, hasard = Math.random) {
+	const notes = main.map((c) => {
+		let v = nature(c) === "anomalie" ? c.atk * (effetDe(c).force ?? 1) + (effetDe(c).alteration ? 12 : 0) : c.def * .6;
+		if (nature(c) === "soutien" && soutien(c) === "site") v = camp.integrite < 60 ? c.def * 1.2 : 15;
+		v *= 1 - (1 - finesse) * hasard();
+		return {
+			c,
+			v
+		};
+	});
+	notes.sort((a, b) => b.v - a.v);
+	return notes[0].c;
+}
+// serveur/reconfinement.ts
+const ACTIONS_RECO = /* @__PURE__ */ new Set([
+	"reco_debuter",
+	"reco_jouer",
+	"reco_repondre",
+	"reco_manifester"
+]);
+async function lire$1(env, id, joueur) {
+	const r = await rpc(env, "duel_lire", {
+		p_duel: id,
+		p_joueur: joueur
+	});
+	if (!r?.etat || r.etat.mode !== "reco") throw new Erreur(404, "Confrontation introuvable ou déjà terminée");
+	return {
+		etat: r.etat,
+		version: r.version
+	};
+}
+async function ecrire$1(env, id, joueur, version, etat) {
+	if (!await rpc(env, "duel_ecrire", {
+		p_duel: id,
+		p_joueur: joueur,
+		p_version: version,
+		p_etat: etat
+	})) throw new Erreur(409, "La confrontation a changé entre-temps : rechargez la page");
+}
+const adversaireDe = (niveau) => ADVERSAIRES.find((a) => a.niveau === niveau);
+function vuePublique(etat, b) {
+	return {
+		tour: etat.tour,
+		main: etat.main,
+		cartesIA: etat.mainIA.length,
+		mainIA: etat.revele ? etat.mainIA : void 0,
+		joueur: etat.joueur,
+		ia: etat.ia,
+		bonnes: etat.bonnes,
+		manifestation: manifestationDe(etat.equipe.map((id) => b.parId.get(id)))
+	};
+}
+async function debuter$1(env, idJoueur, corps) {
+	const adversaire = ADVERSAIRES.find((a) => a.niveau === corps.niveau);
+	if (!adversaire) throw new Erreur(400, "Adversaire inconnu");
+	const prep = await rpc(env, "duel_preparer", {
+		p_joueur: idJoueur,
+		p_niveau: adversaire.niveau
+	});
+	const b = await base(env, prep.langue);
+	if (prep.equipe.some((id) => !b.parId.has(id))) throw new Erreur(409, "Nouvelles fiches disponibles : rechargez la page");
+	const etat = {
+		mode: "reco",
+		niveau: adversaire.niveau,
+		langue: prep.langue,
+		equipe: prep.equipe,
+		main: prep.equipe,
+		mainIA: deckAdversaire(b, adversaire).map((c) => c.id),
+		tour: 1,
+		joueur: campReco(),
+		ia: campReco(),
+		bonnes: 0,
+		questions: 0,
+		phase: "choix",
+		revele: false
+	};
+	await ecrire$1(env, prep.id, idJoueur, 0, etat);
+	return {
+		id: prep.id,
+		...vuePublique(etat, b)
+	};
+}
+/** Retire `n` mauvaises réponses au hasard */
+function aRetirer(options, bonne, n) {
+	const mauvaises = options.map((_, i) => i).filter((i) => i !== bonne);
+	const retirees = [];
+	while (retirees.length < n && mauvaises.length) retirees.push(mauvaises.splice(Math.floor(Math.random() * mauvaises.length), 1)[0]);
+	return retirees;
+}
+async function jouer$1(env, idJoueur, corps, maintenant) {
+	const id = texte(corps.id);
+	const { etat, version } = await lire$1(env, id, idJoueur);
+	if (etat.phase !== "choix") throw new Erreur(409, "Un reconfinement attend votre réponse");
+	const idCarte = texte(corps.carte);
+	if (!etat.main.includes(idCarte)) throw new Erreur(400, "Cette carte n'est plus dans votre main");
+	const b = await base(env, etat.langue);
+	const adversaire = adversaireDe(etat.niveau);
+	const carte = b.parId.get(idCarte);
+	const carteIA = choisirIAReco(etat.mainIA.map((x) => b.parId.get(x)), etat.ia, adversaire.precision);
+	let recoIA;
+	let reponseIA;
+	if (nature(carte) === "anomalie") {
+		recoIA = preparerReconfinement(carte, etat.ia, carteIA);
+		if (recoIA.auto) reponseIA = {
+			juste: recoIA.auto === "reussite",
+			temps: 0
+		};
+		else {
+			const q = questionReconfinement(b, carte);
+			const malus = (recoIA.alteree ? .15 : 0) - recoIA.retirees * .1;
+			const r = reponseAdversaire({
+				...adversaire,
+				precision: Math.max(.15, adversaire.precision - malus)
+			}, q);
+			reponseIA = {
+				juste: r.choix === q.bonne && r.temps <= recoIA.duree,
+				temps: Math.min(r.temps, recoIA.duree)
+			};
+		}
+	}
+	const suivant = {
+		...etat,
+		coup: idCarte,
+		coupIA: carteIA.id,
+		recoIA,
+		reponseIA
+	};
+	const revelation = {
+		carteIA: carteIA.id,
+		tempsIA: reponseIA && !recoIA?.auto ? reponseIA.temps : void 0
+	};
+	if (nature(carteIA) === "anomalie") {
+		const reco = preparerReconfinement(carteIA, etat.joueur, carte);
+		if (!reco.auto) {
+			const q = questionReconfinement(b, carteIA);
+			const question = {
+				intitule: q.intitule,
+				document: q.document,
+				options: q.options,
+				bonne: q.bonne,
+				retirees: aRetirer(q.options, q.bonne, reco.retirees),
+				duree: reco.duree
+			};
+			await ecrire$1(env, id, idJoueur, version, {
+				...suivant,
+				phase: "question",
+				question,
+				reco,
+				debut: maintenant
+			});
+			return {
+				...revelation,
+				question: {
+					intitule: q.intitule,
+					document: q.document,
+					options: q.options,
+					retirees: question.retirees,
+					duree: reco.duree
+				},
+				reco: {
+					effet: reco.effet,
+					alteree: reco.alteree,
+					actif: reco.actif
+				}
+			};
+		}
+		const res = await resoudre(env, id, idJoueur, version, {
+			...suivant,
+			reco
+		}, b, {
+			reconfinee: reco.auto === "reussite",
+			temps: 0
+		}, null);
+		return {
+			...revelation,
+			auto: reco.auto,
+			resultat: res
+		};
+	}
+	const res = await resoudre(env, id, idJoueur, version, suivant, b, null, null);
+	return {
+		...revelation,
+		resultat: res
+	};
+}
+async function repondre$1(env, idJoueur, corps, maintenant) {
+	const id = texte(corps.id);
+	const { etat, version } = await lire$1(env, id, idJoueur);
+	if (etat.phase !== "question" || !etat.question || !etat.reco || etat.debut === void 0) throw new Erreur(409, "Aucun reconfinement en cours");
+	const q = etat.question;
+	const ecoule = (maintenant - etat.debut) / 1e3;
+	const choix = corps.choix;
+	const choixRetenu = typeof choix === "number" && Number.isInteger(choix) && choix >= 0 && choix < q.options.length && !q.retirees.includes(choix) && ecoule <= q.duree + 3 ? choix : null;
+	const temps = Math.min(q.duree, ecoule);
+	const juste = choixRetenu === q.bonne;
+	return await resoudre(env, id, idJoueur, version, etat, await base(env, etat.langue), {
+		reconfinee: juste,
+		temps,
+		regarde: corps.regarde === true
+	}, {
+		choix: choixRetenu,
+		bonne: q.bonne
+	});
+}
+/** Résout le tour : libérations, soutiens, jauges, contagion, Manifestation de l'IA ; clôt la partie à la fin */
+async function resoudre(env, id, idJoueur, version, etat, b, issueJoueur, reponse) {
+	const carte = b.parId.get(etat.coup);
+	const carteIA = b.parId.get(etat.coupIA);
+	const camps = {
+		joueur: { ...etat.joueur },
+		ia: { ...etat.ia }
+	};
+	const mains = {
+		joueur: etat.main.filter((x) => x !== carte.id),
+		ia: etat.mainIA.filter((x) => x !== carteIA.id)
+	};
+	const evenements = [];
+	const consommes = {
+		joueur: {},
+		ia: {}
+	};
+	for (const [x, c] of [["joueur", carte], ["ia", carteIA]]) if (nature(c) === "soutien" && soutien(c) === "site") {
+		const v = Math.round(c.def * .4);
+		camps[x].integrite = Math.min(100, camps[x].integrite + v);
+		evenements.push({
+			camp: x,
+			type: "soin",
+			valeur: v,
+			texte: `${c.num ?? c.nm} renforce le Site : +${v}`
+		});
+	}
+	const poche = (x) => {
+		if (mains[x].length) mains[x].splice(Math.floor(Math.random() * mains[x].length), 1);
+	};
+	if (etat.recoIA && etat.reponseIA) {
+		if (appliquerLiberation("joueur", camps, carte, etat.recoIA, {
+			reconfinee: etat.reponseIA.juste,
+			temps: etat.reponseIA.temps
+		}, evenements).poche) poche("ia");
+		if (!etat.recoIA.auto) remplir(camps.ia, gainReponse(etat.reponseIA.juste, etat.reponseIA.temps));
+		for (const k of [
+			"reconfinementsAuto",
+			"questionsCourtes",
+			"echecsAuto",
+			"questionsFaciles"
+		]) consommes.ia[k] = true;
+	}
+	if (etat.reco && issueJoueur) {
+		if (appliquerLiberation("ia", camps, carteIA, etat.reco, issueJoueur, evenements).poche) poche("joueur");
+		if (reponse) remplir(camps.joueur, gainReponse(issueJoueur.reconfinee, issueJoueur.temps));
+		for (const k of [
+			"reconfinementsAuto",
+			"questionsCourtes",
+			"echecsAuto",
+			"questionsFaciles"
+		]) consommes.joueur[k] = true;
+	}
+	finDeTour(camps, consommes, evenements);
+	if (camps.ia.manifestation >= 100 && !camps.ia.manifeste && camps.ia.integrite > 0) evenements.push(...manifester(URGENCE, "ia", camps, mains));
+	const suivant = {
+		...etat,
+		phase: "choix",
+		tour: etat.tour + 1,
+		joueur: camps.joueur,
+		ia: camps.ia,
+		main: mains.joueur,
+		mainIA: mains.ia,
+		bonnes: etat.bonnes + (reponse && issueJoueur?.reconfinee ? 1 : 0),
+		questions: etat.questions + (reponse ? 1 : 0),
+		coup: void 0,
+		coupIA: void 0,
+		question: void 0,
+		reco: void 0,
+		recoIA: void 0,
+		reponseIA: void 0,
+		debut: void 0
+	};
+	const resultat = {
+		choix: reponse?.choix ?? null,
+		bonne: reponse?.bonne,
+		temps: issueJoueur?.temps,
+		reponseIA: etat.reponseIA,
+		evenements
+	};
+	if (!termine(etat.tour, camps.joueur, camps.ia) && mains.joueur.length && mains.ia.length) {
+		await ecrire$1(env, id, idJoueur, version, suivant);
+		return {
+			...resultat,
+			...vuePublique(suivant, b),
+			fin: null
+		};
+	}
+	const issue = issueReco(camps.joueur, camps.ia);
+	const questions = Math.min(5, Math.max(1, suivant.questions));
+	const gains = await rpc(env, "duel_clore", {
+		p_duel: id,
+		p_joueur: idJoueur,
+		p_version: version,
+		p_etat: suivant,
+		p_issue: issue,
+		p_bonnes: Math.min(questions, suivant.bonnes),
+		p_questions: questions
+	});
+	return {
+		...resultat,
+		...vuePublique(suivant, b),
+		fin: {
+			issue,
+			...gains
+		}
+	};
+}
+async function manifesterJoueur(env, idJoueur, corps) {
+	const id = texte(corps.id);
+	const { etat, version } = await lire$1(env, id, idJoueur);
+	if (etat.phase !== "choix") throw new Erreur(409, "Pas pendant un reconfinement");
+	if (etat.joueur.manifeste || etat.joueur.manifestation < 100) throw new Erreur(409, "La jauge de Manifestation n’est pas pleine");
+	const b = await base(env, etat.langue);
+	const m = manifestationDe(etat.equipe.map((x) => b.parId.get(x)));
+	const camps = {
+		joueur: { ...etat.joueur },
+		ia: { ...etat.ia }
+	};
+	const mains = {
+		joueur: [...etat.main],
+		ia: [...etat.mainIA]
+	};
+	const evenements = manifester(m, "joueur", camps, mains);
+	const suivant = {
+		...etat,
+		joueur: camps.joueur,
+		ia: camps.ia,
+		main: mains.joueur,
+		mainIA: mains.ia,
+		revele: etat.revele || m.id === "revelation"
+	};
+	await ecrire$1(env, id, idJoueur, version, suivant);
+	return {
+		declenchee: m,
+		evenements,
+		...vuePublique(suivant, b)
+	};
+}
+async function traiterReco(env, idJoueur, action, corps, maintenant) {
+	switch (action) {
+		case "reco_debuter": return debuter$1(env, idJoueur, corps);
+		case "reco_jouer": return jouer$1(env, idJoueur, corps, maintenant);
+		case "reco_manifester": return manifesterJoueur(env, idJoueur, corps);
+		default: return repondre$1(env, idJoueur, corps, maintenant);
+	}
 }
 // serveur/duel.ts
 /**
@@ -1580,7 +2427,18 @@ async function jouer(env, idJoueur, corps, maintenant) {
 	const carteIA = b.parId.get(idIA);
 	const surMaCarte = Math.random() < .5;
 	const q = surMaCarte ? genererQuestion(b, carte, carteIA, false) : genererQuestion(b, carteIA, carte, true);
-	const reponseIA = reponseAdversaire(adversaire, q);
+	const effet = effetDe(carte);
+	const effetIA = effetDe(carteIA);
+	const duree = effetIA.alteration === "temporel" ? 12 : 20;
+	const dureeIA = effet.alteration === "temporel" ? 12 : 20;
+	const brute = reponseAdversaire({
+		...adversaire,
+		precision: adversaire.precision - (effet.alteration ? .15 : 0)
+	}, q);
+	const reponseIA = brute.temps > dureeIA ? {
+		choix: -1,
+		temps: dureeIA
+	} : brute;
 	await ecrire(env, idDuel, idJoueur, version, {
 		...etat,
 		manche,
@@ -1596,7 +2454,8 @@ async function jouer(env, idJoueur, corps, maintenant) {
 			difficulte: q.difficulte
 		},
 		debut: maintenant,
-		reponseIA
+		reponseIA,
+		duree
 	});
 	return {
 		manche,
@@ -1606,7 +2465,13 @@ async function jouer(env, idJoueur, corps, maintenant) {
 			document: q.document,
 			options: q.options
 		},
-		duree: 20,
+		duree,
+		alteration: effetIA.alteration ? {
+			nom: effetIA.nom,
+			icone: effetIA.icone,
+			texte: effetIA.texte,
+			alteration: effetIA.alteration
+		} : null,
 		tempsIA: reponseIA.temps
 	};
 }
@@ -1617,21 +2482,29 @@ async function repondre(env, idJoueur, corps, maintenant) {
 	const q = etat.question;
 	const ecoule = (maintenant - etat.debut) / 1e3;
 	const choix = corps.choix;
-	const choixRetenu = typeof choix === "number" && Number.isInteger(choix) && choix >= 0 && choix < q.options.length && ecoule <= 23 ? choix : null;
-	const temps = Math.min(20, ecoule);
+	const choixRetenu = typeof choix === "number" && Number.isInteger(choix) && choix >= 0 && choix < q.options.length && ecoule <= (etat.duree ?? 20) + 3 ? choix : null;
+	const temps = Math.min(etat.duree ?? 20, ecoule);
 	const b = await base(env, etat.langue);
 	const carte = b.parId.get(etat.carte);
 	const carteIA = b.parId.get(etat.carteIA);
 	const ok = choixRetenu === q.bonne;
 	const okIA = etat.reponseIA.choix === q.bonne;
 	const tousDeux = ok && okIA;
-	const infliges = ok ? degats(carte, carteIA, temps, tousDeux && temps < etat.reponseIA.temps) : 0;
-	const recus = okIA ? degats(carteIA, carte, etat.reponseIA.temps, tousDeux && etat.reponseIA.temps < temps) : 0;
+	const effet = effetDe(carte);
+	const effetIA = effetDe(carteIA);
+	const infliges = ok ? Math.round(degats(carte, carteIA, temps, tousDeux && temps < etat.reponseIA.temps) * (effet.force ?? 1)) : 0;
+	const recus = okIA ? Math.round(degats(carteIA, carte, etat.reponseIA.temps, tousDeux && etat.reponseIA.temps < temps) * (effetIA.force ?? 1)) : 0;
+	const contamine = {
+		joueur: etat.poison ?? 0,
+		ia: etat.poisonIA ?? 0
+	};
 	const suivant = {
 		...etat,
 		phase: "resultat",
-		pv: etat.pv - recus,
-		pvIA: etat.pvIA - infliges,
+		pv: etat.pv - recus - contamine.joueur,
+		pvIA: etat.pvIA - infliges - contamine.ia,
+		poison: contamine.joueur + (okIA && effetIA.poison ? effetIA.poison : 0),
+		poisonIA: contamine.ia + (ok && effet.poison ? effet.poison : 0),
 		bonnes: etat.bonnes + (ok ? 1 : 0),
 		main: etat.main.filter((id) => id !== etat.carte),
 		mainIA: etat.mainIA.filter((id) => id !== etat.carteIA),
@@ -1645,6 +2518,11 @@ async function repondre(env, idJoueur, corps, maintenant) {
 		carteIA: etat.carteIA,
 		degatsInfliges: infliges,
 		degatsRecus: recus,
+		contamination: contamine,
+		effets: {
+			joueur: effet,
+			ia: effetIA
+		},
 		pv: suivant.pv,
 		pvIA: suivant.pvIA,
 		bonnes: suivant.bonnes,
@@ -1710,6 +2588,7 @@ async function traiter(req, env) {
 			case "repondre": return repondreJson(200, await repondre(env, idJoueur, corps, maintenant));
 			default:
 				if (typeof corps.action === "string" && ACTIONS_BRECHE.has(corps.action)) return repondreJson(200, await traiterBreche(env, idJoueur, corps.action, corps, maintenant));
+				if (typeof corps.action === "string" && ACTIONS_RECO.has(corps.action)) return repondreJson(200, await traiterReco(env, idJoueur, corps.action, corps, maintenant));
 				if (typeof corps.action === "string" && ACTIONS_JCJ.has(corps.action)) return repondreJson(200, await traiterJcj(env, idJoueur, corps.action, corps, maintenant));
 				throw new Erreur(400, "Action inconnue");
 		}

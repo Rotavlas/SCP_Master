@@ -623,6 +623,9 @@ function LesAuteurs() {
 
 // ---------- Les entrées ----------
 
+/** Durée de la scène seule, sans prélude (Manifestation en confrontation). */
+export const dureeSansPrelude = (id: string) => (id === 'perso:les-auteurs' ? DUREE_AUTEURS : SCENES[id] ? dureeScene(SCENES[id]) : 6)
+
 /** Durée de chaque cinématique (s), prélude compris, avant le tampon « Mythique ». */
 export const dureeAnimation = (id: string) =>
   (PRELUDES[id] ? dureePrelude(PRELUDES[id]) : 0) +
@@ -640,9 +643,12 @@ export const prechargerMythique = (id: string) => {
 /** La cinématique est-elle en plein écran (et non dans le cadre de la carte) ? */
 export const animationPleinEcran = (id: string) => id in SCENES || id in PRELUDES
 
-/** `fige` : la scène arrêtée à cet instant, sans prélude (pour l'atelier). */
-export function AnimationMythique({ id, fige }: { id: string; fige?: number }) {
-  const prelude = fige === undefined ? PRELUDES[id] : undefined
+/**
+ * `fige` : la scène arrêtée à cet instant, sans prélude (pour l'atelier).
+ * `sansPrelude` : la scène seule, la version courte d'une Manifestation en confrontation.
+ */
+export function AnimationMythique({ id, fige, sansPrelude }: { id: string; fige?: number; sansPrelude?: boolean }) {
+  const prelude = fige === undefined && !sansPrelude ? PRELUDES[id] : undefined
   const [apresPrelude, setApresPrelude] = useState(!prelude)
   useEffect(() => {
     if (!prelude) return

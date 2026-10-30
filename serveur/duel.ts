@@ -7,11 +7,13 @@
  * L'état de la partie est enregistré dans prive.duels_ia par les fonctions SQL duel_* (clé de service).
  */
 import { ADVERSAIRES, DUREE_QUESTION, INTEGRITE_MAX, MANCHES, deckAdversaire, degats, reponseAdversaire } from '../src/engine/duel'
+import { DUREE_TEMPORELLE, effetDe } from '../src/engine/effets'
 import { genererQuestion } from '../src/engine/quiz'
 import type { Langue } from '../src/types'
 import { Erreur, GRACE, base, joueur, rpc, texte, type Environnement } from './commun'
 import { ACTIONS_BRECHE, traiterBreche } from './breche'
 import { ACTIONS_JCJ, traiterJcj } from './jcj'
+import { ACTIONS_RECO, traiterReco } from './reconfinement'
 
 export type { Environnement } from './commun'
 
@@ -40,6 +42,11 @@ export interface Etat {
   /** Horodatage serveur de l'envoi de la question */
   debut?: number
   reponseIA?: { choix: number; temps: number }
+  /** Durée de la question du joueur (une anomalie temporelle adverse la raccourcit) */
+  duree?: number
+  /** Contamination : dégâts subis à chaque manche par le joueur, par l'IA */
+  poison?: number
+  poisonIA?: number
 }
 
 async function lire(env: Environnement, idDuel: string, idJoueur: string): Promise<{ etat: Etat; version: number }> {
@@ -98,7 +105,14 @@ async function jouer(env: Environnement, idJoueur: string, corps: Record<string,
   // La question porte sur l'une des deux cartes ; la carte adverse reste cachée jusqu'à la réponse
   const surMaCarte = Math.random() < 0.5
   const q = surMaCarte ? genererQuestion(b, carte, carteIA, false) : genererQuestion(b, carteIA, carte, true)
-  const reponseIA = reponseAdversaire(adversaire, q)
+  // Duel éclair : chaque carte altère la question de l'autre camp (src/engine/effets.ts)
+  const effet = effetDe(carte)
+  const effetIA = effetDe(carteIA)
+  const duree = effetIA.alteration === 'temporel' ? DUREE_TEMPORELLE : DUREE_QUESTION
+  const dureeIA = effet.alteration === 'temporel' ? DUREE_TEMPORELLE : DUREE_QUESTION
+  const brute = reponseAdversaire({ ...adversaire, precision: adversaire.precision - (effet.alteration ? 0.15 : 0) }, q)
+  // Trop lente pour une question raccourcie : l'IA n'a pas répondu à temps
+  const reponseIA = brute.temps > dureeIA ? { choix: -1, temps: dureeIA } : brute
   const suivant: Etat = {
     ...etat,
     manche,
@@ -108,13 +122,16 @@ async function jouer(env: Environnement, idJoueur: string, corps: Record<string,
     question: { sujet: q.sujet.id, intitule: q.intitule, document: q.document, options: q.options, bonne: q.bonne, difficulte: q.difficulte },
     debut: maintenant,
     reponseIA,
+    duree,
   }
   await ecrire(env, idDuel, idJoueur, version, suivant)
   return {
     manche,
     surMaCarte,
     question: { intitule: q.intitule, document: q.document, options: q.options },
-    duree: DUREE_QUESTION,
+    duree,
+    // L'effet de la carte adverse, encore cachée, se fait sentir sur la question
+    alteration: effetIA.alteration ? { nom: effetIA.nom, icone: effetIA.icone, texte: effetIA.texte, alteration: effetIA.alteration } : null,
     // Quand l'IA « a répondu », pour l'afficher pendant la question ; jamais son choix
     tempsIA: reponseIA.temps,
   }
@@ -130,9 +147,10 @@ async function repondre(env: Environnement, idJoueur: string, corps: Record<stri
   const ecoule = (maintenant - etat.debut) / 1000
   const choix = corps.choix
   // Hors délai ou réponse mal formée : comme si le temps était écoulé
-  const valide = typeof choix === 'number' && Number.isInteger(choix) && choix >= 0 && choix < q.options.length && ecoule <= DUREE_QUESTION + GRACE
+  const valide =
+    typeof choix === 'number' && Number.isInteger(choix) && choix >= 0 && choix < q.options.length && ecoule <= (etat.duree ?? DUREE_QUESTION) + GRACE
   const choixRetenu = valide ? (choix as number) : null
-  const temps = Math.min(DUREE_QUESTION, ecoule)
+  const temps = Math.min(etat.duree ?? DUREE_QUESTION, ecoule)
 
   const b = await base(env, etat.langue)
   const carte = b.parId.get(etat.carte)!
@@ -140,13 +158,19 @@ async function repondre(env: Environnement, idJoueur: string, corps: Record<stri
   const ok = choixRetenu === q.bonne
   const okIA = etat.reponseIA.choix === q.bonne
   const tousDeux = ok && okIA
-  const infliges = ok ? degats(carte, carteIA, temps, tousDeux && temps < etat.reponseIA.temps) : 0
-  const recus = okIA ? degats(carteIA, carte, etat.reponseIA.temps, tousDeux && etat.reponseIA.temps < temps) : 0
+  const effet = effetDe(carte)
+  const effetIA = effetDe(carteIA)
+  // Une anomalie hostile frappe plus fort ; une contagieuse ronge l'autre camp à chaque manche suivante
+  const infliges = ok ? Math.round(degats(carte, carteIA, temps, tousDeux && temps < etat.reponseIA.temps) * (effet.force ?? 1)) : 0
+  const recus = okIA ? Math.round(degats(carteIA, carte, etat.reponseIA.temps, tousDeux && etat.reponseIA.temps < temps) * (effetIA.force ?? 1)) : 0
+  const contamine = { joueur: etat.poison ?? 0, ia: etat.poisonIA ?? 0 }
   const suivant: Etat = {
     ...etat,
     phase: 'resultat',
-    pv: etat.pv - recus,
-    pvIA: etat.pvIA - infliges,
+    pv: etat.pv - recus - contamine.joueur,
+    pvIA: etat.pvIA - infliges - contamine.ia,
+    poison: contamine.joueur + (okIA && effetIA.poison ? effetIA.poison : 0),
+    poisonIA: contamine.ia + (ok && effet.poison ? effet.poison : 0),
     bonnes: etat.bonnes + (ok ? 1 : 0),
     main: etat.main.filter((id) => id !== etat.carte),
     mainIA: etat.mainIA.filter((id) => id !== etat.carteIA),
@@ -160,6 +184,8 @@ async function repondre(env: Environnement, idJoueur: string, corps: Record<stri
     carteIA: etat.carteIA,
     degatsInfliges: infliges,
     degatsRecus: recus,
+    contamination: contamine,
+    effets: { joueur: effet, ia: effetIA },
     pv: suivant.pv,
     pvIA: suivant.pvIA,
     bonnes: suivant.bonnes,
@@ -217,6 +243,10 @@ export async function traiter(req: Request, env: Environnement): Promise<Respons
         // Brèche de confinement contre l'IA : serveur/breche.ts
         if (typeof corps.action === 'string' && ACTIONS_BRECHE.has(corps.action)) {
           return repondreJson(200, await traiterBreche(env, idJoueur, corps.action, corps, maintenant))
+        }
+        // Reconfinement contre l'IA : serveur/reconfinement.ts
+        if (typeof corps.action === 'string' && ACTIONS_RECO.has(corps.action)) {
+          return repondreJson(200, await traiterReco(env, idJoueur, corps.action, corps, maintenant))
         }
         // Duels entre joueurs : serveur/jcj.ts
         if (typeof corps.action === 'string' && ACTIONS_JCJ.has(corps.action)) {

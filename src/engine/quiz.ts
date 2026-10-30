@@ -155,7 +155,15 @@ const GENERATEURS: { poids: number; identification?: boolean; f: Generateur }[] 
     f: (b, s) => {
       // Fonction d'un membre du personnel, genre d'un conte, groupe à l'origine d'un document
       if (!s.cat || !['p', 'c', 'd'].includes(s.k)) return null
-      const categories = [...new Set(b.parType.get(s.k)!.flat().map((c) => c.cat).filter((c): c is string => !!c && c !== s.cat))]
+      const categories = [
+        ...new Set(
+          b.parType
+            .get(s.k)!
+            .flat()
+            .map((c) => c.cat)
+            .filter((c): c is string => !!c && c !== s.cat),
+        ),
+      ]
       const intitule =
         s.k === 'p'
           ? `Quelle est la fonction de ${s.nm} ?`
@@ -178,7 +186,7 @@ const GENERATEURS: { poids: number; identification?: boolean; f: Generateur }[] 
             ? `Quel dossier implique ${designation(s)} ?`
             : s.k === 'l'
               ? `Quelle anomalie est confinée au ${s.num} ?`
-            : `À quelle anomalie ${designation(s)} est-il lié ?`
+              : `À quelle anomalie ${designation(s)} est-il lié ?`
       return construire(s, intitule, choisir(lie), leurres, 2)
     },
   },
@@ -195,7 +203,9 @@ const GENERATEURS: { poids: number; identification?: boolean; f: Generateur }[] 
     poids: 1,
     f: (b, s) => {
       if (!s.a) return null
-      const leurres = voisines(b, s, 6).map((c) => c.a ?? '').filter((a) => a && a !== s.a)
+      const leurres = voisines(b, s, 6)
+        .map((c) => c.a ?? '')
+        .filter((a) => a && a !== s.a)
       return construire(s, `Qui a écrit ${designation(s)} ?`, s.a, leurres, 2)
     },
   },
@@ -219,4 +229,27 @@ export function genererQuestion(base: Base, sujet: Carte, autre: Carte, cachee: 
   }
   // Fiche trop pauvre pour un vrai quiz : sa rareté reste une question honnête
   return construire(sujet, `Quelle est la rareté de ${designation(sujet)} ?`, RARETES_TEXTE[sujet.ra], RARETES_TEXTE, 0)!
+}
+
+/** Début d'un extrait de procédures, coupé proprement, sa désignation caviardée */
+function extraitProcedures(c: Carte, longueur = 150): string {
+  const t = caviarder(c.q ?? '', c)
+    .replace(/\s+/g, ' ')
+    .trim()
+  if (t.length <= longueur) return t
+  const coupe = t.slice(0, longueur)
+  return `${coupe.slice(0, Math.max(coupe.lastIndexOf(' '), longueur - 20))}…`
+}
+
+/**
+ * La question pour reconfiner une anomalie qui s'échappe (Reconfinement) : la carte est visible, donc pas de
+ * question qui la nomme. Une fois sur deux, quand elle a des procédures, reconnaître les siennes parmi d'autres.
+ */
+export function questionReconfinement(base: Base, anomalie: Carte): Question {
+  if (anomalie.q && anomalie.q.length >= 80 && Math.random() < 0.5) {
+    const leurres = voisines(base, anomalie, 6, [], (c) => !!c.q && c.q.length >= 80 && memeLangue(anomalie)(c)).map((c) => extraitProcedures(c))
+    const q = construire(anomalie, `Quelles procédures reconfinent ${designation(anomalie)} ?`, extraitProcedures(anomalie), leurres, 2)
+    if (q) return q
+  }
+  return genererQuestion(base, anomalie, anomalie, false)
 }

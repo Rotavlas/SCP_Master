@@ -3,7 +3,7 @@
  * cinématique complète, pour travailler les illustrations. Page de développement seulement
  * (npm run atelier) : elle n'est pas publiée avec le jeu.
  */
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Protocole } from './components/Booster'
 import { Carte } from './components/Carte'
@@ -13,9 +13,14 @@ import { chargerBase, type Base } from './data/catalogue'
 import { VARIANTES } from './engine/variantes'
 import { CREDITS_ILLUSTRATIONS, SIGNATURES } from './data/mythiques'
 import type { Carte as TCarte } from './types'
-import { brancherFauxServeur } from './atelierBreche'
+import { brancherServeurLocal } from './atelierServeur'
 import { Breche } from './components/Breche'
-import { TutoBreche } from './components/TutoBreche'
+import { DuelEclair } from './components/DuelEclair'
+import { Reconfinement } from './components/Reconfinement'
+import { Tuto, TutoBreche } from './components/TutoBreche'
+import { ETAPES_ECLAIR, ETAPES_RECO } from './components/TutoModes'
+import { QuestionAlteree } from './components/QuestionAlteree'
+import type { Alteration } from './engine/effets'
 import { ADVERSAIRES } from './engine/duel'
 import './styles.css'
 
@@ -49,22 +54,95 @@ function Voir({ id }: { id: string }) {
   )
 }
 
-/** atelier.html?breche : une Brèche de confinement contre un faux serveur local (src/atelierBreche.ts) */
-function EssaiBreche({ base }: { base: Base }) {
+/**
+ * atelier.html?mode=reco|breche|eclair : une confrontation contre l'IA, jouée avec le vrai code du serveur en local
+ * (src/atelierServeur.ts) ; &equipe=id1,id2… pour changer l'équipe de démonstration, &niveau=1…5 pour l'adversaire.
+ */
+function EssaiMode({ base, mode }: { base: Base; mode: string }) {
   const [tuto, setTuto] = useState(false)
   const [n, setN] = useState(0)
+  const params = new URLSearchParams(location.search)
+  const adversaire = ADVERSAIRES[Math.min(4, Math.max(0, Number(params.get('niveau') ?? 3) - 1))]
+  const quitter = () => setN(n + 1)
   return (
     <main className="contenu">
       <div className="actions">
         <button className="btn" onClick={() => setTuto(true)}>
           Tutoriel
         </button>
-        <button className="btn" onClick={() => setN(n + 1)}>
+        <button className="btn" onClick={quitter}>
           Nouvelle partie
         </button>
       </div>
-      {tuto && <TutoBreche onFermer={() => setTuto(false)} />}
-      <Breche key={n} base={base} adversaire={ADVERSAIRES[2]} onQuitter={() => setN(n + 1)} />
+      {tuto &&
+        (mode === 'breche' ? (
+          <TutoBreche onFermer={() => setTuto(false)} />
+        ) : (
+          <Tuto etapes={mode === 'reco' ? ETAPES_RECO : ETAPES_ECLAIR} cle="atelier" onFermer={() => setTuto(false)} />
+        ))}
+      {mode === 'reco' ? (
+        <Reconfinement key={n} base={base} adversaire={adversaire} onQuitter={quitter} />
+      ) : mode === 'eclair' ? (
+        <DuelEclair key={n} base={base} adversaire={adversaire} onQuitter={quitter} />
+      ) : (
+        <Breche key={n} base={base} adversaire={adversaire} onQuitter={quitter} />
+      )}
+    </main>
+  )
+}
+
+/** atelier.html?mode=alterations : chaque altération d'une question, en boucle, pour en juger le rendu */
+const ALTERATIONS: Alteration[] = ['clignement', 'memetique', 'antimemetique', 'effacement', 'realite', 'spatial', 'visuel', 'sonore', 'temporel']
+
+function PlancheAlterations() {
+  const [debut, setDebut] = useState(() => Date.now())
+  const [maintenant, setMaintenant] = useState(Date.now())
+  const [choisie, setChoisie] = useState<Alteration>('clignement')
+  useEffect(() => {
+    const t = setInterval(() => setMaintenant(Date.now()), 200)
+    return () => clearInterval(t)
+  }, [])
+  const ecoule = ((maintenant - debut) / 1000) % 20
+  const question = {
+    intitule: 'Quelles procédures reconfinent SCP-173 ?',
+    document:
+      'Item SCP-173 is to be kept in a locked container at all times. When personnel must enter SCP-173’s container, no fewer than 3 may enter at any time.',
+    options: [
+      'Cellule verrouillée, trois agents au moins, contact visuel permanent',
+      'Aquarium d’eau salée de 30 000 litres',
+      'Coffre de type Faraday, Site-77',
+      'Aucune procédure : neutralisé',
+    ],
+  }
+  return (
+    <main className="contenu">
+      <div className="pastilles">
+        {ALTERATIONS.map((a) => (
+          <button
+            key={a}
+            className={`pastille-filtre ${a === choisie ? 'active' : ''}`}
+            onClick={() => {
+              setChoisie(a)
+              setDebut(Date.now())
+            }}
+          >
+            {a}
+          </button>
+        ))}
+      </div>
+      <div className="duel-question" style={{ maxWidth: 640, margin: '1rem auto' }}>
+        <p className="dossier-entete">
+          Altération : {choisie} · {ecoule.toFixed(0)} s
+        </p>
+        <QuestionAlteree
+          key={`${choisie}-${debut}`}
+          question={question}
+          alteration={choisie}
+          retirees={[3]}
+          onRepondre={() => setDebut(Date.now())}
+          ecoule={ecoule}
+        />
+      </div>
     </main>
   )
 }
@@ -73,9 +151,11 @@ function Atelier({ base }: { base: Base }) {
   const params = new URLSearchParams(location.search)
   const voir = params.get('voir')
   if (voir) return <Voir id={voir} />
-  if (params.has('breche')) {
-    brancherFauxServeur(base)
-    return <EssaiBreche base={base} />
+  const mode = params.get('mode') ?? (params.has('breche') ? 'breche' : null)
+  if (mode === 'alterations') return <PlancheAlterations />
+  if (mode) {
+    brancherServeurLocal(params.get('equipe')?.split(','))
+    return <EssaiMode base={base} mode={mode} />
   }
   const mythiques = Object.keys(SIGNATURES)
     .map((id) => base.parId.get(id))

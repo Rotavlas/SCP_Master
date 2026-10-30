@@ -10,6 +10,8 @@ import { fileURLToPath } from 'node:url'
 const racine = fileURLToPath(new URL('..', import.meta.url))
 const { traiter } = await import('./.cache/duel.mjs')
 const R = await import('./.cache/breche.mjs')
+const RC = await import('./.cache/reconfinement.mjs')
+const E = await import('./.cache/effets.mjs')
 
 const db = new PGlite()
 await db.exec(`
@@ -208,13 +210,14 @@ await test('une carte déjà jouée ne revient pas', async () => {
   assert.equal((await appel('jeton-A', { action: 'jouer', id: duel, carte: equipeA[0] })).statut, 400)
 })
 await test('réponse après le délai : comptée comme temps écoulé', async () => {
-  await appel('jeton-A', { action: 'jouer', id: duel, carte: equipeA[1] })
+  const q = await appel('jeton-A', { action: 'jouer', id: duel, carte: equipeA[1] })
   const bonne = (await etatServeur(duel)).question.bonne
   horloge += 30_000
   const r = await appel('jeton-A', { action: 'repondre', id: duel, choix: bonne })
   assert.equal(r.corps.choix, null)
   assert.equal(r.corps.degatsInfliges, 0)
-  assert.equal(r.corps.temps, 20)
+  // 20 s, ou 12 si la carte adverse est temporelle
+  assert.equal(r.corps.temps, q.corps.duree)
 })
 await test('réponse mal formée : comptée comme temps écoulé', async () => {
   await appel('jeton-A', { action: 'jouer', id: duel, carte: equipeA[2] })
@@ -407,6 +410,128 @@ await test("avec l'initiative, la carte montrée est bien celle que l'IA joue", 
     return
   }
   assert.fail("l'initiative n'a jamais été prise en 8 parties")
+})
+
+console.log('Reconfinement : effets et règles')
+const carteR = (k, atk, def, extra = {}) => ({ id: `r-${k}-${atk}-${def}`, k, nm: 'Test', ra: 1, p: 1, atk, def, ...extra })
+await test('les effets viennent du lore : signatures, puis familles de tags', async () => {
+  assert.equal(E.effetDe({ id: 'scp-173', t: ['sculpture'] }).alteration, 'clignement')
+  assert.equal(E.effetDe({ id: 'scp-x', t: ['humanoid', 'memetic'] }).alteration, 'memetique')
+  assert.equal(E.effetDe({ id: 'scp-x', t: ['hostile'] }).force, 1.5)
+  assert.equal(E.effetDe({ id: 'scp-x', t: ['humanoid'] }).id, 'aucun')
+})
+await test('une part sensible des SCP a un effet', async () => {
+  const scp = JSON.parse(readFileSync(`${racine}public/data/cards.json`, 'utf8')).cartes.filter((c) => c.k === 's')
+  const avec = scp.filter((c) => E.effetDe(c).id !== 'aucun').length
+  assert.ok(avec / scp.length > 0.4, `${avec}/${scp.length}`)
+})
+await test('anomalies et soutiens', async () => {
+  assert.equal(RC.nature({ k: 's', id: 'scp-1' }), 'anomalie')
+  assert.equal(RC.nature({ k: 'p', id: 'entite:scarlet-king' }), 'anomalie')
+  assert.equal(RC.nature({ k: 'f', id: 'fim:x' }), 'soutien')
+})
+await test('un Protocole neutralise l’effet et divise la brèche', async () => {
+  const a = carteR('s', 60, 0, { id: 'scp-x', t: ['hostile'] })
+  const sans = RC.preparerReconfinement(a, RC.campReco(), null)
+  const avec = RC.preparerReconfinement(a, RC.campReco(), carteR('o', 0, 0))
+  assert.equal(RC.degatsAnomalie(a, sans, { reconfinee: false, temps: 5 }), 45)
+  assert.equal(RC.degatsAnomalie(a, avec, { reconfinee: false, temps: 5 }), 15)
+})
+await test('expertise : plus de temps, et l’altération est dissipée', async () => {
+  const a = carteR('s', 40, 0, { id: 'scp-x', t: ['temporal'] })
+  assert.equal(RC.preparerReconfinement(a, RC.campReco(), null).duree, 12)
+  const r = RC.preparerReconfinement(a, RC.campReco(), carteR('p', 0, 30))
+  assert.equal(r.duree, 28)
+  assert.equal(r.alteree, false)
+})
+await test('une FIM reconfine d’office un SCP qu’elle a confiné', async () => {
+  const a = carteR('s', 40, 0, { id: 'scp-682', num: 'SCP-682' })
+  const r = RC.preparerReconfinement(a, RC.campReco(), carteR('f', 0, 30, { lie: ['SCP-682'] }))
+  assert.equal(r.auto, 'reussite')
+})
+await test('SCP-173 frappe plus fort quand on tarde, SCP-682 inflige même reconfiné', async () => {
+  const s173 = carteR('s', 50, 0, { id: 'scp-173' })
+  const r = RC.preparerReconfinement(s173, RC.campReco(), null)
+  assert.ok(RC.degatsAnomalie(s173, r, { reconfinee: false, temps: 18 }) > RC.degatsAnomalie(s173, r, { reconfinee: false, temps: 2 }))
+  const s682 = carteR('s', 50, 0, { id: 'scp-682' })
+  assert.equal(RC.degatsAnomalie(s682, RC.preparerReconfinement(s682, RC.campReco(), null), { reconfinee: true, temps: 3 }), Math.round(50 * 0.5 * 1.3 * 0.6))
+})
+await test('SCP-096 : l’avoir regardé triple une brèche', async () => {
+  const s096 = carteR('s', 40, 0, { id: 'scp-096' })
+  const r = RC.preparerReconfinement(s096, RC.campReco(), null)
+  assert.equal(RC.degatsAnomalie(s096, r, { reconfinee: false, temps: 3, regarde: true }), 60)
+  assert.equal(RC.degatsAnomalie(s096, r, { reconfinee: false, temps: 3 }), 20)
+})
+await test('la Manifestation suit la Mythique de l’équipe, sinon le Protocole d’urgence', async () => {
+  assert.equal(RC.manifestationDe([carteR('s', 1, 1), { ...carteR('p', 1, 1), id: 'entite:scarlet-king', ra: 5 }]).id, 'chaines')
+  assert.equal(RC.manifestationDe([carteR('s', 1, 1)]).id, 'urgence')
+  const camps = { joueur: RC.campReco(), ia: RC.campReco() }
+  const mains = { joueur: ['a'], ia: ['x', 'y', 'z'] }
+  RC.manifester(RC.manifestationDe([{ ...carteR('p', 1, 1), id: 'entite:scarlet-king', ra: 5 }]), 'joueur', camps, mains)
+  assert.equal(mains.ia.length, 1, 'deux cartes enchaînées')
+  assert.equal(camps.joueur.manifeste, true)
+})
+
+console.log('Reconfinement : serveur')
+await admin('delete from prive.duels_ia where joueur = $1', [B])
+await test('une partie complète, arbitrée et récompensée par le serveur', async () => {
+  const d = (await appel('jeton-B', { action: 'reco_debuter', niveau: 1 })).corps
+  assert.ok(d.id, JSON.stringify(d))
+  assert.equal(d.joueur.integrite, 100)
+  assert.ok(!('mainIA' in d && d.mainIA), 'la main de l’IA reste cachée')
+  let fin = null
+  for (const carte of d.main) {
+    const j = await appel('jeton-B', { action: 'reco_jouer', id: d.id, carte })
+    assert.equal(j.statut, 200, j.texte)
+    assert.ok(j.corps.carteIA, 'la carte de l’IA est montrée')
+    let r = j.corps.resultat
+    if (j.corps.question) {
+      assert.ok(!/"bonne"/.test(j.texte), 'la bonne réponse reste sur le serveur')
+      const etat = await etatServeur(d.id)
+      assert.ok(!j.corps.question.retirees.includes(etat.question.bonne), 'on ne retire jamais la bonne réponse')
+      horloge += 2000
+      r = (await appel('jeton-B', { action: 'reco_repondre', id: d.id, choix: etat.question.bonne })).corps
+      assert.equal(r.choix, r.bonne)
+    }
+    assert.ok(r && Array.isArray(r.evenements), JSON.stringify(r))
+    if (r.fin) {
+      fin = r.fin
+      break
+    }
+  }
+  assert.ok(fin, 'la partie se termine')
+  assert.ok(['victoire', 'defaite', 'nul'].includes(fin.issue))
+})
+await test('une réponse retirée par la FIM ne compte pas', async () => {
+  // Réponse invalide : comme un temps écoulé
+  const d = (await appel('jeton-B', { action: 'reco_debuter', niveau: 1 })).corps
+  for (const carte of d.main) {
+    const j = await appel('jeton-B', { action: 'reco_jouer', id: d.id, carte })
+    if (!j.corps.question) {
+      if (j.corps.resultat?.fin) break
+      continue
+    }
+    horloge += 1000
+    const r = await appel('jeton-B', { action: 'reco_repondre', id: d.id, choix: 7 })
+    assert.equal(r.corps.choix, null)
+    return
+  }
+})
+await test('pas de Manifestation avant que la jauge soit pleine', async () => {
+  const d = (await appel('jeton-B', { action: 'reco_debuter', niveau: 1 })).corps
+  const r = await appel('jeton-B', { action: 'reco_manifester', id: d.id })
+  assert.equal(r.statut, 409)
+})
+await test('la Manifestation se déclenche une fois la jauge pleine', async () => {
+  const d = (await appel('jeton-B', { action: 'reco_debuter', niveau: 1 })).corps
+  const etat = await etatServeur(d.id)
+  etat.joueur.manifestation = 100
+  await admin('update prive.duels_ia set etat = $2 where id = $1', [d.id, JSON.stringify(etat)])
+  const r = await appel('jeton-B', { action: 'reco_manifester', id: d.id })
+  assert.equal(r.statut, 200, r.texte)
+  assert.equal(r.corps.joueur.manifeste, true)
+  assert.equal(r.corps.joueur.manifestation, 0)
+  assert.equal((await appel('jeton-B', { action: 'reco_manifester', id: d.id })).statut, 409, 'une seule fois')
 })
 
 console.log('Duels entre joueurs')

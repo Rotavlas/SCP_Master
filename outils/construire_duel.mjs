@@ -11,6 +11,8 @@ const sorties = [
   ['serveur/duel.ts', 'outils/.cache/duel.mjs'],
   // Les règles de la Brèche de confinement seules, pour les tester une à une
   ['src/engine/breche.ts', 'outils/.cache/breche.mjs'],
+  ['src/engine/reconfinement.ts', 'outils/.cache/reconfinement.mjs'],
+  ['src/engine/effets.ts', 'outils/.cache/effets.mjs'],
 ]
 for (const [entree, fichier] of sorties) {
   await build({

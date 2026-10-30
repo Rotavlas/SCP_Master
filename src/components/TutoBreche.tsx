@@ -2,20 +2,18 @@ import { useState } from 'react'
 import { CELLULES_MAX, INTEGRITE_CELLULE, ROLES, SEUIL_INITIATIVE, TOURS, type Camp, type Evenement } from '../engine/breche'
 import { Cellules } from './Breche'
 
-/** Le tutoriel est montré d'office avant la première Brèche, puis à la demande */
-const CLE_TUTO = 'scp-tuto-breche'
-
-export function tutoVu(): boolean {
+/** Chaque mode a son tutoriel, montré d'office avant la première partie, puis à la demande */
+export function tutoVu(cle: string): boolean {
   try {
-    return localStorage.getItem(CLE_TUTO) === '1'
+    return localStorage.getItem(cle) === '1'
   } catch {
     return true
   }
 }
 
-function marquerVu() {
+function marquerVu(cle: string) {
   try {
-    localStorage.setItem(CLE_TUTO, '1')
+    localStorage.setItem(cle, '1')
   } catch {
     // Navigation privée : il reviendra à la prochaine visite
   }
@@ -24,7 +22,7 @@ function marquerVu() {
 const plein = (): Camp => ({ cellules: [INTEGRITE_CELLULE, INTEGRITE_CELLULE, INTEGRITE_CELLULE], ultime: false })
 const evt = (e: Partial<Evenement>): Evenement => ({ camp: 'joueur', type: 'breche', texte: '', ...e })
 
-interface Etape {
+export interface Etape {
   titre: string
   texte: React.ReactNode
   schema?: React.ReactNode
@@ -116,11 +114,16 @@ const ETAPES: Etape[] = [
   },
 ]
 
-export function TutoBreche({ onFermer }: { onFermer: () => void }) {
+export const CLE_TUTO_BRECHE = 'scp-tuto-breche'
+
+export const TutoBreche = ({ onFermer }: { onFermer: () => void }) => <Tuto etapes={ETAPES} cle={CLE_TUTO_BRECHE} onFermer={onFermer} />
+
+/** Les fiches d'un tutoriel, une à une */
+export function Tuto({ etapes, cle, onFermer }: { etapes: Etape[]; cle: string; onFermer: () => void }) {
   const [i, setI] = useState(0)
-  const e = ETAPES[i]
+  const e = etapes[i]
   const fermer = () => {
-    marquerVu()
+    marquerVu(cle)
     onFermer()
   }
   return (
@@ -128,13 +131,13 @@ export function TutoBreche({ onFermer }: { onFermer: () => void }) {
     <div className="tuto-fond">
       <div className="tuto" role="dialog" aria-modal="true" aria-labelledby="tuto-titre">
         <p className="dossier-entete">
-          Instruction de confinement · {i + 1}/{ETAPES.length}
+          Instruction de confinement · {i + 1}/{etapes.length}
         </p>
         <h2 id="tuto-titre">{e.titre}</h2>
         <div className="tuto-texte">{e.texte}</div>
         {e.schema && <div className="tuto-schema">{e.schema}</div>}
         <div className="tuto-points" aria-hidden="true">
-          {ETAPES.map((_, j) => (
+          {etapes.map((_, j) => (
             <span key={j} className={j === i ? 'actif' : ''} />
           ))}
         </div>
@@ -147,7 +150,7 @@ export function TutoBreche({ onFermer }: { onFermer: () => void }) {
           <button className="btn btn-lien" onClick={fermer}>
             Passer
           </button>
-          {i < ETAPES.length - 1 ? (
+          {i < etapes.length - 1 ? (
             <button className="btn btn-principal" onClick={() => setI(i + 1)} autoFocus>
               Suivant
             </button>

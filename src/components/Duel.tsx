@@ -19,19 +19,53 @@ import { Pseudo } from './Badges'
 import { Breche } from './Breche'
 import { Carte } from './Carte'
 import { meilleureEquipe } from './Collection'
+import { DuelEclair } from './DuelEclair'
 import { DuelJcj } from './DuelJcj'
-import { TutoBreche, tutoVu } from './TutoBreche'
+import { Reconfinement } from './Reconfinement'
+import { CLE_TUTO_BRECHE, TutoBreche, Tuto, tutoVu } from './TutoBreche'
+import { CLE_TUTO_ECLAIR, CLE_TUTO_RECO, ETAPES_ECLAIR, ETAPES_RECO } from './TutoModes'
 
 /** Confrontations récompensées par 24 heures contre l'IA (le serveur fait foi : public.duel_clore) */
 const DUELS_IA_RECOMPENSES = 5
 
+/** Les trois façons d'affronter l'IA, toutes arbitrées par le serveur */
+type Mode = 'reco' | 'breche' | 'eclair'
+
+const MODES: { id: Mode; nom: string; pitch: string; tuto: string }[] = [
+  {
+    id: 'reco',
+    nom: 'Reconfinement',
+    pitch: 'Libérez vos anomalies avec leurs vrais effets, reconfinez celles d’en face, et manifestez votre Mythique.',
+    tuto: CLE_TUTO_RECO,
+  },
+  {
+    id: 'breche',
+    nom: 'Brèche de confinement',
+    pitch: 'Un plateau de cellules : posez vos cartes, gardez, frappez, prenez l’initiative.',
+    tuto: CLE_TUTO_BRECHE,
+  },
+  { id: 'eclair', nom: 'Duel éclair', pitch: 'Le quiz classique en cinq manches, troublé par les anomalies de chaque camp.', tuto: CLE_TUTO_ECLAIR },
+]
+
+const CLE_MODE = 'scp-mode-ia'
+
+function lireMode(): Mode {
+  try {
+    const m = localStorage.getItem(CLE_MODE)
+    return MODES.some((x) => x.id === m) ? (m as Mode) : 'reco'
+  } catch {
+    return 'reco'
+  }
+}
+
 /**
- * Le hall des confrontations : l'équipe, les duels entre joueurs, et la Brèche de confinement contre l'IA
- * (components/Breche.tsx), arbitrée par le serveur.
+ * Le hall des confrontations : l'équipe, les duels entre joueurs, et les trois modes contre l'IA (Reconfinement,
+ * Brèche de confinement, Duel éclair), arbitrés par le serveur.
  */
 export function Duel({ base, aller, ouvrirProfil }: { base: Base; aller: (e: Ecran) => void; ouvrirProfil: (pseudo: string) => void }) {
   const s = useSauvegarde()
-  // Brèche en cours contre cet adversaire
+  // Partie en cours contre cet adversaire, dans le mode choisi (retenu sur l'appareil)
+  const [mode, setMode] = useState<Mode>(lireMode)
   const [adversaire, setAdversaire] = useState<Adversaire | null>(null)
   // Tutoriel ouvert ; `ensuite` : l'adversaire choisi avant de le lire, à affronter en le fermant
   const [tuto, setTuto] = useState<{ ensuite: Adversaire | null } | null>(null)
@@ -53,15 +87,31 @@ export function Duel({ base, aller, ouvrirProfil }: { base: Base; aller: (e: Ecr
   const equipe = s.deck.map((id) => base.parId.get(id)).filter((c): c is TCarte => !!c && !!s.collection[c.id])
   const niveau = accreditation(s.xp).niveau
 
-  // Avant la toute première Brèche, le tutoriel
+  const modeChoisi = MODES.find((m) => m.id === mode)!
+
+  function choisirMode(m: Mode) {
+    setMode(m)
+    try {
+      localStorage.setItem(CLE_MODE, m)
+    } catch {
+      // Navigation privée : le mode par défaut reviendra
+    }
+  }
+
+  // Avant la toute première partie d'un mode, son tutoriel
   function affronter(a: Adversaire) {
-    if (tutoVu()) setAdversaire(a)
+    if (tutoVu(modeChoisi.tuto)) setAdversaire(a)
     else setTuto({ ensuite: a })
   }
 
   if (duelJcj) return <DuelJcj id={duelJcj} base={base} ouvrirProfil={ouvrirProfil} onQuitter={() => setDuelJcj(null)} />
 
-  if (adversaire) return <Breche key={adversaire.niveau} base={base} adversaire={adversaire} onQuitter={() => setAdversaire(null)} />
+  if (adversaire) {
+    const quitter = () => setAdversaire(null)
+    if (mode === 'reco') return <Reconfinement key={adversaire.niveau} base={base} adversaire={adversaire} onQuitter={quitter} />
+    if (mode === 'breche') return <Breche key={adversaire.niveau} base={base} adversaire={adversaire} onQuitter={quitter} />
+    return <DuelEclair key={adversaire.niveau} base={base} adversaire={adversaire} onQuitter={quitter} />
+  }
 
   return (
     <section className="duel-lobby">
@@ -69,8 +119,8 @@ export function Duel({ base, aller, ouvrirProfil }: { base: Base; aller: (e: Ecr
         <div>
           <h2>Votre équipe</h2>
           <p className="discret">
-            Vos 5 cartes forment votre main. Contre l'IA, chacune a un rôle selon son type : les SCP font brèche, les FIM et le personnel gardent, les Sites
-            fortifient, les Protocoles affaiblissent. Connaître ses dossiers reste l'arme principale.
+            Vos 5 cartes forment votre main. Mêlez anomalies (SCP, entités, GdI…) et soutiens (FIM, personnel, Sites, Protocoles), et glissez-y une Mythique si
+            vous en avez une. Connaître ses dossiers reste l'arme principale.
           </p>
         </div>
         <div className="equipe-emplacements">
@@ -101,19 +151,34 @@ export function Duel({ base, aller, ouvrirProfil }: { base: Base; aller: (e: Ecr
       <HallJcj pret={equipe.length === TAILLE_DECK} ouvrir={ouvrirJcj} ouvrirProfil={ouvrirProfil} surTableau={(t) => setRestantsIA(t.iaRestants)} />
 
       <div className="titre-entrainement">
-        <h2>Brèche de confinement contre l'IA</h2>
+        <h2>Contre l'IA</h2>
         <button className="btn" onClick={() => setTuto({ ensuite: null })}>
           Comment jouer ?
         </button>
       </div>
-      {tuto && (
-        <TutoBreche
-          onFermer={() => {
+      <div className="modes-ia" role="radiogroup" aria-label="Mode de jeu">
+        {MODES.map((m) => (
+          <button
+            key={m.id}
+            role="radio"
+            aria-checked={mode === m.id}
+            className={`mode-ia mode-${m.id} ${mode === m.id ? 'actif' : ''}`}
+            onClick={() => choisirMode(m.id)}
+          >
+            <strong>{m.nom}</strong>
+            <span>{m.pitch}</span>
+          </button>
+        ))}
+      </div>
+      {tuto &&
+        (() => {
+          const fermer = () => {
             if (tuto.ensuite) setAdversaire(tuto.ensuite)
             setTuto(null)
-          }}
-        />
-      )}
+          }
+          if (mode === 'breche') return <TutoBreche onFermer={fermer} />
+          return <Tuto etapes={mode === 'reco' ? ETAPES_RECO : ETAPES_ECLAIR} cle={modeChoisi.tuto} onFermer={fermer} />
+        })()}
       {/* Les duels récompensés du jour : cinq voyants qui s'éteignent un à un */}
       <div
         className={`compteur-ia ${restantsIA === 0 ? 'epuise' : ''}`}
