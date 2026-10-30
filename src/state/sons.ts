@@ -1647,42 +1647,107 @@ function partitionStatue(c: AudioContext, sortie: GainNode, salle: GainNode, b: 
 }
 
 /**
- * SCP-2747, l'anafabula (scène ANAFABULA, 8,6 s) : la page frémit, des flèches noires en jaillissent en
- * sifflant ; un chœur de femmes, étrange (des tons entiers), accompagne la dame couronnée, ses ronces poussent en
- * craquant sur le texte ; puis la page s'efface dans un murmure : tout se tait d'un coup, une seule cloche reste.
+ * SCP-2747, l'anafabula (scène ANAFABULA, 11,8 s) : un conte. Une bougie, la plume qui gratte ligne après ligne, une
+ * harpe et une voix de femme qui fredonne en la mineur ; la page bégaie (« Celui-ci aussi ») dans des chuchotements,
+ * des cordes qui grincent, des ratures ; les flèches déchirent le papier une à une ; un chœur de femmes en tons
+ * entiers accompagne la dame et ses ronces qui craquent ; la couronne sonne… puis le silence, d'un coup. La page
+ * s'efface dans un souffle ; une dernière ligne s'écrit, et s'efface touche après touche.
  */
 function partitionAnafabula(c: AudioContext, sortie: GainNode, salle: GainNode, b: Construction) {
   const p = partition(c, sortie, salle, b)
-  p.nappe('froissement', 0.4, [
-    [0.2, 0.1],
-    [7.3, 0.12],
-    [7.4, 0.0001],
+  const CONTE = [0.35, 0.75, 1.1, 1.45, 1.8, 2.15, 2.5, 2.8, 3.1, 3.45, 3.7, 3.95]
+  // La bougie : un souffle très doux
+  p.nappe('froissement', 0.25, [
+    [0.1, 0.05],
+    [9.5, 0.06],
+    [9.6, 0.0001],
   ])
-  // Les flèches jaillissent
-  for (const t of [0.7, 0.85, 1.0, 1.2]) {
-    p.son(t, 'souffle', { gain: 0.35, vitesse: 3, pan: (Math.random() - 0.5) * 1.4, r: 0.3 })
-    p.son(t + 0.12, 'tampon', { gain: 0.3, vitesse: 1.4, r: 0.3 })
+  // La plume gratte chaque ligne ; une corde de harpe à chaque début de ligne (la mineur, en arpège)
+  const harpe = [220, 261.63, 329.63, 440, 392, 329.63, 293.66, 261.63, 246.94]
+  CONTE.forEach((t, i) => {
+    for (let k = 0; k < 4; k++) p.son(t + k * 0.12, 'froissement', { gain: 0.09, vitesse: 2 + Math.random() * 0.5, pan: -0.3 + k * 0.2, r: 0.15 })
+    if (i < 9) p.cloche(t, harpe[i], 0.035, 1.6, 0.5)
+  })
+  // Une voix de femme qui fredonne la mélodie du conte, note après note
+  const melodie: [number, number][] = [
+    [0.3, 440],
+    [0.9, 523.25],
+    [1.5, 493.88],
+    [2.0, 440],
+    [2.5, 392],
+    [3.0, 329.63],
+  ]
+  melodie.forEach(([t, f], i) => {
+    const fin = melodie[i + 1]?.[0] ?? 3.55
+    p.choeur(
+      [f],
+      [
+        [t, 0.0001],
+        [t + 0.12, 0.05],
+        [fin, 0.045],
+        [fin + 0.15, 0.0001],
+      ],
+      VOYELLE_OU,
+    )
+  })
+  // La page bégaie : « Celui-ci aussi », trois fois, en chuchotements de plus en plus nombreux ; les cordes grincent
+  ;[3.45, 3.7, 3.95].forEach((t, i) => {
+    for (let k = 0; k <= i; k++) p.chuchoter(t + k * 0.05, 0.5, { gain: 0.07 + i * 0.02, pan: (k - i / 2) * 0.5 })
+  })
+  for (const [f, g] of [
+    [440, 0.012],
+    [466.16, 0.011],
+    [493.88, 0.01],
+  ])
+    p.note(3.4, f, {
+      duree: 0.9,
+      gain: g,
+      type: 'sawtooth',
+      attaque: 0.6,
+      relache: 0.15,
+      glisse: f * 1.06,
+      filtre: { de: 1800, a: 3600 },
+      vibrato: [7, 0.008, 0.3],
+      r: 0.6,
+    })
+  // Les ratures : la plume qui barre, rageuse
+  for (let i = 0; i < 9; i++) p.son(3.6 + i * 0.07, 'froissement', { gain: 0.18, vitesse: 3, pan: (Math.random() - 0.5) * 0.8, r: 0.1 })
+  // Les flèches : chacune perce et déchire la page
+  for (const t of [4.45, 4.5, 4.55, 4.6, 4.65, 4.75]) {
+    p.son(t, 'souffle', { gain: 0.3, vitesse: 3.2, pan: (Math.random() - 0.5) * 1.4, r: 0.3 })
+    p.son(t + 0.02, 'dechirure', { gain: 0.45, vitesse: 0.8 + Math.random() * 0.3, pan: (Math.random() - 0.5) * 1.2, r: 0.3 })
   }
-  // Le chœur de femmes, en tons entiers : ni majeur ni mineur, comme un conte qui se dérègle
+  p.impact(4.75, 1)
+  // La dame : un bourdon grave et le chœur de femmes en tons entiers, ni majeur ni mineur
+  p.note(5.5, A2, { duree: 4.0, gain: 0.06, attaque: 0.8, relache: 0.05, type: 'triangle', r: 0.6 })
   p.choeur(
-    [A3 * 2, 493.88, 554.37, 622.25],
+    [440, 493.88, 554.37, 622.25],
     [
-      [1.6, 0.0001],
-      [3.0, 0.05],
-      [6.2, 0.08],
-      [7.35, 0.08],
-      [7.42, 0.0001],
+      [5.5, 0.0001],
+      [6.3, 0.06],
+      [8.6, 0.1],
+      [9.55, 0.12],
+      [9.6, 0.0001],
     ],
     VOYELLE_AH,
   )
-  p.note(1.6, A2, { duree: 5.6, gain: 0.05, attaque: 1, relache: 0.05, type: 'triangle', r: 0.6 })
-  // La plume, puis les ronces qui poussent en craquant
-  for (let t = 3.2; t < 4.6; t += 0.15) p.son(t, 'froissement', { gain: 0.1, vitesse: 2.1, r: 0.15 })
-  for (let t = 4.2; t < 6.6; t += 0.14 + Math.random() * 0.1)
-    p.son(t, 'craquement', { gain: 0.25, vitesse: 1.3 + Math.random() * 0.6, pan: (Math.random() - 0.5) * 1.4, r: 0.35 })
-  // La page s'efface : un murmure, puis le silence, et une cloche
-  for (let k = 0; k < 3; k++) p.chuchoter(6.8 + k * 0.12, 0.6, { gain: 0.07, pan: (k - 1) * 0.6 })
-  p.cloche(7.45, 220, 0.06, 4.5, 0.9)
+  p.voixGrave(5.7, A2, 1.2, 0.06, VOYELLE_OU)
+  // Les ronces poussent et dévorent le texte en craquant
+  for (let t = 6.8; t < 9.0; t += 0.12 + Math.random() * 0.1)
+    p.son(t, 'craquement', { gain: 0.25, vitesse: 1.2 + Math.random() * 0.6, pan: (Math.random() - 0.5) * 1.4, r: 0.35 })
+  for (let t = 6.9; t < 9.0; t += 0.5) p.chuchoter(t, 0.45, { gain: 0.04, pan: (Math.random() - 0.5) * 1.6 })
+  // La couronne
+  p.cloche(9.2, 880, 0.05, 2.2)
+  p.cloche(9.25, 1318.5, 0.035, 1.8)
+  p.cloche(9.3, 1760, 0.025, 1.5)
+  // … puis le silence, d'un coup (tout ce qui tenait s'arrête à 9,6 s). La page s'efface dans un souffle.
+  p.son(9.75, 'souffle', { gain: 0.5, vitesse: 0.7, r: 0.9 })
+  for (let k = 0; k < 4; k++) p.chuchoter(9.8 + k * 0.08, 0.4, { gain: 0.05, pan: (k - 1.5) * 0.5 })
+  p.cloche(9.9, 110, 0.06, 4, 0.9)
+  // La dernière ligne s'écrit à la plume…
+  for (let k = 0; k < 6; k++) p.son(10.2 + k * 0.14, 'froissement', { gain: 0.1, vitesse: 2.3, r: 0.15 })
+  // … et s'efface, touche après touche
+  for (let k = 0; k < 22; k++) p.son(10.95 + k * 0.03, 'touche', { gain: 0.16, vitesse: 0.62, r: 0.1 })
 }
 
 /** Les ambiances, par nom */

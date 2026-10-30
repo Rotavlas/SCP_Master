@@ -70,6 +70,8 @@ export interface SceneImmersive {
   centre?: [number, number]
   /** Dessiné par-dessus, dans les coordonnées de l'image (suit la caméra) ; animations CSS à partir du début */
   dessus?: (l: number, h: number) => ReactNode
+  /** Fusion du dessus avec la toile : `multiply` pose une encre sur le papier, qui disparaît sous le noir du dessin */
+  fusionDessus?: 'multiply'
   /** Calque plein écran par-dessus la toile (avant-scène), animations CSS à partir du début */
   avant?: ReactNode
   /** La toile n'apparaît qu'à cet instant (une avant-scène la précède) */
@@ -592,7 +594,15 @@ export function Immersion({ id, scene, fige }: { id: string; scene: SceneImmersi
       <div className="im-cadre" ref={cadre} style={scene.debutToile ? { opacity: 0 } : undefined}>
         <canvas ref={toile} className="im-toile" />
         {taille && scene.dessus && (
-          <svg ref={dessus} className="im-dessus" width={taille.l} height={taille.h} viewBox={`0 0 ${taille.l} ${taille.h}`} aria-hidden="true">
+          <svg
+            ref={dessus}
+            className="im-dessus"
+            width={taille.l}
+            height={taille.h}
+            viewBox={`0 0 ${taille.l} ${taille.h}`}
+            style={scene.fusionDessus ? { mixBlendMode: scene.fusionDessus } : undefined}
+            aria-hidden="true"
+          >
             {scene.dessus(taille.l, taille.h)}
           </svg>
         )}

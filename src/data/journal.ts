@@ -12,6 +12,15 @@ export interface Entree {
 export const JOURNAL: Entree[] = [
   {
     date: '2026-10-30',
+    titre: 'L’anafabula efface son propre récit',
+    points: [
+      'La cinématique de SCP-2747 est entièrement refaite : un vrai conte s’écrit à la plume sur un parchemin enluminé, à la lueur d’une bougie, sur une harpe et une voix qui fredonne.',
+      'Puis la page bégaie (« Celui-ci aussi. »), se rature en rouge, et les flèches noires la déchirent ; la dame apparaît, ses ronces dévorent le texte ligne après ligne, la couronne se pose.',
+      'Enfin le silence : la page s’efface et blanchit, une dernière ligne s’écrit — « Cette carte en est un. » — et s’efface à son tour, touche après touche.',
+    ],
+  },
+  {
+    date: '2026-10-30',
     titre: 'Le Reconfinement entre joueurs',
     points: [
       'Les duels classés et amicaux se jouent désormais en Reconfinement : chacun pose sa carte en secret, les deux sont révélées ensemble, puis chacun reconfine l’anomalie que l’autre a libérée chez lui. Mains sur la table, effets du lore, et la Manifestation des Mythiques, que les deux joueurs voient se déchaîner.',

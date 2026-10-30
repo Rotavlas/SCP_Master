@@ -270,35 +270,61 @@ const CARTES = [
     ],
   },
   {
-    // SCP-2747, l'anafabula (« Lady in Thorns ») : sur une page de texte, les flèches noires jaillissent du sol, la
-    // dame apparaît, ses ronces poussent et se ramifient, la couronne se pose ; puis la page est effacée
+    // SCP-2747, l'anafabula (« Lady in Thorns ») : la page d'un conte est écrite, puis déchirée par les flèches noires
+    // qui jaillissent du bas (4,4 s) ; la dame apparaît depuis son cœur (5,6 s), ses ronces poussent et dévorent le
+    // texte (6,8 à 9 s), la couronne se pose (9,2 s) ; enfin la page entière blanchit : le récit est effacé (9,8 s).
+    // Le texte du conte est dessiné par-dessus (AnimationsMythiques.tsx) ; ici, seulement le dessin.
     nom: 'anafabula',
     source: 'outils/sunny/anafabula.png',
     interieurSombre: false,
     details: 0.4,
-    papier: { t0: 7.4, vitesse: 900, classe: 4 },
+    // Les plages blanches du dessin gardent le parchemin jusqu'à l'effacement : seuls les traits fins s'ouvrent avant
+    detailMax: 1.5,
+    papier: { t0: 9.8, vitesse: 1500, classe: 4 },
+    apercu: [4.6, 5.2, 5.8, 6.6, 7.6, 8.6, 9.4, 10.0, 10.6],
     phases: [
       {
         type: 'encre',
         classe: 1,
-        // Les flèches, sans les ronces qui les surplombent (x 130 à 640, jusqu'à y 570)
-        region: [rect(0, 290, 130, 1063), rect(640, 320, 752, 1063), rect(0, 570, 752, 1063)],
-        sauf: [rect(300, 395, 470, 780)],
-        graines: [
-          [60, 1062, 0.6],
-          [190, 1062, 0.8],
-          [290, 1062, 1.0],
-          [480, 1062, 0.95],
-          [570, 1062, 0.7],
-          [700, 1062, 0.9],
+        // Les flèches, sans les ronces qui les surplombent (x 130 à 640, jusqu'à y 570) ; la grande flèche centrale
+        // s'arrête en pointe sous la dame (le reste pousse avec les ronces), la dame elle-même est à part
+        region: [
+          rect(0, 290, 130, 1063),
+          rect(640, 320, 752, 1063),
+          rect(0, 640, 752, 1063),
+          poly([130, 570], [300, 570], [380, 515], [460, 570], [640, 570], [640, 640], [130, 640]),
         ],
-        vitesse: 700,
+        sauf: [ellipse(380, 575, 100, 195)],
+        graines: [
+          [60, 1062, 4.45],
+          [190, 1062, 4.6],
+          [290, 1062, 4.75],
+          [480, 1062, 4.5],
+          [570, 1062, 4.65],
+          [700, 1062, 4.55],
+        ],
+        vitesse: 1100,
         remplissage: 0.9,
-        finir: 2.7,
+        finir: 5.8,
       },
-      { type: 'encre', classe: 0, region: [rect(300, 395, 470, 780)], graines: [[380, 470, 2.9]], vitesse: 260, remplissage: 0.8, saut: 0.5, finir: 4.0 },
-      { type: 'encre', classe: 3, region: [rect(345, 345, 415, 398)], graines: [[380, 394, 6.2]], vitesse: 140, saut: 0.8 },
-      { type: 'encre', classe: 2, region: [rect(90, 0, 680, 620)], voisins: true, t0: 4.0, vitesse: 230, remplissage: 0.9, finir: 6.1 },
+      // La dame, depuis sa tête, son cœur et ses mains : sans franchir le blanc qui la sépare de la flèche derrière elle
+      {
+        type: 'encre',
+        classe: 0,
+        region: [ellipse(380, 575, 100, 195)],
+        graines: [
+          [380, 470, 5.6],
+          [380, 575, 5.75],
+          [380, 690, 5.9],
+        ],
+        vitesse: 300,
+        remplissage: 0.8,
+        saut: 0.02,
+        finir: 7.0,
+      },
+      // La couronne seule, au plus près : une zone plus large blanchirait le papier autour d'elle avant l'effacement
+      { type: 'encre', classe: 3, region: [ellipse(381, 377, 25, 17)], graines: [[381, 377, 9.2]], vitesse: 160, saut: 0.02 },
+      { type: 'encre', classe: 2, region: [rect(90, 0, 680, 620)], voisins: true, t0: 6.8, vitesse: 210, remplissage: 0.9, finir: 9.0 },
     ],
   },
   {

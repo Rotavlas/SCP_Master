@@ -9238,3 +9238,159 @@ body.en-partie .reco:has(.duel-fin) {
     display: none;
   }
 }
+
+/* ---------- SCP-2747 : le conte qui s'écrit, se rature, se déchire, se fait dévorer et s'efface ---------- */
+.an-trace {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation:
+    an-trace 1.4s ease-out var(--t) forwards,
+    an-disparait 0.6s ease-in 9.7s forwards;
+}
+
+@keyframes an-trace {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes an-disparait {
+  to {
+    opacity: 0;
+  }
+}
+
+.an-lettrine {
+  opacity: 0;
+  animation:
+    an-apparait 0.6s ease-out var(--t) forwards,
+    an-disparait 0.5s ease-in 9.65s forwards;
+}
+
+@keyframes an-apparait {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.an-lettrine-i {
+  font-family: 'Cinzel', 'Cormorant Garamond', serif;
+  font-size: 96px;
+  fill: #f4d58a;
+}
+
+.an-texte {
+  font-family: 'IM Fell English', 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-size: 38px;
+  fill: #2a1c14;
+}
+
+/* La plume : chaque ligne se découvre de gauche à droite */
+.an-plume {
+  transform-box: fill-box;
+  transform-origin: left;
+  transform: scaleX(0);
+  animation: an-ecrit 0.6s cubic-bezier(0.3, 0.1, 0.4, 1) var(--t) forwards;
+}
+
+@keyframes an-ecrit {
+  to {
+    transform: scaleX(1);
+  }
+}
+
+/* La page bégaie : « Celui-ci aussi. » tremble */
+.an-begaie {
+  animation: an-tremble 0.12s steps(2) 3.55s 9;
+}
+
+@keyframes an-tremble {
+  50% {
+    transform: translate(2px, -1px);
+  }
+}
+
+/* Une ligne qui disparaît : elle rougit, se tord, se brouille et tombe */
+.an-ligne {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: an-devore 0.9s ease-in var(--fin) forwards;
+}
+
+.an-ligne .an-texte {
+  animation: an-rougit 0.35s ease-in var(--fin) forwards;
+}
+
+.an-ligne .an-texte.an-begaie {
+  animation:
+    an-tremble 0.12s steps(2) 3.55s 9,
+    an-rougit 0.35s ease-in var(--fin) forwards;
+}
+
+@keyframes an-rougit {
+  to {
+    fill: #8a1a10;
+  }
+}
+
+@keyframes an-devore {
+  30% {
+    opacity: 1;
+    filter: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(22px) rotate(calc(var(--sens) * 5deg)) scaleX(1.08);
+    filter: blur(7px);
+  }
+}
+
+.an-rature {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation:
+    an-trace 0.28s ease-out var(--t) forwards,
+    an-disparait 0.5s ease-in var(--fin) forwards;
+}
+
+/* La dernière ligne, sur la page blanche : elle s'écrit, puis s'efface lettre par lettre */
+.an-derniere {
+  position: absolute;
+  inset: auto 0 8% 0;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+  font-style: italic;
+  font-size: clamp(1.7rem, 4.6vw, 3rem);
+  color: #a3140c;
+  text-shadow: 0 0 12px rgba(255, 255, 255, 0.9);
+}
+
+.an-derniere span {
+  white-space: nowrap;
+  clip-path: inset(0 100% 0 0);
+  animation:
+    an-ecrit-ligne 0.9s steps(22) 10.2s forwards,
+    an-efface-ligne 0.66s steps(22) 10.95s forwards;
+}
+
+@keyframes an-ecrit-ligne {
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes an-efface-ligne {
+  from {
+    clip-path: inset(0 0 0 0);
+  }
+  to {
+    clip-path: inset(0 100% 0 0);
+  }
+}

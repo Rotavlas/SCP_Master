@@ -552,46 +552,175 @@ const STATUE: SceneImmersive = {
 }
 
 // ---------- SCP-2747, l'anafabula ----------
-// Une page de récit. Des flèches noires en jaillissent, une dame couronnée apparaît, ses ronces poussent et se
-// ramifient sur le texte… puis la page est effacée : il ne reste qu'elle. Tout récit qui la contient cesse d'exister.
+// Tout récit qui la contient cesse d'exister : la cinématique en est un. Une page de conte s'écrit à la plume, à la
+// lueur d'une bougie ; elle se met à bégayer, des ratures rouges la traversent ; les flèches noires jaillissent du
+// bas et déchirent les lignes ; la dame apparaît, ses ronces poussent et dévorent le texte ligne après ligne ; la
+// couronne se pose. Puis tout s'efface d'un coup, la page blanchit, et une dernière ligne s'écrit… et s'efface
+// à son tour, lettre par lettre (partition : state/sons.ts, partitionAnafabula).
+
+/** Les lignes du conte (coordonnées de l'image, 752 × 1063) : [texte, y, instant où elle s'écrit] */
+const CONTE: [string, number, number][] = [
+  ['l était une fois, au-delà des marges,', 150, 0.35],
+  ['une dame couronnée d’épines', 216, 0.75],
+  ['qui ne vivait que dans les histoires.', 282, 1.1],
+  ['Partout où l’on écrivait son nom,', 348, 1.45],
+  ['les pages se taisaient une à une.', 414, 1.8],
+  ['Les conteurs l’appelaient l’anafabula.', 480, 2.15],
+  ['La Fondation ne l’appelle pas.', 546, 2.5],
+  ['Car tout récit qui la contient', 612, 2.8],
+  ['cesse d’exister.', 678, 3.1],
+  ['Celui-ci aussi.', 744, 3.45],
+  ['Celui-ci aussi.', 810, 3.7],
+  ['Celui-ci aussi.', 876, 3.95],
+]
+
+/**
+ * Quand une ligne disparaît : déchirée par les flèches (bas de la page, à partir de 4,45 s) ou dévorée par les
+ * ronces (haut de la page, de 6,8 à 9 s, de la dame vers le haut).
+ */
+const finLigne = (y: number) => (y > 600 ? 4.45 + ((1063 - y) / 1063) * 1.4 : 6.8 + ((620 - y) / 620) * 2.2)
+
+function PageAnafabula() {
+  return (
+    <g className="an-page">
+      {/* Le cadre de la page, tracé à la plume, puis une ronce qui court le long du bord */}
+      <rect
+        x="34"
+        y="34"
+        width="684"
+        height="995"
+        fill="none"
+        stroke="#5a1a12"
+        strokeWidth="3"
+        pathLength={1}
+        className="an-trace"
+        style={{ '--t': '0.05s' } as Style}
+      />
+      <rect
+        x="46"
+        y="46"
+        width="660"
+        height="971"
+        fill="none"
+        stroke="#5a1a12"
+        strokeWidth="1"
+        pathLength={1}
+        className="an-trace"
+        style={{ '--t': '0.25s' } as Style}
+      />
+      {/* La lettrine enluminée */}
+      <g className="an-lettrine" style={{ '--t': '0.15s' } as Style}>
+        <rect x="62" y="74" width="92" height="112" fill="#7a1810" stroke="#c9a13f" strokeWidth="3" />
+        <text x="108" y="168" textAnchor="middle" className="an-lettrine-i">
+          I
+        </text>
+      </g>
+      {CONTE.map(([texte, y, t], i) => (
+        <g key={i} className="an-ligne" style={{ '--fin': `${finLigne(y)}s`, '--sens': i % 2 ? 1 : -1 } as Style}>
+          <clipPath id={`an-ecrit-${i}`}>
+            <rect x="0" y={y - 40} width="752" height="56" className="an-plume" style={{ '--t': `${t}s` } as Style} />
+          </clipPath>
+          <text x={i < 2 ? 172 : 72} y={y} clipPath={`url(#an-ecrit-${i})`} className={`an-texte ${i >= 9 ? 'an-begaie' : ''}`}>
+            {texte}
+          </text>
+        </g>
+      ))}
+      {/* Les ratures : la page se met à se corriger elle-même */}
+      {CONTE.slice(0, 9).map(([, y], i) => (
+        <path
+          key={i}
+          d={`M ${66 + (i % 3) * 14} ${y - 10} q 160 ${i % 2 ? -7 : 6} 320 0 t 320 ${i % 2 ? 4 : -5}`}
+          fill="none"
+          stroke="#a3140c"
+          strokeWidth="5"
+          strokeLinecap="round"
+          pathLength={1}
+          className="an-rature"
+          style={{ '--t': `${3.6 + i * 0.07}s`, '--fin': `${finLigne(y)}s` } as Style}
+        />
+      ))}
+    </g>
+  )
+}
+
+/** La dernière ligne, en avant-scène : elle s'écrit sur la page blanche, puis s'efface lettre par lettre. */
+function DerniereLigne() {
+  return (
+    <div className="an-derniere" aria-hidden="true">
+      <span>Cette carte en est un.</span>
+    </div>
+  )
+}
+
 const ANAFABULA: SceneImmersive = {
   nom: 'anafabula',
   son: { ambiance: 'anafabula', secoue: false },
   image: 'sunny/anafabula.png',
-  flash: '#ffffff',
-  retour: 8.6,
-  fond: { mode: 6, c1: '#ece4d2', c2: '#2a2420' },
+  retour: 11.8,
+  fond: { mode: 4, c1: '#e9dcc0', c2: '#e9dcc0' },
+  flash: '#fff3dc',
   classes: [
-    { couleur: '#9b1c1c', tau: 0.3 },
-    { couleur: '#5a1212', tau: 0.25 },
-    { couleur: '#b3261e', tau: 0.3 },
-    { couleur: '#d4a017', tau: 0.6 },
+    { couleur: '#9b1c1c', tau: 0.35 },
+    { couleur: '#3a0a08', tau: 0.25 },
+    { couleur: '#c42a1e', tau: 0.4, ondule: 2 },
+    { couleur: '#e8b84a', tau: 0.3, eclat: 0.6 },
     { couleur: '#ffffff', tau: 0.2, eclat: 0 },
   ],
   camera: [
-    [0, 376, 920, 1.9],
-    [2.4, 376, 760, 1.35],
-    [3.0, 382, 470, 2.4],
-    [4.2, 380, 420, 1.7],
-    [5.8, 376, 330, 1.1],
-    [6.3, 380, 380, 2.2],
-    [6.9, 380, 380, 2.0],
-    [7.6, 376, 531, 1],
+    [0, 376, 210, 1.65],
+    [0.4, 376, 220, 1.6],
+    [3.3, 376, 800, 1.5],
+    [3.9, 376, 531, 1],
+    [5.5, 376, 531, 1],
+    [6.1, 380, 560, 1.55],
+    [6.8, 380, 520, 1.35],
+    [8.8, 376, 300, 1.05],
+    [9.2, 380, 374, 2.6],
+    [9.6, 380, 374, 2.4],
+    [10.2, 376, 531, 1],
   ],
   secousses: [
-    [0.7, 5],
-    [1.0, 4],
+    [4.45, 4],
+    [4.5, 4],
+    [4.55, 5],
+    [4.6, 4],
+    [4.65, 4],
+    [4.75, 6],
+    [9.2, 2],
+    [9.8, 3],
   ],
   pistes: {
+    // La bougie : les bords restent dans l'ombre tant que le conte existe
+    tenebres: [
+      [0, 0.6],
+      [3.6, 0.5],
+      [9.6, 0.45],
+      [10.0, 0],
+    ],
+    pouls: pics(
+      [
+        [3.6, 0.25],
+        [3.85, 0.3],
+        [4.1, 0.35],
+      ],
+      0.05,
+      0.22,
+    ),
     flash: pics(
       [
-        [0.7, 0.15],
-        [7.4, 0.45],
+        [4.45, 0.18],
+        [4.55, 0.18],
+        [4.75, 0.22],
+        [9.2, 0.35],
+        [9.8, 0.6],
       ],
-      0.03,
-      0.7,
+      0.02,
+      0.4,
     ),
   },
+  fusionDessus: 'multiply',
+  dessus: () => <PageAnafabula />,
+  avant: <DerniereLigne />,
 }
 
 const SCENES: Record<string, SceneImmersive> = {
