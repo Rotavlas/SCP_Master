@@ -15,6 +15,7 @@ export const JOURNAL: Entree[] = [
     titre: 'La Brèche de confinement',
     points: [
       'Les confrontations contre l’IA deviennent un vrai jeu de plateau : chaque agent protège un Site de 3 cellules, et fait tomber celles de l’adversaire en 5 tours.',
+      'Les cartes se posent sur la table : glissez-les de votre main jusqu’à leur cible. Elles restent sur la cellule qu’elles ont frappée ou gardée, et les tours passés se rangent en tranches.',
       'Chaque carte a un rôle selon son type : les SCP et les grandes entités font brèche (un Keter frappe plus fort qu’un Safe), les FIM et le personnel gardent une cellule, les Sites en ouvrent une nouvelle, les Protocoles affaiblissent la carte adverse.',
       'La question porte sur votre propre carte : juste, elle agit pleinement ; fausse, à moitié. Juste en moins de 7 secondes, vous prenez l’initiative et voyez la carte adverse avant de choisir la vôtre.',
       'Une FIM reconfine aussitôt un SCP qu’elle a confiné dans le wiki ; la première Mythique engagée déclenche son ultime.',

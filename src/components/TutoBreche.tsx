@@ -45,8 +45,9 @@ const ETAPES: Etape[] = [
     titre: 'Un tour',
     texte: (
       <>
-        Votre équipe de 5 cartes est votre main : chaque tour, vous en engagez <b>une</b>, puis vous choisissez sa cible. L'adversaire fait de même, et les deux
-        cartes agissent <b>en même temps</b>. Chaque carte ne sert qu'une fois.
+        Votre équipe de 5 cartes est votre main : chaque tour, vous en <b>posez une</b> sur le plateau, en la glissant sur sa cible (ou en la touchant, puis en
+        touchant la cible). L'adversaire fait de même, et les deux cartes agissent <b>en même temps</b>. Chaque carte ne sert qu'une fois, et reste posée là où
+        elle a agi.
       </>
     ),
   },

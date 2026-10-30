@@ -7451,10 +7451,16 @@ select,
   border-color: var(--rouge);
 }
 
-.breche-camp {
+/* Le plateau : chaque cellule est une colonne où restent posées les cartes */
+.breche-table {
   display: grid;
-  grid-template-columns: minmax(8rem, 12rem) 1fr auto;
-  align-items: center;
+  gap: 0.8rem;
+}
+
+.plateau {
+  display: grid;
+  grid-template-columns: minmax(8rem, 11rem) 1fr;
+  align-items: start;
   gap: 1rem;
   padding: 0.8rem 1rem;
   background: var(--panneau);
@@ -7462,9 +7468,200 @@ select,
   border-radius: 10px;
 }
 
-.breche-camp.adverse {
+.plateau-ia {
   border-color: rgba(210, 58, 44, 0.45);
   background: linear-gradient(180deg, rgba(210, 58, 44, 0.08), transparent 70%), var(--panneau);
+}
+
+.plateau-joueur {
+  align-items: end;
+}
+
+.plateau-colonnes {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(0, 6.6rem);
+  justify-content: center;
+  gap: 0.6rem;
+}
+
+.colonne {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.5rem;
+  min-height: 7.5rem;
+  padding: 0.35rem;
+  border: 1px dashed transparent;
+  border-radius: 10px;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+/* Côté joueur, la cellule est en bas et les cartes s'empilent au-dessus, vers le centre de la table */
+.plateau-joueur .colonne {
+  flex-direction: column-reverse;
+}
+
+.colonne-soutien {
+  border-color: var(--bord);
+  justify-content: flex-start;
+}
+
+.soutien-titre {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--discret);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 0.3rem 0;
+}
+
+.colonne.ouverte {
+  cursor: pointer;
+  border-color: var(--ambre);
+  background: rgba(240, 180, 60, 0.07);
+}
+
+.colonne.ouverte:hover,
+.colonne.survolee {
+  background: rgba(240, 180, 60, 0.2);
+  box-shadow: 0 0 0 2px var(--ambre);
+}
+
+.colonne .cellule {
+  width: 100%;
+  min-height: 5.8rem;
+}
+
+/* Les cartes posées : les plus anciennes se chevauchent, la dernière reste entière */
+.pile {
+  display: flex;
+  flex-direction: column;
+}
+
+.plateau-joueur .pile {
+  flex-direction: column-reverse;
+}
+
+/* Les cartes des tours d'avant se rangent en tranches : on n'en voit que le bandeau, la carte au survol */
+.pose.ancienne {
+  height: 1.7rem;
+  overflow: hidden;
+  border-radius: 6px;
+  margin-bottom: 2px;
+}
+
+.plateau-joueur .pose.ancienne {
+  margin: 2px 0 0;
+}
+
+.pose.ancienne:hover {
+  height: auto;
+  overflow: visible;
+  z-index: 4;
+  filter: none;
+}
+
+.pose.ancienne .pose-marque {
+  top: 0.15rem;
+  left: auto;
+  right: 0.15rem;
+}
+
+/* Les cartes du dernier tour se chevauchent moins : on lit la garde sous la brèche */
+.plateau-ia .pile .pose.recente + .pose.recente {
+  margin-top: -80%;
+}
+
+.plateau-joueur .pile .pose.recente + .pose.recente {
+  margin-bottom: -80%;
+}
+
+.pose {
+  position: relative;
+  /* Chaque carte forme sa couche : la suivante couvre aussi la pastille de la précédente */
+  z-index: 0;
+  width: 100%;
+  animation: poser 0.35s ease-out;
+}
+
+.pose .carte {
+  width: 100%;
+}
+
+.pose.ancienne {
+  filter: saturate(0.5) brightness(0.7);
+}
+
+.pose.en-attente .carte {
+  box-shadow:
+    0 0 0 2px var(--ambre),
+    0 8px 20px rgba(240, 180, 60, 0.3);
+}
+
+.pose-ia.en-attente .carte {
+  box-shadow:
+    0 0 0 2px var(--rouge),
+    0 8px 20px rgba(210, 58, 44, 0.35);
+}
+
+.pose-marque {
+  position: absolute;
+  top: -0.45rem;
+  left: -0.35rem;
+  z-index: 3;
+  min-width: 1.4rem;
+  height: 1.4rem;
+  padding: 0 0.25rem;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  color: var(--r);
+  background: #0b0d0e;
+  border: 1px solid var(--r);
+}
+
+.pose-ia .pose-marque {
+  left: auto;
+  right: -0.35rem;
+}
+
+/* La carte de l'IA, engagée mais encore cachée */
+.pose-dos {
+  display: block;
+  aspect-ratio: 5 / 7;
+  border-radius: 8px;
+  border: 1px solid rgba(210, 58, 44, 0.6);
+  background: repeating-linear-gradient(45deg, #3a1a16 0 6px, #24100d 6px 12px);
+  animation: dos-pulse 1.4s ease-in-out infinite alternate;
+}
+
+@keyframes dos-pulse {
+  to {
+    box-shadow: 0 0 16px rgba(210, 58, 44, 0.5);
+  }
+}
+
+@keyframes poser {
+  from {
+    opacity: 0;
+    transform: translateY(-14px) scale(1.08) rotate(-3deg);
+  }
+}
+
+.plateau-joueur .pose {
+  animation-name: poser-bas;
+}
+
+@keyframes poser-bas {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(1.08) rotate(3deg);
+  }
 }
 
 .breche-identite {
@@ -7685,18 +7882,6 @@ select,
   }
 }
 
-/* La carte jouée, à côté de son Site */
-.breche-jouee {
-  display: grid;
-  justify-items: center;
-  gap: 0.35rem;
-  width: 8.5rem;
-}
-
-.breche-jouee .carte {
-  width: 100%;
-}
-
 /* Le rôle d'une carte */
 .breche-badge {
   display: inline-flex;
@@ -7780,28 +7965,114 @@ select,
   border-left-color: var(--rouge);
 }
 
-/* La main */
+/* Sur grand écran, consignes et question passent à droite de la table : plateau et main tiennent à l'écran */
+@media (min-width: 1000px) {
+  .breche {
+    max-width: 1240px;
+  }
+
+  .breche-table {
+    grid-template-columns: minmax(0, 1fr) 22rem;
+    grid-template-areas:
+      'ia centre'
+      'joueur centre';
+    column-gap: 1rem;
+  }
+
+  .plateau-ia {
+    grid-area: ia;
+  }
+
+  .plateau-joueur {
+    grid-area: joueur;
+  }
+
+  .breche-table > .breche-centre {
+    grid-area: centre;
+    align-self: center;
+  }
+
+  .plateau {
+    grid-template-columns: 8rem 1fr;
+  }
+
+  .breche-centre .breche-consigne {
+    padding: 1rem;
+    background: var(--panneau);
+    border: 1px solid var(--bord);
+    border-radius: 10px;
+  }
+
+  .breche-centre .breche-question h2 {
+    font-size: 1.15rem;
+  }
+
+  /* La main reste en bas de l'écran, à moitié levée ; une carte survolée ou choisie se lève entière */
+  .breche-main {
+    position: sticky;
+    bottom: 0;
+    z-index: 6;
+    margin-top: -1rem;
+    padding: 0.8rem 0 0;
+    overflow: visible;
+    background: linear-gradient(180deg, transparent, rgba(11, 13, 14, 0.94) 30%);
+    pointer-events: none;
+  }
+
+  .breche-main-carte {
+    pointer-events: auto;
+    margin-bottom: -8.6rem;
+  }
+
+  .breche-main-carte .breche-badge {
+    order: -1;
+  }
+
+  .breche-main-carte:hover,
+  .breche-main-carte.choisie {
+    transform: translateY(-8.4rem);
+  }
+
+  /* Le bas de la table reste visible au-dessus de la main arrimée */
+  .breche-table {
+    padding-bottom: 3rem;
+  }
+}
+
+/* La main : de grandes cartes qu'on glisse sur le plateau */
 .breche-main {
   display: flex;
-  flex-wrap: wrap;
   justify-content: center;
-  gap: 0.8rem;
+  gap: 0.9rem;
+  padding: 0.4rem 0 0.8rem;
 }
 
 .breche-main-carte {
   display: grid;
   justify-items: center;
   gap: 0.35rem;
-  width: 9rem;
-  transition: transform 0.15s;
+  width: 9.2rem;
+  flex: none;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: pan-x;
+  transition:
+    transform 0.15s,
+    opacity 0.15s;
 }
 
 .breche-main-carte .carte {
   width: 100%;
+  pointer-events: none;
+}
+
+.breche-main-carte:hover {
+  transform: translateY(-6px);
 }
 
 .breche-main-carte.choisie {
-  transform: translateY(-10px);
+  transform: translateY(-12px);
 }
 
 .breche-main-carte.choisie .carte {
@@ -7810,12 +8081,27 @@ select,
     0 10px 26px rgba(240, 180, 60, 0.35);
 }
 
-.breche-fin-sites {
-  display: flex;
-  justify-content: center;
-  gap: 2rem;
-  flex-wrap: wrap;
-  margin: 0.8rem 0;
+.breche-main-carte.soulevee {
+  opacity: 0.3;
+}
+
+/* La carte qui suit le doigt ou la souris */
+.breche-fantome {
+  position: fixed;
+  z-index: 80;
+  width: 8.5rem;
+  pointer-events: none;
+  transform: translate(-50%, -65%) rotate(-5deg) scale(1.04);
+  filter: drop-shadow(0 16px 24px rgba(0, 0, 0, 0.6));
+}
+
+.breche-fantome .carte {
+  width: 100%;
+}
+
+.glisse-en-cours,
+.glisse-en-cours * {
+  cursor: grabbing !important;
 }
 
 .titre-entrainement {
@@ -7905,10 +8191,10 @@ select,
 }
 
 @media (max-width: 760px) {
-  .breche-camp {
+  .plateau {
     grid-template-columns: 1fr;
-    gap: 0.6rem;
-    padding: 0.7rem;
+    gap: 0.5rem;
+    padding: 0.6rem 0.5rem;
   }
 
   .breche-identite {
@@ -7925,6 +8211,22 @@ select,
     margin: 0;
   }
 
+  .plateau-colonnes {
+    grid-auto-columns: minmax(0, 1fr);
+    justify-content: stretch;
+    gap: 0.3rem;
+  }
+
+  .colonne {
+    min-height: 7rem;
+    padding: 0.2rem;
+  }
+
+  .colonne .cellule {
+    min-height: 5.2rem;
+    padding: 0.3rem 0.15rem;
+  }
+
   .cellules {
     justify-content: center;
   }
@@ -7934,21 +8236,32 @@ select,
     min-height: 6rem;
   }
 
-  .breche-jouee {
-    width: 7rem;
-    justify-self: center;
-  }
-
+  /* La main défile de côté ; on glisse une carte vers le haut pour la poser */
   .breche-main {
-    gap: 0.5rem;
+    justify-content: flex-start;
+    overflow-x: auto;
+    gap: 0.6rem;
+    padding: 0.6rem 0.2rem 0.8rem;
+    scroll-snap-type: x proximity;
   }
 
   .breche-main-carte {
-    width: calc((100% - 1rem) / 3);
+    width: 7.6rem;
+    scroll-snap-align: start;
+  }
+
+  .breche-main-carte:hover {
+    transform: none;
   }
 
   .breche-badge {
     font-size: 0.62rem;
     padding: 0.1rem 0.35rem;
+  }
+
+  .pose-marque {
+    min-width: 1.1rem;
+    height: 1.1rem;
+    font-size: 0.62rem;
   }
 }
