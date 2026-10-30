@@ -12,6 +12,15 @@ export interface Entree {
 export const JOURNAL: Entree[] = [
   {
     date: '2026-10-30',
+    titre: 'Le Reconfinement entre joueurs',
+    points: [
+      'Les duels classés et amicaux se jouent désormais en Reconfinement : chacun pose sa carte en secret, les deux sont révélées ensemble, puis chacun reconfine l’anomalie que l’autre a libérée chez lui. Mains sur la table, effets du lore, et la Manifestation des Mythiques, que les deux joueurs voient se déchaîner.',
+      '« Tout voir » à l’ouverture d’un dossier ne saute plus les Légendaires et les Mythiques : leurs cinématiques se jouent d’abord, puis le bilan.',
+      'Toutes les cinématiques Mythiques ont maintenant leur musique : la marche au pas d’Alpha-1 sous la sirène, l’orgue et la plume de l’Administrator, le respirateur et le bip plat d’O5-1 avant que son cœur reparte, la boîte à musique de la chambre noire de Siegel, le cœur qui s’emballe face à SCP-173, le chœur étrange de l’anafabula qui s’éteint avec la page.',
+    ],
+  },
+  {
+    date: '2026-10-30',
     titre: 'Des confrontations plus lisibles',
     points: [
       'Une partie occupe tout l’écran : plus besoin de faire défiler, et la main ne chevauche plus le bas de page.',

@@ -207,14 +207,9 @@ const GARDIEN: SceneImmersive = {
 // Leur insigne s'y peint : l'anneau, la main qui s'abat, la lance qui part.
 const MAIN_ROUGE: SceneImmersive = {
   nom: 'alpha-1',
-  son: {
-    ambiance: 'alarme',
-    evenements: [
-      [4.0, jouer.frappe],
-      [6.3, jouer.glisse],
-    ],
-  },
+  son: { ambiance: 'alpha1', secoue: false },
   image: 'sunny/alpha-1.png',
+  flash: '#ff2a1a',
   retour: 9.0,
   debutToile: 3.2,
   fond: { mode: 3, c1: '#000000', c2: '#000000' },
@@ -248,6 +243,29 @@ const MAIN_ROUGE: SceneImmersive = {
       [3.2, 0.3],
       [8.0, 1],
     ],
+    tenebres: [
+      [3.2, 0.7],
+      [5.5, 0.5],
+      [7.4, 0.3],
+      [8.6, 0],
+    ],
+    flash: pics(
+      [
+        [5.6, 0.45],
+        [6.35, 0.25],
+        [7.4, 0.2],
+      ],
+      0.03,
+      0.5,
+    ),
+    pouls: pics(
+      [
+        [5.6, 0.8],
+        [7.4, 0.5],
+      ],
+      0.04,
+      0.6,
+    ),
   },
   avant: <Couloir />,
 }
@@ -296,8 +314,26 @@ function Couloir() {
 // se remplissent derrière eux, depuis les traits ; le visage arrive en dernier, les lunettes accrochent la lumière.
 const ADMINISTRATEUR: SceneImmersive = {
   nom: 'administrateur',
-  son: { ambiance: 'orgue', evenements: [0.6, 1.5, 2.4, 3.3, 4.2, 5.1, 6.0].map((t): [number, () => void] => [t, jouer.plume]).concat([[7.1, jouer.eclair]]) },
+  son: { ambiance: 'administrateur', secoue: false },
   image: 'sunny/administrateur.png',
+  flash: '#ffe7a3',
+  centre: [367, 178],
+  pistes: {
+    rayons: [
+      [6.9, 0],
+      [7.25, 0.55],
+      [8.4, 0.2],
+      [9.2, 0],
+    ],
+    flash: pics(
+      [
+        [0.1, 0.12],
+        [7.1, 0.3],
+      ],
+      0.04,
+      0.6,
+    ),
+  },
   retour: 9.2,
   fond: { mode: 4, c1: '#e8dfc8', c2: '#e8dfc8' },
   classes: [
@@ -336,16 +372,9 @@ const ADMINISTRATEUR: SceneImmersive = {
 // d'abord, par à-coups, comme un vieux moniteur ; le cœur repart sur l'écran, puis la lumière revient.
 const FONDATEUR: SceneImmersive = {
   nom: 'o5-1',
-  son: {
-    ambiance: 'machines',
-    evenements: [
-      [0.6, jouer.plantage],
-      [6.08, () => jouer.bip(1500)],
-      [6.3, () => jouer.bip(1500)],
-      [6.5, jouer.eclair],
-    ],
-  },
+  son: { ambiance: 'fondateur', secoue: false },
   image: 'sunny/o5-1.png',
+  flash: '#5aa0ff',
   retour: 8.4,
   saccade: [0.4, 6.2],
   fond: { mode: 0, c1: '#02040a', c2: '#0b1424' },
@@ -370,6 +399,21 @@ const FONDATEUR: SceneImmersive = {
       [6.36, 0.2],
       [6.5, 1],
     ],
+    tenebres: [
+      [0, 0.85],
+      [6.0, 0.7],
+      [6.6, 0.15],
+      [8.0, 0],
+    ],
+    flash: pics(
+      [
+        [6.08, 0.25],
+        [6.3, 0.3],
+        [6.5, 0.4],
+      ],
+      0.02,
+      0.35,
+    ),
   },
   dessus: () => (
     <>
@@ -400,14 +444,7 @@ const FONDATEUR: SceneImmersive = {
 // sort, la lumière revient… et un instant il s'efface de sa propre photo, comme il a disparu des registres.
 const SIEGEL: SceneImmersive = {
   nom: 'aaron-siegel',
-  son: {
-    ambiance: 'chambre',
-    evenements: [
-      [5.3, jouer.glisse],
-      [6.15, jouer.brume],
-      [6.8, jouer.brume],
-    ],
-  },
+  son: { ambiance: 'siegel', secoue: false },
   image: 'photos/aaron-siegel.png',
   retour: 7.8,
   fond: { mode: 5, c1: '#1a0605', c2: '#ffb0a0' },
@@ -439,6 +476,13 @@ const SIEGEL: SceneImmersive = {
       [6.85, 0.6],
       [6.95, 0],
     ],
+    tenebres: [
+      [0, 0.75],
+      [5.2, 0.6],
+      [5.8, 0.25],
+      [7.6, 0],
+    ],
+    flash: pics([[5.5, 0.2]], 0.05, 0.6),
   },
   dessus: (l, h) => (
     <text x={l / 2} y={h + 34} textAnchor="middle" className="im-legende" style={{ '--t': '6.2s' } as Style}>
@@ -454,7 +498,7 @@ const CLIGNEMENTS = [2.3, 3.6, 4.8, 5.95]
 const STATUE: SceneImmersive = {
   nom: 'scp-173',
   cadreCarte: [14, 0, 204, 286],
-  son: { ambiance: 'neon', secoue: 'raclement' },
+  son: { ambiance: 'statue', secoue: false },
   image: 'photos/scp-173.png',
   retour: 7.2,
   fond: { mode: 0, c1: '#050505', c2: '#050505' },
@@ -487,6 +531,22 @@ const STATUE: SceneImmersive = {
         [t + (i === 3 ? 0.56 : 0.22), i === 3 ? 0 : 0.12 + i * 0.05],
       ]),
     ],
+    tenebres: [
+      [0, 0.9],
+      [5.9, 0.75],
+      [6.6, 0.3],
+      [7.1, 0],
+    ],
+    pouls: pics(
+      [
+        [2.3, 0.5],
+        [3.6, 0.6],
+        [4.8, 0.75],
+        [5.95, 1],
+      ],
+      0.04,
+      0.5,
+    ),
   },
   secousses: CLIGNEMENTS.map((t): [number, number] => [t + 0.2, 2]),
 }
@@ -496,14 +556,9 @@ const STATUE: SceneImmersive = {
 // ramifient sur le texte… puis la page est effacée : il ne reste qu'elle. Tout récit qui la contient cesse d'exister.
 const ANAFABULA: SceneImmersive = {
   nom: 'anafabula',
-  son: {
-    ambiance: 'page',
-    evenements: [
-      [4.0, jouer.plume],
-      [7.4, () => jouer.brume()],
-    ],
-  },
+  son: { ambiance: 'anafabula', secoue: false },
   image: 'sunny/anafabula.png',
+  flash: '#ffffff',
   retour: 8.6,
   fond: { mode: 6, c1: '#ece4d2', c2: '#2a2420' },
   classes: [
@@ -527,6 +582,16 @@ const ANAFABULA: SceneImmersive = {
     [0.7, 5],
     [1.0, 4],
   ],
+  pistes: {
+    flash: pics(
+      [
+        [0.7, 0.15],
+        [7.4, 0.45],
+      ],
+      0.03,
+      0.7,
+    ),
+  },
 }
 
 const SCENES: Record<string, SceneImmersive> = {

@@ -334,6 +334,35 @@ const BRUITAGES: Record<string, [number, (d: Float32Array, sr: number) => void]>
       for (let i = 0; i < d.length; i++) d[i] = hasard() * 0.8
     },
   ],
+  // Une caisse claire militaire : le timbre qui grésille, la peau qui claque
+  caisseClaire: [
+    0.35,
+    (d, sr) => {
+      for (let i = 0; i < d.length; i++) {
+        const t = i / sr
+        d[i] = hasard() * Math.exp(-t / 0.07) * 0.8 + Math.sin(2 * Math.PI * 190 * t) * Math.exp(-t / 0.04) * 0.6
+      }
+      resonance(d, sr, 330, 0.03, 0.2)
+      passeHaut(d, sr, 150)
+      normaliser(d)
+    },
+  ],
+  // Un respirateur : l'air poussé, une pause, l'air relâché avec un léger sifflement
+  respiration: [
+    3.2,
+    (d, sr) => {
+      let lp = 0
+      for (let i = 0; i < d.length; i++) {
+        const t = i / sr
+        const env = t < 1.2 ? Math.sin((Math.PI * t) / 1.2) : t > 1.6 && t < 3.0 ? Math.sin((Math.PI * (t - 1.6)) / 1.4) * 0.7 : 0
+        lp += (hasard() - lp) * (t < 1.2 ? 0.08 : 0.15)
+        d[i] = lp * env
+      }
+      resonance(d, sr, 1900, 0.4, 0.02)
+      passeHaut(d, sr, 200)
+      normaliser(d, 0.7)
+    },
+  ],
   // Un tambour rituel (taiko) : la peau frappée, une note grave qui chute, le fût qui résonne
   tambour: [
     1.6,
@@ -1385,6 +1414,277 @@ function partitionGardien(c: AudioContext, sortie: GainNode, salle: GainNode, b:
   p.braam(7.6, [D2, A2, D3, FD3], 1.1, 0.26)
 }
 
+const C2 = 65.41
+const EB2 = 77.78
+const C3 = 130.81
+
+/**
+ * MTF Alpha-1, « Red Right Hand » (scène MAIN_ROUGE, 9 s) : on marche au pas dans le couloir, caisse claire et
+ * bottes, sous la sirène et un ostinato de cuivres graves ; la radio crache l'ordre du Conseil ; la main s'abat
+ * dans un fracas de métal, la lance part dans un souffle, et les cuivres en ut mineur ferment la marche.
+ */
+function partitionAlpha1(c: AudioContext, sortie: GainNode, salle: GainNode, b: Construction) {
+  const p = partition(c, sortie, salle, b)
+  // La sirène, au loin
+  p.note(0, 650, {
+    duree: 8.2,
+    gain: 0.025,
+    type: 'sawtooth',
+    attaque: 0.6,
+    relache: 0.8,
+    vibrato: [0.4, 0.35, 0.1],
+    filtre: { de: 900, a: 900, q: 0.8, type: 'bandpass' },
+    r: 0.8,
+  })
+  // La marche : bottes et caisse claire, au pas
+  for (let t = 0.1, i = 0; t < 7.4; t += 0.52, i++) {
+    p.son(t, 'pas', { gain: 0.4, vitesse: 0.9 + Math.random() * 0.1, pan: i % 2 ? 0.25 : -0.25, r: 0.4 })
+    p.son(t, 'caisseClaire', { gain: i % 4 === 0 ? 0.35 : 0.18, vitesse: 1 + Math.random() * 0.05, r: 0.35 })
+    if (i % 4 === 2) p.son(t + 0.13, 'caisseClaire', { gain: 0.14, vitesse: 1.05, r: 0.3 })
+  }
+  // L'ostinato des cuivres graves, ut mineur, qui se resserre
+  for (let t = 0.1, i = 0; t < 5.5; t += 0.52, i++)
+    p.note(t, [C2, C2, EB2, C2, G2 / 2, C2, F2, EB2][i % 8], {
+      duree: 0.18,
+      gain: 0.07,
+      type: 'sawtooth',
+      attaque: 0.02,
+      relache: 0.2,
+      filtre: { de: 300, a: 900, q: 2, en: 0.1 },
+      r: 0.4,
+    })
+  p.bourdon(
+    [C2 / 2, C2],
+    'sawtooth',
+    [
+      [0, 150],
+      [5.6, 500],
+      [8.6, 150],
+    ],
+    [
+      [0.2, 0.05],
+      [5.6, 0.1],
+      [8.8, 0.0001],
+    ],
+  )
+  // La radio : un grésillement, deux bips, l'ordre tombe
+  p.son(3.1, 'froissement', { gain: 0.35, vitesse: 2.4, r: 0.1 })
+  p.note(3.2, 1400, { duree: 0.06, gain: 0.04, type: 'square', r: 0.1 })
+  p.note(3.35, 1400, { duree: 0.06, gain: 0.04, type: 'square', r: 0.1 })
+  p.chuchoter(3.5, 1.2, { gain: 0.05, r: 0.2 })
+  // La main s'abat : le fracas, le métal qui résonne
+  p.impact(5.6, 1.4)
+  p.cloche(5.6, 98, 0.06, 2.5)
+  p.braam(5.6, [C2, G2, C3, EB3], 0.6, 0.24)
+  // La lance part
+  p.son(6.2, 'souffle', { gain: 0.6, vitesse: 2.2, r: 0.3 })
+  p.impact(6.35, 0.7)
+  // La marche se ferme : un dernier accord
+  p.braam(7.4, [C2, G2, C3, EB3, G2 * 2], 0.9, 0.22)
+}
+
+/**
+ * The Administrator (scène ADMINISTRATEUR, 9,2 s) : une cloche de cathédrale quand le sceau s'allume, puis un
+ * orgue qui avance d'accord en accord pendant que la plume dessine (ré mineur, si bémol, fa, do, sol mineur, la),
+ * des grattements de plume ; quand les lunettes accrochent la lumière, l'accord s'éclaire en ré majeur et un
+ * chœur répond.
+ */
+function partitionAdministrateur(c: AudioContext, sortie: GainNode, salle: GainNode, b: Construction) {
+  const p = partition(c, sortie, salle, b)
+  p.cloche(0.1, 73.42, 0.08, 4)
+  p.cloche(0.1, 146.83, 0.04, 3)
+  p.note(0.3, D1, { duree: 8.2, gain: 0.06, attaque: 0.8, relache: 1.2, type: 'triangle', r: 0.6 })
+  const accords: [number, number[]][] = [
+    [0.5, [D2, F2, A2, D3]],
+    [1.6, [BB1, F2, BB2, D3]],
+    [2.7, [F2, A2, C3, F3]],
+    [3.8, [C2, G2, C3, E3]],
+    [4.9, [G1, D2, G2, BB2]],
+    [6.0, [A1, E3 / 2, A2, CD3]],
+    [7.1, [D2, FD3 / 2, A2, D3, FD3]],
+  ]
+  accords.forEach(([t, notes], i) => p.orgue(t, notes, i === accords.length - 1 ? 1.6 : 1.05, 0.09))
+  // La plume gratte le papier, de plus en plus vite
+  for (let t = 0.6; t < 6.8; t += 0.18 + Math.random() * 0.2)
+    p.son(t, 'froissement', { gain: 0.12, vitesse: 1.9 + Math.random() * 0.5, pan: (Math.random() - 0.5) * 0.6, r: 0.15 })
+  // Les lunettes accrochent la lumière : un éclat, un chœur en majeur
+  p.cloche(7.1, 1175, 0.03, 2.5)
+  p.cloche(7.2, 1760, 0.025, 2.2)
+  p.choeur(
+    [D3, FD3, A3, D3 * 2],
+    [
+      [7.0, 0.0001],
+      [7.4, 0.08],
+      [8.8, 0.05],
+      [9.6, 0.0001],
+    ],
+  )
+}
+
+/**
+ * O5-1, « The Founder » (scène FONDATEUR, 8,4 s) : le premier siège, branché aux machines. Un respirateur, le
+ * bourdon du courant, des décharges ; le moniteur ne fait qu'un long bip plat… puis le cœur repart, les bips
+ * reprennent, et un chœur grave salue le retour de la lumière.
+ */
+function partitionFondateur(c: AudioContext, sortie: GainNode, salle: GainNode, b: Construction) {
+  const p = partition(c, sortie, salle, b)
+  p.bourdon(
+    [50, 100, 150],
+    'sawtooth',
+    [
+      [0, 220],
+      [6.0, 260],
+      [6.5, 900],
+      [8.6, 300],
+    ],
+    [
+      [0.1, 0.04],
+      [6.0, 0.05],
+      [6.5, 0.09],
+      [8.8, 0.0001],
+    ],
+  )
+  for (const t of [0.2, 3.4]) p.son(t, 'respiration', { gain: 0.45, r: 0.3 })
+  // Les décharges pendant que le courant dessine le corps
+  for (let t = 0.6; t < 6.0; t += 0.4 + Math.random() * 0.7) {
+    for (let i = 0; i < 6; i++) p.note(t + i * 0.03, 80 + Math.random() * 2400, { duree: 0.02, gain: 0.03, type: 'square', relache: 0.02, r: 0.1 })
+  }
+  // Le moniteur : un long bip plat…
+  p.note(1.0, 1000, { duree: 4.9, gain: 0.03, attaque: 0.02, relache: 0.05, r: 0.2 })
+  // … puis le cœur repart
+  for (const t of [6.08, 6.3, 7.0, 7.7, 8.4]) p.note(t, 1500, { duree: 0.08, gain: 0.06, attaque: 0.004, relache: 0.08, r: 0.25 })
+  p.note(6.5, 40, { duree: 0.6, gain: 0.25, glisse: 80, attaque: 0.3, relache: 1, r: 0.5 })
+  p.choeur(
+    [D2, A2, D3, F3],
+    [
+      [6.4, 0.0001],
+      [6.9, 0.09],
+      [8.4, 0.06],
+      [9.0, 0.0001],
+    ],
+    VOYELLE_OH,
+  )
+  p.voixGrave(6.6, D2, 1.4, 0.08, VOYELLE_OH)
+}
+
+/**
+ * Aaron Siegel (scène SIEGEL, 7,8 s) : la chambre noire. Une pompe, des gouttes, le bain qui bulle ; une boîte à
+ * musique égrène une valse en mineur pendant que le tirage se développe. On sort la photo de l'eau… il s'efface
+ * de sa propre photo : la boîte à musique ralentit et se tait, un souffle froid monte.
+ */
+function partitionSiegel(c: AudioContext, sortie: GainNode, salle: GainNode, b: Construction) {
+  const p = partition(c, sortie, salle, b)
+  p.bourdon(
+    [60, 120],
+    'triangle',
+    [
+      [0, 200],
+      [7, 200],
+    ],
+    [
+      [0.1, 0.05],
+      [6.0, 0.05],
+      [7.6, 0.0001],
+    ],
+  )
+  for (let t = 0.3; t < 5.2; t += 0.3 + Math.random() * 0.5)
+    p.son(t, 'goutte', { gain: 0.2, vitesse: 0.7 + Math.random() * 0.6, pan: (Math.random() - 0.5) * 0.8, r: 0.6 })
+  // La boîte à musique : une valse en la mineur, aiguë et fragile
+  const valse = [880, 1047, 1319, 1175, 1047, 988, 880, 659, 784, 880, 988, 1047, 988, 880, 831, 880]
+  valse.forEach((f, i) => {
+    const t = 0.8 + i * 0.32
+    if (t < 6.1) p.cloche(t, f, 0.025, 1.1, 0.5)
+  })
+  // On sort la photo : l'eau ruisselle
+  p.son(5.3, 'raclement', { gain: 0.25, vitesse: 2.6, r: 0.4 })
+  for (let i = 0; i < 8; i++) p.son(5.35 + i * 0.05, 'goutte', { gain: 0.15, vitesse: 1.2 + Math.random(), r: 0.5 })
+  // Il s'efface : la boîte à musique ralentit et descend, un souffle froid
+  p.note(6.1, 880, { duree: 0.6, gain: 0.03, glisse: 440, attaque: 0.01, relache: 0.6, r: 0.8 })
+  p.son(6.1, 'souffle', { gain: 0.45, vitesse: 0.5, r: 0.9 })
+  p.chuchoter(6.15, 1.3, { gain: 0.06, pan: 0 })
+  p.note(6.2, 1975, { duree: 1.2, gain: 0.008, attaque: 0.6, relache: 1, vibrato: [7, 0.01, 0.2], r: 0.9 })
+}
+
+/**
+ * SCP-173 (scène STATUE, 7,2 s) : un néon qui grésille dans le silence, un cœur qui s'emballe ; à chaque
+ * clignement, un coup sourd et la pierre qui racle ; des cordes aiguës montent, dissonantes, à mesure qu'elle
+ * approche ; son visage arrive dans un cri, puis plus rien… elle est revenue à sa place.
+ */
+function partitionStatue(c: AudioContext, sortie: GainNode, salle: GainNode, b: Construction) {
+  const p = partition(c, sortie, salle, b)
+  // Le néon
+  p.note(0, 100, { duree: 6.8, gain: 0.025, type: 'sawtooth', attaque: 0.05, relache: 0.3, filtre: { de: 1800, a: 1800, q: 1.5, type: 'bandpass' }, r: 0.1 })
+  for (let t = 0.8; t < 1.4; t += 0.1) p.note(t, 100, { duree: 0.04, gain: 0.05, type: 'square', relache: 0.02, r: 0 })
+  // Le cœur, de plus en plus vite
+  for (let t = 1.0, k = 0.9; t < 5.9; t += k, k = Math.max(0.42, k * 0.9)) battement(p, t, 0.35)
+  // Chaque clignement : un coup sourd, la pierre qui racle
+  for (const t of [2.3, 3.6, 4.8]) {
+    p.note(t, 45, { duree: 0.05, relache: 0.8, gain: 0.35, glisse: 28, r: 0.3 })
+    p.son(t + 0.05, 'raclement', { gain: 0.6, vitesse: 0.8, r: 0.3 })
+  }
+  // Des cordes aiguës qui montent en grinçant
+  for (const [f, g] of [
+    [1568, 0.012],
+    [1661, 0.01],
+    [2093, 0.008],
+  ])
+    p.note(2.4, f, {
+      duree: 3.4,
+      gain: g,
+      type: 'sawtooth',
+      attaque: 2.8,
+      relache: 0.15,
+      glisse: f * 1.25,
+      filtre: { de: 2500, a: 5000 },
+      vibrato: [6, 0.006, 1],
+      r: 0.6,
+    })
+  // Son visage : le cri
+  p.impact(5.95, 1.3)
+  p.braam(5.95, [D2, AB2, D3, EB3], 0.4, 0.28)
+  p.note(5.95, 2400, { duree: 0.3, gain: 0.05, type: 'sawtooth', glisse: 1200, filtre: { de: 3000, a: 1500, q: 4, type: 'bandpass' }, relache: 0.4, r: 0.6 })
+  p.chuchoter(5.95, 0.6, { gain: 0.12 })
+}
+
+/**
+ * SCP-2747, l'anafabula (scène ANAFABULA, 8,6 s) : la page frémit, des flèches noires en jaillissent en
+ * sifflant ; un chœur de femmes, étrange (des tons entiers), accompagne la dame couronnée, ses ronces poussent en
+ * craquant sur le texte ; puis la page s'efface dans un murmure : tout se tait d'un coup, une seule cloche reste.
+ */
+function partitionAnafabula(c: AudioContext, sortie: GainNode, salle: GainNode, b: Construction) {
+  const p = partition(c, sortie, salle, b)
+  p.nappe('froissement', 0.4, [
+    [0.2, 0.1],
+    [7.3, 0.12],
+    [7.4, 0.0001],
+  ])
+  // Les flèches jaillissent
+  for (const t of [0.7, 0.85, 1.0, 1.2]) {
+    p.son(t, 'souffle', { gain: 0.35, vitesse: 3, pan: (Math.random() - 0.5) * 1.4, r: 0.3 })
+    p.son(t + 0.12, 'tampon', { gain: 0.3, vitesse: 1.4, r: 0.3 })
+  }
+  // Le chœur de femmes, en tons entiers : ni majeur ni mineur, comme un conte qui se dérègle
+  p.choeur(
+    [A3 * 2, 493.88, 554.37, 622.25],
+    [
+      [1.6, 0.0001],
+      [3.0, 0.05],
+      [6.2, 0.08],
+      [7.35, 0.08],
+      [7.42, 0.0001],
+    ],
+    VOYELLE_AH,
+  )
+  p.note(1.6, A2, { duree: 5.6, gain: 0.05, attaque: 1, relache: 0.05, type: 'triangle', r: 0.6 })
+  // La plume, puis les ronces qui poussent en craquant
+  for (let t = 3.2; t < 4.6; t += 0.15) p.son(t, 'froissement', { gain: 0.1, vitesse: 2.1, r: 0.15 })
+  for (let t = 4.2; t < 6.6; t += 0.14 + Math.random() * 0.1)
+    p.son(t, 'craquement', { gain: 0.25, vitesse: 1.3 + Math.random() * 0.6, pan: (Math.random() - 0.5) * 1.4, r: 0.35 })
+  // La page s'efface : un murmure, puis le silence, et une cloche
+  for (let k = 0; k < 3; k++) p.chuchoter(6.8 + k * 0.12, 0.6, { gain: 0.07, pan: (k - 1) * 0.6 })
+  p.cloche(7.45, 220, 0.06, 4.5, 0.9)
+}
+
 /** Les ambiances, par nom */
 const AMBIANCES: Record<string, (c: AudioContext, sortie: GainNode, salle: GainNode, b: Construction) => void> = {
   // Un brasier : le feu qui crépite et gronde, une basse qui respire
@@ -1467,6 +1767,12 @@ const AMBIANCES: Record<string, (c: AudioContext, sortie: GainNode, salle: GainN
   // Et celles de leurs préludes
   tenebres: partitionTenebres,
   patmos: partitionPatmos,
+  alpha1: partitionAlpha1,
+  administrateur: partitionAdministrateur,
+  fondateur: partitionFondateur,
+  siegel: partitionSiegel,
+  statue: partitionStatue,
+  anafabula: partitionAnafabula,
   // Un bureau la nuit : le silence, une horloge
   bureau: (c, sortie, _salle, b) => {
     bourdon(c, sortie, [50], 'sine', 200, 0.02, b)
@@ -1476,7 +1782,18 @@ const AMBIANCES: Record<string, (c: AudioContext, sortie: GainNode, salle: GainN
 }
 
 /** Une partition commence net (son premier coup tombe à l'instant 0) ; une ambiance monte en 1,5 s */
-const ENTREE: Record<string, number> = { roi: 0.02, gardien: 0.02, tenebres: 0.3, patmos: 0.3 }
+const ENTREE: Record<string, number> = {
+  roi: 0.02,
+  gardien: 0.02,
+  tenebres: 0.3,
+  patmos: 0.3,
+  alpha1: 0.02,
+  administrateur: 0.02,
+  fondateur: 0.02,
+  siegel: 0.02,
+  statue: 0.02,
+  anafabula: 0.02,
+}
 
 /** Lance une ambiance (rien si le son est coupé) ; l'arrêter la fait disparaître en fondu. */
 export function ambiance(nom: string): Ambiance {
