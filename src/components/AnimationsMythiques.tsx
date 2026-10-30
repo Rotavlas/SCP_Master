@@ -31,8 +31,9 @@ function pics(instants: [number, number][], montee: number, descente: number): [
 // ---------- Le Roi écarlate ----------
 // Le brasier s'allume, les flammes montent du sol ; le dieu se dresse depuis le bas, ses bois poussent et se
 // ramifient, la couronne se lève ; ses sept yeux s'ouvrent un à un, puis les chaînes avancent maillon par
-// maillon et se tendent. L'air tremble de chaleur, les étincelles montent ; chaque tambour fait battre le bord
-// de l'écran, chaque coup de chaîne l'embrase (partition : state/sons.ts, partitionRoi).
+// maillon et se tendent. Les ténèbres rongent les bords, l'air tremble de chaleur, les étincelles montent ;
+// chaque tambour fait battre le bord de l'écran, chaque coup de chaîne l'embrase (partition : state/sons.ts,
+// partitionRoi).
 const TAMBOURS_ROI = [1.8, 3.0, 4.2, 5.4, 6.0, 6.35, 6.65, 6.9, 7.1, 7.28, 7.42]
 
 const ROI: SceneImmersive = {
@@ -76,6 +77,14 @@ const ROI: SceneImmersive = {
       [2, 0.45],
       [8.4, 1],
       [9.3, 0],
+    ],
+    // Les ténèbres l'entourent : épaisses au début, elles reculent un peu devant le feu
+    tenebres: [
+      [0, 1],
+      [2.4, 0.85],
+      [6.0, 0.7],
+      [8.4, 0.6],
+      [9.2, 0],
     ],
     etincelles: [
       [0, 0.1],

@@ -157,8 +157,9 @@ export const prechargerPrelude = (id: string) => {
 
 /** L'ambiance sonore de chaque indice visuel */
 const AMBIANCES: Record<Prelude['indice'], string> = {
-  braises: 'brasier',
-  patmos: 'choeur',
+  // Le Roi écarlate et le Gate Guardian ont leur partition (state/sons.ts)
+  braises: 'tenebres',
+  patmos: 'patmos',
   viseur: 'alarme',
   sceau: 'orgue',
   moniteur: 'machines',

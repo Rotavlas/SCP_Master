@@ -327,6 +327,13 @@ const BRUITAGES: Record<string, [number, (d: Float32Array, sr: number) => void]>
       normaliser(d)
     },
   ],
+  // Du bruit blanc, en boucle : la matière des chuchotements
+  bruitBlanc: [
+    2,
+    (d) => {
+      for (let i = 0; i < d.length; i++) d[i] = hasard() * 0.8
+    },
+  ],
   // Un tambour rituel (taiko) : la peau frappée, une note grave qui chute, le fût qui résonne
   tambour: [
     1.6,
@@ -813,22 +820,184 @@ function partition(c: AudioContext, sortie: GainNode, salle: GainNode, b: Constr
           })
       p.note(t, notes[0] / 2, { duree, gain: gain * 0.6, attaque: 0.03, relache: 1.6, glisse: notes[0] / 2.6, r: 0.3 })
     },
-    /** Une trompette : un cuivre dont l'éclat s'ouvre à l'attaque, puis vibre */
-    trompette(t: number, freq: number, duree: number, gain: number) {
-      for (const [type, g] of [
-        ['sawtooth', 1],
-        ['square', 0.35],
-      ] as const)
-        p.note(t, freq, {
-          duree,
-          gain: gain * g,
-          type,
-          attaque: 0.05,
-          relache: 0.35,
-          filtre: { de: 500, a: 3200, q: 2.5, en: 0.12 },
-          vibrato: [5.5, 0.006, 0.3],
-          r: 0.65,
-        })
+    /**
+     * Une trompette de l'Apocalypse : des cuivres graves et faux, qui grondent (le souffle racle à 30 Hz),
+     * s'ouvrent comme un cri et retombent d'une tierce en mourant ; une note métallique crisse par-dessus.
+     */
+    trompetteApocalypse(t: number, freqs: number[], duree: number, gain: number) {
+      const debut = t0 + t
+      const fin = debut + duree + 1.2
+      const g = c.createGain()
+      g.gain.setValueAtTime(0.0001, debut)
+      g.gain.exponentialRampToValueAtTime(gain, debut + 0.45)
+      g.gain.setValueAtTime(gain, debut + duree)
+      g.gain.exponentialRampToValueAtTime(0.0001, fin)
+      // Le grondement : le volume tremble très vite
+      const grogne = c.createOscillator()
+      grogne.frequency.value = 31
+      const prof = c.createGain()
+      prof.gain.value = gain * 0.4
+      grogne.connect(prof).connect(g.gain)
+      grogne.start(debut)
+      grogne.stop(fin)
+      b.sources.push(grogne)
+      const filtre = c.createBiquadFilter()
+      filtre.type = 'lowpass'
+      filtre.Q.value = 3
+      filtre.frequency.setValueAtTime(220, debut)
+      filtre.frequency.exponentialRampToValueAtTime(1500, debut + duree * 0.35)
+      filtre.frequency.exponentialRampToValueAtTime(500, fin)
+      const metal = c.createBiquadFilter()
+      metal.type = 'bandpass'
+      metal.frequency.value = 1350
+      metal.Q.value = 9
+      const gm = c.createGain()
+      gm.gain.value = 0.35
+      filtre.connect(g)
+      metal.connect(gm).connect(g)
+      g.connect(vers(1, 0.7))
+      for (const f of freqs)
+        for (const [k, type, v] of [
+          [1.012, 'sawtooth', 1],
+          [1.047, 'sawtooth', 0.7],
+          [0.5, 'square', 0.45],
+        ] as const) {
+          const o = c.createOscillator()
+          o.type = type
+          // Un peu trop haut à l'attaque, puis la note s'effondre
+          o.frequency.setValueAtTime(f * k, debut)
+          o.frequency.exponentialRampToValueAtTime(f * k * 0.84, fin)
+          const go = c.createGain()
+          go.gain.value = v / freqs.length
+          o.connect(go)
+          go.connect(filtre)
+          go.connect(metal)
+          o.start(debut)
+          o.stop(fin + 0.05)
+          b.sources.push(o)
+        }
+    },
+    /** Des chuchotements : un souffle découpé en syllabes, passé dans des voyelles au hasard, avec ses sifflantes */
+    chuchoter(t: number, duree: number, { gain = 0.06, pan = 0, r = 0.6 }: { gain?: number; pan?: number; r?: number } = {}) {
+      const debut = t0 + t
+      const s = c.createBufferSource()
+      s.buffer = bruitage(c, 'bruitBlanc')
+      s.loop = true
+      const pp = c.createStereoPanner()
+      pp.pan.setValueAtTime(pan, debut)
+      pp.pan.linearRampToValueAtTime(Math.max(-1, Math.min(1, pan + (Math.random() - 0.5) * 0.6)), debut + duree)
+      pp.connect(vers(gain, r))
+      const voyelle = c.createGain()
+      voyelle.gain.value = 0.0001
+      const sifflante = c.createGain()
+      sifflante.gain.value = 0.0001
+      const f1 = c.createBiquadFilter()
+      f1.type = 'bandpass'
+      f1.Q.value = 5
+      const f2 = c.createBiquadFilter()
+      f2.type = 'bandpass'
+      f2.Q.value = 7
+      const fs = c.createBiquadFilter()
+      fs.type = 'bandpass'
+      fs.frequency.value = 5600
+      fs.Q.value = 1.4
+      s.connect(f1).connect(voyelle)
+      s.connect(f2).connect(voyelle)
+      s.connect(fs).connect(sifflante)
+      voyelle.connect(pp)
+      sifflante.connect(pp)
+      const formants = [
+        [300, 2300],
+        [700, 1200],
+        [450, 850],
+        [500, 1750],
+        [380, 1000],
+      ]
+      for (let x = debut; x < debut + duree;) {
+        const l = 0.08 + Math.random() * 0.16
+        const [a, bb] = formants[Math.floor(Math.random() * formants.length)]
+        f1.frequency.setValueAtTime(a, x)
+        f2.frequency.setValueAtTime(bb, x)
+        const fort = 0.4 + Math.random() * 0.6
+        voyelle.gain.setTargetAtTime(fort, x, 0.015)
+        voyelle.gain.setTargetAtTime(0.0001, x + l * 0.7, 0.025)
+        // Une syllabe sur trois siffle (s, ch)
+        if (Math.random() < 0.35) {
+          sifflante.gain.setTargetAtTime(fort * 0.7, x, 0.01)
+          sifflante.gain.setTargetAtTime(0.0001, x + l * 0.5, 0.02)
+        }
+        x += l + 0.02 + Math.random() * 0.07
+      }
+      s.start(debut)
+      s.stop(debut + duree + 0.3)
+      b.sources.push(s)
+    },
+    /**
+     * Une voix grave, presque inhumaine : deux voix d'homme sur une même note, une sous-octave qui grogne, passées
+     * dans les formants d'une voyelle ; la note s'affaisse lentement en tremblant.
+     */
+    voixGrave(t: number, freq: number, duree: number, gain: number, voyelle: [number, number, number][] = VOYELLE_OH, pan = 0) {
+      const debut = t0 + t
+      const fin = debut + duree + 0.8
+      const g = c.createGain()
+      g.gain.setValueAtTime(0.0001, debut)
+      g.gain.exponentialRampToValueAtTime(gain, debut + 0.3)
+      g.gain.setValueAtTime(gain, debut + duree)
+      g.gain.exponentialRampToValueAtTime(0.0001, fin)
+      const pp = c.createStereoPanner()
+      pp.pan.value = pan
+      g.connect(pp).connect(vers(1, 0.6))
+      const entree = c.createGain()
+      for (const [f, q, v] of voyelle) {
+        const bp = c.createBiquadFilter()
+        bp.type = 'bandpass'
+        bp.frequency.value = f
+        bp.Q.value = q
+        const gv = c.createGain()
+        gv.gain.value = v * 2.2
+        entree.connect(bp).connect(gv).connect(g)
+      }
+      // Un peu du son brut, pour le grain de la gorge
+      const brut = c.createBiquadFilter()
+      brut.type = 'lowpass'
+      brut.frequency.value = 300
+      entree.connect(brut).connect(g)
+      for (const [k, type, v] of [
+        [1, 'sawtooth', 1],
+        [1.004, 'sawtooth', 0.8],
+        [0.5, 'square', 0.35],
+      ] as const) {
+        const o = c.createOscillator()
+        o.type = type
+        o.frequency.setValueAtTime(freq * k * 1.02, debut)
+        o.frequency.exponentialRampToValueAtTime(freq * k * 0.94, fin)
+        const vib = c.createOscillator()
+        vib.frequency.value = 4.3 + Math.random()
+        const pv = c.createGain()
+        pv.gain.value = freq * k * 0.009
+        vib.connect(pv).connect(o.frequency)
+        const go = c.createGain()
+        go.gain.value = v
+        o.connect(go).connect(entree)
+        o.start(debut)
+        vib.start(debut)
+        o.stop(fin + 0.05)
+        vib.stop(fin + 0.05)
+        b.sources.push(o, vib)
+      }
+    },
+    /** Un accord d'orgue : chaque note avec ses jeux (octaves, quinte), une attaque lente et un léger tremblant */
+    orgue(t: number, notes: number[], duree: number, gain: number) {
+      for (const n of notes)
+        for (const [k, v] of [
+          [1, 1],
+          [2, 0.6],
+          [3, 0.35],
+          [4, 0.3],
+          [6, 0.12],
+          [8, 0.08],
+        ])
+          p.note(t, n * k, { duree, gain: (gain * v) / notes.length, attaque: 0.18, relache: 0.9, vibrato: [6, 0.0025, 0.2], r: 0.7 })
     },
     /** Un coup de sub-basse qui retombe, avec un tampon ralenti pour le corps */
     impact(t: number, force = 1) {
@@ -887,25 +1056,101 @@ const VOYELLE_OH: [number, number, number][] = [
   [800, 9, 0.6],
   [2830, 11, 0.15],
 ]
+const VOYELLE_OU: [number, number, number][] = [
+  [320, 8, 1],
+  [700, 10, 0.4],
+  [2400, 12, 0.08],
+]
+// Les voix claires (femmes, enfants) : formants plus hauts
+const VOYELLE_I: [number, number, number][] = [
+  [330, 8, 0.7],
+  [2600, 11, 1],
+  [3300, 12, 0.5],
+]
 
-// Ré mineur, le Roi écarlate ; ré majeur, le Gate Guardian
+// Les notes (Hz)
 const D1 = 36.71
+const G1 = 49
+const A1 = 55
+const BB1 = 58.27
 const D2 = 73.42
+const F2 = 87.31
+const G2 = 98
+const AB2 = 103.83
 const A2 = 110
+const BB2 = 116.54
 const D3 = 146.83
+const CD3 = 138.59
+const EB3 = 155.56
+const E3 = 164.81
 const F3 = 174.61
 const FD3 = 185
+const G3 = 196
 const A3 = 220
-const D4 = 293.66
-const FD4 = 369.99
-const A4 = 440
+const BB3 = 233.08
 const D5 = 587.33
+const EB5 = 622.25
+const FD5 = 739.99
+const A5 = 880
+
+/** Un battement de cœur lointain : deux coups sourds */
+function battement(p: ReturnType<typeof partition>, t: number, gain = 0.5) {
+  p.son(t, 'tambour', { gain, vitesse: 0.55, r: 0.5 })
+  p.son(t + 0.22, 'tambour', { gain: gain * 0.7, vitesse: 0.5, r: 0.5 })
+}
 
 /**
- * Le Roi écarlate (scène ROI, 9,6 s avant le retour) : le feu s'allume dans un coup de sub-basse, des tambours
- * rituels de plus en plus pressés, ses bois qui poussent en craquant, un chœur d'hommes grave et dissonant ;
- * chacun de ses sept yeux s'ouvre sur une cloche funèbre ; puis les chaînes se tendent dans un fracas de métal
- * et un accord de cuivres écrase tout.
+ * Le prélude du Roi écarlate (« Ne prononce pas son nom… ») : les ténèbres. Une basse si grave qu'elle se sent
+ * plus qu'elle ne s'entend, un chœur d'hommes très bas, un cœur qui bat ; et à chaque ligne, une voix d'outre-tombe
+ * qui l'entonne pendant que des chuchotements la reprennent tout autour.
+ */
+function partitionTenebres(c: AudioContext, sortie: GainNode, salle: GainNode, b: Construction) {
+  const p = partition(c, sortie, salle, b)
+  p.bourdon(
+    [D1 * 0.75, D1, D1 * 1.006],
+    'sawtooth',
+    [
+      [0, 70],
+      [12, 160],
+    ],
+    [
+      [0.5, 0.12],
+      [12, 0.16],
+      [13, 0.0001],
+    ],
+  )
+  p.choeur(
+    [D2 / 2, A2 / 2, D2],
+    [
+      [0.6, 0.0001],
+      [2.5, 0.05],
+      [11, 0.08],
+      [13, 0.0001],
+    ],
+    VOYELLE_OU,
+  )
+  p.nappe('feu', 0.5, [
+    [0.5, 0.08],
+    [12.5, 0.15],
+    [13, 0.0001],
+  ])
+  for (let t = 1.6; t < 12.5; t += 1.6) battement(p, t, 0.32 + t * 0.012)
+  // Chaque ligne : une voix grave qui l'entonne, des chuchotements qui la répètent de tous côtés
+  const lignes = [0.9, 3.4, 5.9, 8.4]
+  lignes.forEach((t, i) => {
+    p.voixGrave(t, [D2, D2, AB2 / 2, D2 / 1.06][i], 1.7, 0.09 + i * 0.015, VOYELLE_OH)
+    for (let k = 0; k < 3 + i; k++)
+      p.chuchoter(t + 0.1 + k * 0.28, 1.1 + Math.random() * 0.8, { gain: 0.05 + i * 0.012, pan: (k % 2 ? 1 : -1) * (0.3 + Math.random() * 0.6) })
+  })
+  // « Elles viennent de céder. » : les chaînes, très loin
+  for (let i = 0; i < 6; i++) p.son(8.9 + i * 0.05, 'maillon', { gain: 0.12, vitesse: 0.5, r: 0.9, pan: (Math.random() - 0.5) * 1.5 })
+}
+
+/**
+ * Le Roi écarlate (scène ROI, 9,6 s avant le retour) : les ténèbres d'abord, un murmure de mille voix et une voix
+ * d'outre-tombe ; le feu s'allume dans un coup de sub-basse, des tambours rituels de plus en plus pressés, ses
+ * bois qui poussent en craquant, un chœur d'hommes grave et dissonant ; chacun de ses sept yeux s'ouvre sur une
+ * cloche funèbre et une voix ; puis les chaînes se tendent dans un fracas de métal et un accord de cuivres écrase tout.
  */
 function partitionRoi(c: AudioContext, sortie: GainNode, salle: GainNode, b: Construction) {
   const p = partition(c, sortie, salle, b)
@@ -913,9 +1158,9 @@ function partitionRoi(c: AudioContext, sortie: GainNode, salle: GainNode, b: Con
   p.impact(0, 1.1)
   p.son(0.05, 'souffle', { gain: 0.7, vitesse: 0.8, r: 0.4 })
   p.nappe('feu', 1, [
-    [0.3, 0.25],
-    [2, 0.6],
-    [8.4, 0.85],
+    [0.3, 0.2],
+    [2, 0.5],
+    [8.4, 0.75],
     [9.8, 0.0001],
   ])
   p.nappe('feu', 0.55, [
@@ -923,35 +1168,54 @@ function partitionRoi(c: AudioContext, sortie: GainNode, salle: GainNode, b: Con
     [8.4, 0.45],
     [9.8, 0.0001],
   ])
-  // Une basse en triton (ré, sol dièse) dont le filtre s'ouvre lentement : la menace monte
+  // Une basse en triton (ré, sol dièse), plus une sous-basse qui fait trembler, dont le filtre s'ouvre lentement
   p.bourdon(
-    [D1, D1 * 1.414, D2, D2 * 1.006],
+    [D1 * 0.75, D1, D1 * 1.414, D2, D2 * 1.006],
     'sawtooth',
     [
-      [0, 110],
-      [5.4, 380],
-      [8.4, 1100],
-      [9.6, 300],
+      [0, 90],
+      [5.4, 320],
+      [8.4, 1000],
+      [9.6, 260],
     ],
     [
-      [0.2, 0.06],
-      [5.4, 0.12],
-      [8.4, 0.2],
+      [0.2, 0.09],
+      [5.4, 0.14],
+      [8.4, 0.22],
       [9.9, 0.0001],
     ],
   )
-  // Un chœur d'hommes, « oh », grave et dissonant (la seconde mineure en haut)
+  // Le chœur d'hommes, d'abord « ou » presque fermé et très bas, puis « oh » et la seconde mineure qui grince
+  p.choeur(
+    [D2 / 2, D2, A2, D3],
+    [
+      [0.2, 0.0001],
+      [1.6, 0.06],
+      [5.0, 0.09],
+      [9.9, 0.0001],
+    ],
+    VOYELLE_OU,
+  )
   p.choeur(
     [D2, A2, D3, F3, F3 * 1.0595],
     [
-      [2.6, 0.0001],
-      [4.2, 0.05],
-      [6.0, 0.09],
+      [3.4, 0.0001],
+      [5.0, 0.05],
+      [6.4, 0.09],
       [8.4, 0.16],
       [9.9, 0.0001],
     ],
     VOYELLE_OH,
   )
+  // Les voix d'outre-tombe : elles entonnent quand le dieu se dresse, puis quand il ouvre les yeux
+  p.voixGrave(0.4, D2, 2.2, 0.1, VOYELLE_OU, -0.2)
+  p.voixGrave(0.4, D2 * 0.75, 2.2, 0.08, VOYELLE_OU, 0.2)
+  p.voixGrave(3.0, A1, 2.3, 0.1, VOYELLE_OH)
+  p.voixGrave(5.9, D2, 1.6, 0.12, VOYELLE_AH, -0.3)
+  p.voixGrave(5.9, AB2, 1.6, 0.1, VOYELLE_AH, 0.3)
+  // Un murmure de mille voix qui enfle, de tous côtés
+  for (let t = 0.2; t < 9.2; t += 0.35 + Math.random() * 0.3)
+    p.chuchoter(t, 0.9 + Math.random() * 0.9, { gain: 0.03 + (t / 9.2) * 0.05, pan: (Math.random() - 0.5) * 1.8 })
   // Tambours rituels : ils accompagnent la croissance puis se pressent quand les yeux s'ouvrent
   for (const [t, g] of [
     [1.8, 0.7],
@@ -966,11 +1230,11 @@ function partitionRoi(c: AudioContext, sortie: GainNode, salle: GainNode, b: Con
     [7.28, 0.9],
     [7.42, 1],
   ])
-    p.son(t, 'tambour', { gain: g, vitesse: 0.92 + Math.random() * 0.1, r: 0.45, pan: (Math.random() - 0.5) * 0.3 })
+    p.son(t, 'tambour', { gain: g, vitesse: 0.85 + Math.random() * 0.1, r: 0.45, pan: (Math.random() - 0.5) * 0.3 })
   p.impact(5.4, 1)
   // Les bois poussent et se ramifient en craquant, tout autour
   for (let t = 3.0; t < 5.6; t += 0.2 + Math.random() * 0.12)
-    p.son(t, 'craquement', { gain: 0.35, vitesse: 0.7 + Math.random() * 0.6, pan: (Math.random() - 0.5) * 1.4, r: 0.35 })
+    p.son(t, 'craquement', { gain: 0.35, vitesse: 0.6 + Math.random() * 0.5, pan: (Math.random() - 0.5) * 1.4, r: 0.35 })
   // Les sept yeux : une cloche funèbre par œil, de plus en plus grave, et un souffle humide
   for (let i = 0; i < 7; i++) {
     const t = 6.05 + i * 0.2
@@ -984,15 +1248,51 @@ function partitionRoi(c: AudioContext, sortie: GainNode, salle: GainNode, b: Con
   p.note(7.6, 210, { duree: 0.7, gain: 0.05, type: 'sawtooth', glisse: 95, attaque: 0.08, filtre: { de: 900, a: 500, q: 9, type: 'bandpass' }, r: 0.5 })
   p.impact(7.95, 1)
   p.impact(8.2, 1.2)
-  // L'accord final : des cuivres en ré mineur, avec la seconde qui grince
+  // L'accord final : des cuivres en ré mineur, la seconde qui grince, et toutes les voix ensemble
   p.braam(8.4, [D2, A2, D3, F3, F3 * 1.0595], 0.9, 0.3)
+  p.voixGrave(8.4, D2, 1.0, 0.14, VOYELLE_AH)
+  p.voixGrave(8.4, D2 / 2, 1.0, 0.1, VOYELLE_OH)
+}
+
+/**
+ * Le prélude du Gate Guardian (l'ordre d'urgence Patmos-Oméga) : un orgue d'église qui égrène une progression
+ * inquiète, un chœur lointain qui change de voix à chaque ligne ; à « Il a relevé la tête », la première trompette.
+ */
+function partitionPatmos(c: AudioContext, sortie: GainNode, salle: GainNode, b: Construction) {
+  const p = partition(c, sortie, salle, b)
+  p.note(0.2, D1, { duree: 12, gain: 0.05, attaque: 1, relache: 1.5, type: 'triangle', r: 0.6 })
+  // Une ligne, un accord : ré mineur, si bémol, sol mineur, la (la dominante, qui appelle la suite)
+  const accords: [number, number[], [number, number, number][]][] = [
+    [0.9, [D2, F2, A2, D3], VOYELLE_OU],
+    [3.4, [BB1, F2, BB2, D3], VOYELLE_OH],
+    [5.9, [G1, D2, G2, BB2], VOYELLE_AH],
+    [8.4, [A1, E3 / 2, A2, CD3], VOYELLE_I],
+  ]
+  for (const [t, notes, voyelle] of accords) {
+    p.orgue(t, notes, 2.3, 0.07)
+    p.choeur(
+      notes.map((n) => n * 2),
+      [
+        [t, 0.0001],
+        [t + 0.8, 0.045],
+        [t + 2.3, 0.03],
+        [t + 2.7, 0.0001],
+      ],
+      voyelle,
+    )
+  }
+  p.chuchoter(6.0, 1.6, { gain: 0.04, pan: -0.6 })
+  p.chuchoter(6.4, 1.4, { gain: 0.04, pan: 0.6 })
+  // « Il a relevé la tête. »
+  p.trompetteApocalypse(8.7, [D2, AB2], 2.6, 0.11)
+  p.son(8.7, 'grondement', { gain: 0.6, r: 0.5 })
 }
 
 /**
  * Le Gate Guardian (scène GARDIEN, 9,2 s) : la pierre gronde, une lumière de cristal grandit dans la porte, qui
- * s'ouvre d'un coup ; le chœur céleste entre et enfle, les trompettes de l'Apocalypse sonnent ; ses ailes battent
- * dans un souffle immense, le feu rugit ; son œil s'ouvre sur un cri de cristal et le chœur se déchire, la couronne
- * se pose en carillon, et les cuivres concluent.
+ * s'ouvre d'un coup ; les trompettes de l'Apocalypse hurlent, fausses et grondantes ; le chœur et l'orgue avancent
+ * d'accord en accord, les voix changent (hommes, femmes, enfants) ; ses ailes battent dans un souffle immense, le
+ * feu rugit ; son œil s'ouvre sur un cri, le chœur se déchire, la couronne se pose en carillon et tout se résout.
  */
 function partitionGardien(c: AudioContext, sortie: GainNode, salle: GainNode, b: Construction) {
   const p = partition(c, sortie, salle, b)
@@ -1007,36 +1307,33 @@ function partitionGardien(c: AudioContext, sortie: GainNode, salle: GainNode, b:
     p.note(0.2, f, { duree: 1.2, gain: g, attaque: 1.1, relache: 2.2, vibrato: [7, 0.004, 0.6], r: 0.8 })
   p.impact(1.55, 1.3)
   p.son(1.55, 'souffle', { gain: 0.6, vitesse: 0.6, r: 0.7 })
-  // Le chœur céleste : il entre quand la porte s'ouvre et enfle avec la lumière
-  p.choeur(
-    [D3, FD3, A3, D4, FD4, A4, D5],
-    [
-      [1.5, 0.0001],
-      [2.6, 0.05],
-      [4.0, 0.1],
-      [6.3, 0.12],
-      [6.6, 0.2],
-      [8.6, 0.13],
-      [9.6, 0.0001],
-    ],
-  )
-  p.bourdon(
-    [D2, A2],
-    'triangle',
-    [
-      [0, 200],
-      [4, 600],
-    ],
-    [
-      [1.5, 0.05],
-      [6.6, 0.1],
-      [9.6, 0.0001],
-    ],
-  )
-  // Première trompette : ré, la, ré
-  p.trompette(2.8, D4, 0.25, 0.05)
-  p.trompette(3.15, A4, 0.25, 0.05)
-  p.trompette(3.5, D5, 1.0, 0.06)
+  // La pédale de l'orgue tient tout du long
+  p.note(1.5, D1, { duree: 7.4, gain: 0.07, attaque: 0.6, relache: 1.2, type: 'triangle', r: 0.6 })
+  // Accord par accord : l'orgue et un chœur dont la voix change (hommes « ou », « oh », femmes « ah », enfants « i »)
+  const accords: [number, number, number[], [number, number, number][], number][] = [
+    [1.5, 1.4, [D2, A2, D3, F3], VOYELLE_OU, 0.08],
+    [2.8, 1.3, [BB1, F2, BB2, D3], VOYELLE_OH, 0.09],
+    [4.0, 1.0, [G1, D2, G2, BB2], VOYELLE_OH, 0.1],
+    [4.9, 1.5, [A2, CD3, E3, A3], VOYELLE_AH, 0.11],
+    [6.5, 1.1, [D2, EB3, G3, BB3], VOYELLE_AH, 0.14],
+    [7.55, 1.9, [D2, A2, D3, FD3], VOYELLE_I, 0.12],
+  ]
+  for (const [t, d, notes, voyelle, g] of accords) {
+    p.orgue(t, notes, d, g * 0.8)
+    p.choeur(
+      notes.map((n) => n * 2),
+      [
+        [t, 0.0001],
+        [t + 0.25, g],
+        [t + d, g * 0.8],
+        [t + d + 0.5, 0.0001],
+      ],
+      voyelle,
+    )
+  }
+  // Les trompettes de l'Apocalypse : graves, fausses, en triton ; elles grondent, hurlent et s'effondrent
+  p.trompetteApocalypse(2.8, [D2, AB2], 1.6, 0.13)
+  p.trompetteApocalypse(3.9, [A2, EB3], 0.9, 0.11)
   // La lumière envahit tout : un souffle clair, des cloches cristallines
   p.son(3.6, 'souffle', { gain: 0.4, vitesse: 1.6, r: 0.8 })
   for (let i = 0; i < 8; i++) p.cloche(3.8 + i * 0.12, [1175, 1397, 1760, 2349][i % 4], 0.012, 1.6, 0.8)
@@ -1055,25 +1352,35 @@ function partitionGardien(c: AudioContext, sortie: GainNode, salle: GainNode, b:
     [6.4, 0.35],
     [9.2, 0.0001],
   ])
-  // L'œil s'ouvre : un cri de cristal qui monte, deux cordes qui battent l'une contre l'autre
+  // L'œil s'ouvre : un cri de cristal qui monte, des femmes qui hurlent une seconde mineure au-dessus du chœur
   p.note(6.2, 2349, { duree: 0.5, gain: 0.02, attaque: 0.3, relache: 1.5, glisse: 2793, r: 0.7 })
   p.note(6.2, 2380, { duree: 0.5, gain: 0.015, attaque: 0.3, relache: 1.5, glisse: 2830, r: 0.7 })
-  // Le chœur se déchire (une seconde mineure), la deuxième trompette, plus haute
   p.choeur(
-    [D4 * 1.0595, A4 * 1.0595],
+    [D5, EB5],
     [
-      [6.55, 0.0001],
-      [6.65, 0.08],
-      [7.6, 0.03],
-      [8.4, 0.0001],
+      [6.5, 0.0001],
+      [6.62, 0.07],
+      [7.5, 0.03],
+      [8.2, 0.0001],
     ],
+    VOYELLE_I,
   )
-  p.trompette(6.6, A4, 0.25, 0.06)
-  p.trompette(6.95, D5, 0.25, 0.06)
-  p.trompette(7.3, FD4 * 2, 1.2, 0.07)
+  // La dernière trompette, la plus terrible : trois notes serrées qui s'effondrent ensemble
+  p.trompetteApocalypse(6.6, [A2, D3, EB3], 2.0, 0.15)
+  p.voixGrave(6.6, D2, 1.4, 0.1, VOYELLE_AH)
   p.impact(6.6, 0.8)
-  // La couronne se pose : un carillon
+  // La couronne se pose : un carillon, puis des enfants qui chantent la résolution
   for (const [i, f] of [587, 880, 1175, 1760].entries()) p.cloche(7.0 + i * 0.07, f, 0.04, 3)
+  p.choeur(
+    [D5, FD5, A5],
+    [
+      [7.5, 0.0001],
+      [7.9, 0.05],
+      [9.0, 0.035],
+      [9.7, 0.0001],
+    ],
+    VOYELLE_I,
+  )
   // Les cuivres concluent, en majeur
   p.braam(7.6, [D2, A2, D3, FD3], 1.1, 0.26)
 }
@@ -1157,6 +1464,9 @@ const AMBIANCES: Record<string, (c: AudioContext, sortie: GainNode, salle: GainN
   // Les partitions des cinématiques, calées sur leur scène
   roi: partitionRoi,
   gardien: partitionGardien,
+  // Et celles de leurs préludes
+  tenebres: partitionTenebres,
+  patmos: partitionPatmos,
   // Un bureau la nuit : le silence, une horloge
   bureau: (c, sortie, _salle, b) => {
     bourdon(c, sortie, [50], 'sine', 200, 0.02, b)
@@ -1166,7 +1476,7 @@ const AMBIANCES: Record<string, (c: AudioContext, sortie: GainNode, salle: GainN
 }
 
 /** Une partition commence net (son premier coup tombe à l'instant 0) ; une ambiance monte en 1,5 s */
-const ENTREE: Record<string, number> = { roi: 0.02, gardien: 0.02 }
+const ENTREE: Record<string, number> = { roi: 0.02, gardien: 0.02, tenebres: 0.3, patmos: 0.3 }
 
 /** Lance une ambiance (rien si le son est coupé) ; l'arrêter la fait disparaître en fondu. */
 export function ambiance(nom: string): Ambiance {

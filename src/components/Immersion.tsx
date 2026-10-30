@@ -44,6 +44,8 @@ export type Piste =
   | 'etincelles'
   | 'plumes'
   | 'pouls'
+  // Une fumée noire qui ronge les bords de l'écran
+  | 'tenebres'
 
 export interface SceneImmersive {
   /** Carte des temps : public/immersion/<nom>.png */
@@ -143,7 +145,7 @@ uniform vec3 u_c1, u_c2;
 uniform vec3 u_couleur[8];
 uniform float u_tau[8], u_eclat[8], u_ondule[8], u_photo[8];
 uniform float u_porte, u_porteEch, u_lumiere, u_rouge, u_eau, u_efface, u_alarme, u_braise, u_noir;
-uniform float u_flash, u_chaleur, u_rayons, u_etincelles, u_plumes, u_pouls;
+uniform float u_flash, u_chaleur, u_rayons, u_etincelles, u_plumes, u_pouls, u_tenebres;
 uniform vec3 u_flashCol;
 uniform vec2 u_centre;
 out vec4 sortie;
@@ -315,6 +317,12 @@ void main() {
   }
   // Le pouls : le bord de l'écran rougit à chaque battement
   col = mix(col, col * vec3(1.0, 0.16, 0.1) + vec3(0.28, 0.0, 0.0), u_pouls * smoothstep(0.15, 0.85, length(s) * 1.5));
+  // Les ténèbres : une fumée noire qui rampe depuis les bords et ne laisse que le centre
+  if (u_tenebres > 0.0) {
+    float n = fbm(f / u_ecran.y * 2.6 + vec2(u_t * 0.12, -u_t * 0.09));
+    float ombre = smoothstep(0.25, 0.95, length(s) * 1.7 + (n - 0.5) * 0.9) * u_tenebres;
+    col *= 1.0 - clamp(ombre, 0.0, 0.96);
+  }
   // L'éclair : la scène s'illumine d'un coup
   col += u_flashCol * u_flash;
   // Le noir : une lumière qui grésille, un œil qui cligne
@@ -446,6 +454,7 @@ export function Immersion({ id, scene, fige }: { id: string; scene: SceneImmersi
           'etincelles',
           'plumes',
           'pouls',
+          'tenebres',
         ]
         const loc = Object.fromEntries(pistes.map((p) => [p, u(`u_${p}`)]))
         const lt = u('u_t')
