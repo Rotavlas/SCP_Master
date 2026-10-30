@@ -14,23 +14,34 @@ import { ambiance, jouer, planifier } from '../state/sons'
 
 type Style = CSSProperties & Record<`--${string}`, string | number>
 
+/**
+ * Une piste faite de pics : à chaque [instant, hauteur], la valeur monte en `montee` s puis retombe en `descente` s
+ * (raccourcie si le pic suivant arrive avant). Pour les éclairs et les battements calés sur la musique.
+ */
+function pics(instants: [number, number][], montee: number, descente: number): [number, number][] {
+  const cles: [number, number][] = []
+  instants.forEach(([t, h], i) => {
+    const suivant = instants[i + 1]?.[0] ?? Infinity
+    const d = Math.min(descente, (suivant - t) * 0.9)
+    cles.push([t, 0], [t + Math.min(montee, d / 3), h], [t + d, 0])
+  })
+  return cles
+}
+
 // ---------- Le Roi écarlate ----------
 // Le brasier s'allume, les flammes montent du sol ; le dieu se dresse depuis le bas, ses bois poussent et se
 // ramifient, la couronne se lève ; ses sept yeux s'ouvrent un à un, puis les chaînes avancent maillon par
-// maillon et se tendent.
+// maillon et se tendent. L'air tremble de chaleur, les étincelles montent ; chaque tambour fait battre le bord
+// de l'écran, chaque coup de chaîne l'embrase (partition : state/sons.ts, partitionRoi).
+const TAMBOURS_ROI = [1.8, 3.0, 4.2, 5.4, 6.0, 6.35, 6.65, 6.9, 7.1, 7.28, 7.42]
+
 const ROI: SceneImmersive = {
   nom: 'scarlet-king',
-  son: {
-    ambiance: 'brasier',
-    evenements: [
-      [7.6, jouer.chaine],
-      [7.9, jouer.chaine],
-      [8.15, jouer.chaine],
-    ],
-  },
+  son: { ambiance: 'roi', secoue: false },
   image: 'sunny/scarlet-king.png',
   retour: 9.6,
   fond: { mode: 1, c1: '#070101', c2: '#b3140c' },
+  flash: '#ff3b1f',
   classes: [
     { couleur: '#ff3b1f', tau: 0.15, eclat: 0.9 },
     { couleur: '#ffb02e', tau: 0.3, ondule: 5 },
@@ -52,11 +63,7 @@ const ROI: SceneImmersive = {
     [8.4, 230, 570, 1.9],
     [9.0, 229.5, 322, 1],
   ],
-  secousses: [
-    [5.4, 4],
-    [7.95, 7],
-    [8.2, 7],
-  ],
+  secousses: [[0.05, 3], ...TAMBOURS_ROI.map((t, i): [number, number] => [t, i === 3 ? 4 : i > 3 ? 1.5 : 2]), [7.95, 7], [8.2, 7], [8.4, 5]],
   pistes: {
     braise: [
       [0, 0.25],
@@ -64,25 +71,50 @@ const ROI: SceneImmersive = {
       [8.4, 1],
       [9.2, 0],
     ],
+    chaleur: [
+      [0, 0.15],
+      [2, 0.45],
+      [8.4, 1],
+      [9.3, 0],
+    ],
+    etincelles: [
+      [0, 0.1],
+      [1.6, 0.55],
+      [7.5, 1],
+      [9.3, 0],
+    ],
+    pouls: pics(
+      TAMBOURS_ROI.map((t, i) => [t, i === 3 ? 0.9 : 0.55 + i * 0.03]),
+      0.04,
+      0.35,
+    ),
+    flash: pics(
+      [
+        [0.02, 0.35],
+        [5.4, 0.3],
+        [7.95, 0.3],
+        [8.2, 0.35],
+        [8.4, 0.4],
+      ],
+      0.03,
+      0.5,
+    ),
   },
 }
 
 // ---------- The Gate Guardian ----------
 // Une porte de lumière s'ouvre dans le noir ; le séraphin en sort, plus grand qu'elle, la lumière envahit
-// tout ; ses six ailes se déploient, le feu jaillit, son œil s'ouvre et la couronne se pose.
+// tout ; ses six ailes se déploient, le feu jaillit, son œil s'ouvre et la couronne se pose. Des rayons partent
+// de son œil, des plumes de lumière tombent ; la porte qui s'ouvre et l'œil qui s'ouvre éblouissent
+// (partition : state/sons.ts, partitionGardien).
 const GARDIEN: SceneImmersive = {
   nom: 'gate-guardian',
-  son: {
-    ambiance: 'choeur',
-    evenements: [
-      [0.3, () => jouer.impact(40)],
-      [2.8, jouer.eclair],
-      [6.6, jouer.eclair],
-    ],
-  },
+  son: { ambiance: 'gardien', secoue: false },
   image: 'sunny/gate-guardian.png',
   retour: 9.2,
   fond: { mode: 2, c1: '#050403', c2: '#fff1cf' },
+  flash: '#fff1c4',
+  centre: [400, 300],
   classes: [
     { couleur: '#ffe7a3', tau: 0.18, eclat: 0.8 },
     { couleur: '#ffd36b', tau: 0.22 },
@@ -105,7 +137,12 @@ const GARDIEN: SceneImmersive = {
   ],
   secousses: [
     [1.55, 5],
+    [4.85, 1.5],
     [5.0, 4],
+    [5.2, 1.5],
+    [5.55, 1.5],
+    [6.6, 5],
+    [7.6, 3],
   ],
   pistes: {
     porte: [
@@ -120,6 +157,39 @@ const GARDIEN: SceneImmersive = {
       [2.6, 0],
       [4.0, 1],
     ],
+    rayons: [
+      [1.3, 0],
+      [2.6, 0.3],
+      [4.0, 0.8],
+      [6.3, 0.55],
+      [6.6, 0.95],
+      [7.4, 0.7],
+      [8.7, 0.5],
+      [9.2, 0],
+    ],
+    plumes: [
+      [3.6, 0],
+      [4.9, 0.7],
+      [6.0, 1],
+      [8.7, 0.7],
+      [9.2, 0],
+    ],
+    chaleur: [
+      [4.9, 0],
+      [5.3, 0.55],
+      [6.6, 0.2],
+      [7.4, 0],
+    ],
+    flash: pics(
+      [
+        [1.55, 0.6],
+        [4.0, 0.3],
+        [6.6, 0.5],
+        [7.6, 0.3],
+      ],
+      0.03,
+      0.6,
+    ),
   },
 }
 

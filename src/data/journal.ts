@@ -18,6 +18,8 @@ export const JOURNAL: Entree[] = [
       'Reconfinement : la main de l’IA est sur la table, avec l’effet de chaque carte. Les parties durent jusqu’à 8 tours sur des Sites de 150 points, et une anomalie reconfinée retourne dans la main de son propriétaire.',
       'Dégâts et soins se voient et s’entendent : chiffres qui s’envolent, jauge qui flashe, voile rouge quand votre Site est touché, lueur verte quand il est soigné.',
       'Les Mythiques brillent : aura d’or dans la main, portrait dans la jauge de Manifestation qui reprend ses couleurs, et dans la Brèche, l’ultime joue la cinématique de la carte.',
+      'Les cinématiques du Roi écarlate et du Gate Guardian ont leur propre musique, calée sur l’image : tambours rituels, bois qui craquent, chœur d’hommes et cloches funèbres pour le Roi, chaînes dans un fracas de métal ; grondement de la porte, chœur céleste, trompettes de l’Apocalypse et battements d’ailes pour le Gardien.',
+      'À l’image aussi : l’air tremble de chaleur et les étincelles montent autour du Roi, le bord de l’écran bat avec ses tambours ; des rayons partent de l’œil du Gardien et des plumes de lumière tombent.',
     ],
   },
   {

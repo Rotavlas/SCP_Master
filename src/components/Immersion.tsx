@@ -26,7 +26,24 @@ export interface Classe {
 }
 
 /** Valeurs animées par images clés [instant, valeur] */
-export type Piste = 'porte' | 'porteEch' | 'lumiere' | 'rouge' | 'eau' | 'efface' | 'alarme' | 'braise' | 'noir'
+export type Piste =
+  | 'porte'
+  | 'porteEch'
+  | 'lumiere'
+  | 'rouge'
+  | 'eau'
+  | 'efface'
+  | 'alarme'
+  | 'braise'
+  | 'noir'
+  // Par-dessus tout : éclair (de la couleur `flash`), chaleur qui fait trembler l'air, rayons depuis `centre`,
+  // étincelles qui montent, plumes de lumière qui tombent, pouls rouge au bord de l'écran
+  | 'flash'
+  | 'chaleur'
+  | 'rayons'
+  | 'etincelles'
+  | 'plumes'
+  | 'pouls'
 
 export interface SceneImmersive {
   /** Carte des temps : public/immersion/<nom>.png */
@@ -45,6 +62,10 @@ export interface SceneImmersive {
   /** Fenêtre où le temps de construction avance par saccades (un vieux moniteur) */
   saccade?: [number, number]
   pistes?: Partial<Record<Piste, [number, number][]>>
+  /** Couleur de la piste `flash` (blanc par défaut) */
+  flash?: string
+  /** Origine des rayons, en coordonnées de l'image (le centre par défaut) */
+  centre?: [number, number]
   /** Dessiné par-dessus, dans les coordonnées de l'image (suit la caméra) ; animations CSS à partir du début */
   dessus?: (l: number, h: number) => ReactNode
   /** Calque plein écran par-dessus la toile (avant-scène), animations CSS à partir du début */
@@ -122,6 +143,9 @@ uniform vec3 u_c1, u_c2;
 uniform vec3 u_couleur[8];
 uniform float u_tau[8], u_eclat[8], u_ondule[8], u_photo[8];
 uniform float u_porte, u_porteEch, u_lumiere, u_rouge, u_eau, u_efface, u_alarme, u_braise, u_noir;
+uniform float u_flash, u_chaleur, u_rayons, u_etincelles, u_plumes, u_pouls;
+uniform vec3 u_flashCol;
+uniform vec2 u_centre;
 out vec4 sortie;
 
 float hash(vec2 p) { return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453); }
@@ -206,6 +230,11 @@ void main() {
   // Un vieil écran qui décroche : la ligne glisse
   f.x += u_glitch * (hash(vec2(floor(f.y / 6.0), floor(u_t * 20.0))) - 0.5) * 40.0 * step(0.85, hash(vec2(floor(f.y / 30.0), floor(u_t * 9.0))));
   vec2 p = (f - u_ecran * 0.5) / u_cam.z + u_cam.xy;
+  // La chaleur fait trembler l'air, plus fort vers le bas de l'écran
+  if (u_chaleur > 0.0) {
+    float bas = f.y / u_ecran.y;
+    p += u_chaleur * (0.35 + bas) * vec2(bruit(f * 0.011 + vec2(0.0, u_t * 2.3)) - 0.5, bruit(f * 0.011 + vec2(4.0, u_t * 2.7)) - 0.5) * 14.0 / u_cam.z * u_ecran.y / 900.0;
+  }
   if (u_eau > 0.0) p += u_eau * vec2(sin(p.y * 0.05 + u_t * 3.0), cos(p.x * 0.045 + u_t * 2.6)) * 3.0;
   vec3 col;
   bool dedans = p.x >= 0.0 && p.y >= 0.0 && p.x < u_taille.x && p.y < u_taille.y;
@@ -249,9 +278,47 @@ void main() {
     col = mix(col, orig, smoothstep(u_fin, u_fin + 0.5, u_t));
   }
   col *= mix(vec3(1.0), vec3(1.0, 0.3, 0.22), u_rouge);
+  vec2 s = f / u_ecran - 0.5;
+  float px = u_ecran.y / 900.0;
+  // Rayons divins depuis u_centre (projeté à l'écran), qui tournent lentement
+  if (u_rayons > 0.0) {
+    vec2 d = f - ((u_centre - u_cam.xy) * u_cam.z + u_ecran * 0.5);
+    float ang = atan(d.y, d.x);
+    float r = length(d) / u_ecran.y;
+    float faisceaux = pow(bruit(vec2(ang * 10.0, u_t * 0.35)), 4.0) + 0.6 * pow(bruit(vec2(ang * 23.0 + 3.0, -u_t * 0.5)), 6.0);
+    col += vec3(1.0, 0.9, 0.68) * (faisceaux * 0.6 * exp(-r * 1.3) + 0.4 * exp(-r * 5.5)) * u_rayons;
+  }
+  // Étincelles qui montent du brasier, en deux couches
+  if (u_etincelles > 0.0) {
+    for (int k = 0; k < 2; k++) {
+      float tl = (k == 0 ? 24.0 : 14.0) * px;
+      vec2 g = vec2(f.x + sin(f.y * 0.015 / px + u_t * 1.3 + float(k) * 2.0) * 14.0 * px, f.y + u_t * (k == 0 ? 170.0 : 260.0) * px) / tl;
+      vec2 ig = floor(g);
+      float h = hash(ig + float(k) * 17.0);
+      float pt = step(0.92, h) * smoothstep(0.33, 0.0, length(fract(g) - 0.5 - (vec2(hash(ig + 1.3), hash(ig + 5.1)) - 0.5) * 0.5));
+      col += vec3(1.0, 0.42, 0.1) * pt * u_etincelles * (0.7 + 0.5 * sin(u_t * 11.0 + h * 40.0)) * (0.4 + f.y / u_ecran.y);
+    }
+  }
+  // Plumes de lumière qui tombent en se balançant
+  if (u_plumes > 0.0) {
+    for (int k = 0; k < 2; k++) {
+      float tl = (k == 0 ? 46.0 : 28.0) * px;
+      vec2 g = vec2(f.x + sin(u_t * 0.9 + f.y * 0.012 / px + float(k)) * 22.0 * px, f.y - u_t * (k == 0 ? 55.0 : 85.0) * px) / tl;
+      vec2 ig = floor(g);
+      float h = hash(ig + 9.0 + float(k) * 31.0);
+      vec2 q = fract(g) - 0.5 - (vec2(hash(ig + 2.3), hash(ig + 4.1)) - 0.5) * 0.4;
+      float ca = cos(h * 6.28 + u_t), sa = sin(h * 6.28 + u_t);
+      q = vec2(ca * q.x - sa * q.y, sa * q.x + ca * q.y);
+      float pt = step(0.9, h) * smoothstep(0.42, 0.0, length(q * vec2(1.0, 2.6)));
+      col += vec3(1.0, 0.93, 0.72) * pt * u_plumes * 0.85;
+    }
+  }
+  // Le pouls : le bord de l'écran rougit à chaque battement
+  col = mix(col, col * vec3(1.0, 0.16, 0.1) + vec3(0.28, 0.0, 0.0), u_pouls * smoothstep(0.15, 0.85, length(s) * 1.5));
+  // L'éclair : la scène s'illumine d'un coup
+  col += u_flashCol * u_flash;
   // Le noir : une lumière qui grésille, un œil qui cligne
   col *= 1.0 - u_noir;
-  vec2 s = f / u_ecran - 0.5;
   col *= 1.0 - u_vignette * 0.55 * dot(s, s) * 2.0;
   col += (hash(f + fract(u_t) * 91.0) - 0.5) * 0.035 * u_vignette;
   sortie = vec4(col, 1.0);
@@ -361,7 +428,25 @@ export function Immersion({ id, scene, fige }: { id: string; scene: SceneImmersi
         )
         const fin = scene.retour - 0.6
         gl.uniform1f(u('u_fin'), fin)
-        const pistes: Piste[] = ['porte', 'porteEch', 'lumiere', 'rouge', 'eau', 'efface', 'alarme', 'braise', 'noir']
+        gl.uniform3fv(u('u_flashCol'), hex(scene.flash ?? '#ffffff'))
+        gl.uniform2fv(u('u_centre'), scene.centre ?? [l / 2, h / 2])
+        const pistes: Piste[] = [
+          'porte',
+          'porteEch',
+          'lumiere',
+          'rouge',
+          'eau',
+          'efface',
+          'alarme',
+          'braise',
+          'noir',
+          'flash',
+          'chaleur',
+          'rayons',
+          'etincelles',
+          'plumes',
+          'pouls',
+        ]
         const loc = Object.fromEntries(pistes.map((p) => [p, u(`u_${p}`)]))
         const lt = u('u_t')
         const ltr = u('u_tr')
