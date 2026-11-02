@@ -137,6 +137,27 @@ await test('dossiers Keter et O5 : un nombre limité d’achats par jour', async
   // Les autres dossiers restent illimités
   for (let i = 0; i < 4; i++) await valeur(A, "select public.ouvrir_booster('scp', false)")
 })
+await test('missions : trois du jour et trois de la semaine, réclamées une seule fois', async () => {
+  const m = await valeur(A, 'select public.missions()')
+  assert.equal(m.filter((x) => x.periode === 'jour').length, 3)
+  assert.deepEqual(
+    m
+      .filter((x) => x.periode === 'semaine')
+      .map((x) => x.id)
+      .sort(),
+    ['s-agents', 's-dossiers', 's-victoires'],
+  )
+  await echoue(en(A, "select public.reclamer_mission('inconnue')"), /pas au programme/)
+  await echoue(en(A, "select public.reclamer_mission('s-agents')"), /pas encore accomplie/)
+  // 15 dossiers ouverts cette semaine : la mission est accomplie
+  await admin(`insert into prive.tirages (joueur, type_booster, cartes) select '${A}', 'standard', '[]' from generate_series(1, 15)`)
+  const avant = (await valeur(A, 'select public.mon_etat()')).profil.boosters
+  const r = await valeur(A, "select public.reclamer_mission('s-dossiers')")
+  assert.equal(r.profil.boosters, avant + 3)
+  assert.equal(r.missions.find((x) => x.id === 's-dossiers').reclamee, true)
+  await echoue(en(A, "select public.reclamer_mission('s-dossiers')"), /déjà réclamée/)
+  await echoue(en(null, 'select public.missions()'), /permission denied/)
+})
 await test('le Dossier Apollyon : un par semaine, une Légendaire garantie', async () => {
   await admin(`update public.profils set credits = credits + 10000 where id = '${A}'`)
   const r = await valeur(A, "select public.ouvrir_booster('apollyon', false)")

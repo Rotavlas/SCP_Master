@@ -7,6 +7,7 @@ import type { Ecran } from '../types'
 import { Carte } from './Carte'
 import { CompteARebours } from './CompteARebours'
 import { Logo } from './Logo'
+import { Missions } from './Missions'
 
 interface Props {
   base: Base
@@ -44,8 +45,7 @@ export function Accueil({ base, aller, ouvrirCarte }: Props) {
         <p className="dossier-entete">Fondation SCP · Création du dossier personnel</p>
         <h1>Bienvenue, agent.</h1>
         <p className="intro">
-          Choisissez le pseudo sous lequel les autres membres du personnel vous verront. Trois dossiers vous attendent pour commencer votre
-          collection.
+          Choisissez le pseudo sous lequel les autres membres du personnel vous verront. Trois dossiers vous attendent pour commencer votre collection.
         </p>
         <form
           className="inscription"
@@ -111,7 +111,9 @@ export function Accueil({ base, aller, ouvrirCarte }: Props) {
           <span className="tuile-titre">Confrontation</span>
           <span className="tuile-valeur">{duels ? `${duels.elo} Elo` : '—'}</span>
           <span className="tuile-sous">
-            {duels ? `#${duels.rang} · ${duels.jcj.victoires} victoire${duels.jcj.victoires > 1 ? 's' : ''} entre agents · ${duels.enLigne} en ligne` : 'duels entre agents'}
+            {duels
+              ? `#${duels.rang} · ${duels.jcj.victoires} victoire${duels.jcj.victoires > 1 ? 's' : ''} entre agents · ${duels.enLigne} en ligne`
+              : 'duels entre agents'}
           </span>
         </button>
         <button className="tuile" onClick={() => aller('collection')}>
@@ -125,6 +127,8 @@ export function Accueil({ base, aller, ouvrirCarte }: Props) {
           <span className="tuile-sous">crédits disponibles</span>
         </button>
       </div>
+
+      <Missions />
 
       <div className="raretes-resume">
         {RARETES.map((r, i) => (
@@ -158,17 +162,18 @@ export function Accueil({ base, aller, ouvrirCarte }: Props) {
           <li>Le bouton VO/VF bascule les textes vers les traductions de la branche française, quand elles existent.</li>
           <li>La rareté vient de la popularité de la page : note du wiki et nombre de pages qui la citent.</li>
           <li>
-            <strong>Menace</strong> dépend de la longueur du dossier et de la dangerosité de l'objet ;{' '}
-            <strong>Confinement</strong> de sa classe et de ses procédures.
+            <strong>Menace</strong> dépend de la longueur du dossier et de la dangerosité de l'objet ; <strong>Confinement</strong> de sa classe et de ses
+            procédures.
           </li>
           <li>
-            En confrontation, chaque manche pose une question sur l'une des deux cartes en jeu. Bonne réponse : votre carte
-            frappe. Répondez vite pour frapper plus fort.
+            En confrontation, on libère ses anomalies chez l'adversaire et on reconfine les siennes en répondant à des questions sur elles ; chaque anomalie a
+            son effet, et la Mythique de l'équipe se manifeste quand la jauge est pleine.
           </li>
           <li>
-            Les duels <strong>entre agents</strong> sont le cœur du jeu : le duel classé fait gagner ou perdre de l'Elo et rapporte
-            des crédits, le défi amical se lance à un ami en ligne. Contre l'IA, 10 duels récompensés par jour pour s'entraîner.
+            Les duels <strong>entre agents</strong> sont le cœur du jeu : le duel classé fait gagner ou perdre de l'Elo et rapporte des crédits, le défi amical
+            se lance à un ami en ligne. Contre l'IA, trois modes et 5 duels récompensés par jour.
           </li>
+          <li>Chaque jour, trois missions ; chaque semaine, trois de plus : crédits et dossiers à réclamer une fois accomplies.</li>
           <li>Le Marché permet d'enchérir, de vendre et d'échanger des cartes avec les autres agents.</li>
           <li>L'onglet Social réunit amis, clans et messages ; les Classements comparent Elo, collection, fortune et clans.</li>
           <li>Les victoires rapportent crédits et XP. L'accréditation débloque des adversaires IA plus coriaces.</li>
