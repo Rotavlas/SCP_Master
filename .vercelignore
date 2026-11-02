@@ -1,7 +1,9 @@
 node_modules
 dist
 supabase
-outils
+# Les outils restent en local, sauf celui que le build lance (prebuild : catalogue léger)
+outils/*
+!outils/catalogue_leger.mjs
 docs
 .env
 .env.*
