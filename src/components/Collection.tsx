@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Album } from './Album'
 import { CLASSES, ORDRE_TYPES, RARETES, TYPES, type Base } from '../data/catalogue'
 import { VALEUR_RECYCLAGE, gainPlafonne } from '../engine/boosters'
 import { VARIANTES, type IdVariante } from '../engine/variantes'
@@ -247,6 +248,8 @@ export function Collection({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id
           )}
         </div>
       </div>
+
+      <Album />
 
       <div className="filtres-archives">
         <div className="filtres-recherche">

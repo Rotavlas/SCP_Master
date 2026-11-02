@@ -22,6 +22,8 @@ export const JOURNAL: Entree[] = [
       'Les dossiers gratuits et les autres dossiers ne sont pas limités.',
       'De nouvelles anomalies ont leur effet : SCP-939 imite (une fausse réponse copie presque la bonne), SCP-087 plonge la question dans le noir (on ne la lit qu’à la lueur de sa lampe), SCP-2521 transforme l’intitulé en points, SCP-3000 dévore la mémoire, SCP-3008 égare les réponses, SCP-035 possède, MalO apparaît du coin de l’œil ; les propositions pour SCP-001 font vaciller la réalité.',
       'Les Protocoles ont leur pouvoir en Reconfinement : IRA-5 reconfine d’office, CODE RED divise la brèche par quatre, CODE GREEN décontamine, CODE AMBER donne du temps, Montauk vide la jauge adverse, Patmos reconfine d’office les deux tours suivants, CK soigne, XK frappe les deux Sites.',
+      'Saisons classées : chaque mois est une saison. Les agents qui y jouent au moins 5 duels classés sont récompensés à la clôture selon leur Elo (Or dès 1 300 : 2 500 ₵ ; Argent dès 1 150 : 1 200 ₵ ; Bronze dès 1 050 : 600 ₵ ; sinon 200 ₵), puis tous les Elo se rapprochent de moitié de 1 000. Le hall des duels montre la saison en cours et votre dernier résultat.',
+      'L’album de la Fondation, dans les Archives : neuf pages à compléter (Conseil O5, IRA, codes de confinement, scénarios K, grandes entités, départements, Sites, FIM, Mythiques). Une page complète se réclame une fois, de 600 ₵ à 10 000 ₵.',
       'Les Auteurs ont leur musique : un piano qui semble vous remarquer, un « toi » chuchoté, une notification quand ils prennent votre onglet, le silence au plantage, puis la musique qui revient pendant qu’ils écrivent la carte.',
     ],
   },

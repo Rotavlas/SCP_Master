@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import { Saison } from './Saison'
 import type { Base } from '../data/catalogue'
 import { ADVERSAIRES, type Adversaire } from '../engine/duel'
 import {
@@ -377,6 +378,7 @@ function HallJcj({
           </div>
         )}
         {!pret && <p className="alerte">Composez d'abord une équipe de 5 cartes.</p>}
+        <Saison />
       </div>
 
       <div className="hall-amis">

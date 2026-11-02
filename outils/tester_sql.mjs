@@ -559,6 +559,40 @@ await test('recycler et brûler : 3 000 ₵ par jour à plein tarif, 20 % au-del
   assert.equal(await valeur(B, 'select public.recyclage_restant()'), 0)
 })
 
+await test('album : une page complète se réclame une fois', async () => {
+  const pages = await valeur(B, 'select public.albums()')
+  const ira = pages.find((p) => p.id === 'ira')
+  console.log('    pages :', pages.map((p) => `${p.id} ${p.total}`).join(', '))
+  for (const p of pages) assert.ok(p.total > 0, `page vide : ${p.id}`)
+  assert.equal(ira.total, (await admin("select count(*)::int as n from public.cartes where id ~ '^proto:ira-'")).rows[0].n)
+  await echoue(en(B, "select public.reclamer_album('ira')"), /incomplète/)
+  for (const r of (await admin("select id from public.cartes where id ~ '^proto:ira-'")).rows) await donner(B, r.id, 1)
+  const avant = await credits(B)
+  const r = await valeur(B, "select public.reclamer_album('ira')")
+  assert.equal(Number(r.profil.credits), avant + 800)
+  assert.equal(r.albums.find((p) => p.id === 'ira').reclame, true)
+  await echoue(en(B, "select public.reclamer_album('ira')"), /déjà réclamée/)
+  await echoue(en(B, "select public.reclamer_album('inconnu')"), /inconnue/)
+})
+await test('saison classée : récompense selon l’Elo, puis Elo rapprochés de 1 000', async () => {
+  // Cinq duels classés de B en octobre 2026, et un Elo de 1 320
+  await admin(
+    `insert into public.duels_jcj (joueur_a, joueur_b, classe, statut, maj_le) select $1, $2, true, 'termine', '2026-10-15 12:00+02' from generate_series(1, 5)`,
+    [B, A],
+  )
+  await admin(`update public.profils set elo = 1320 where id = '${B}'`)
+  const avant = await credits(B)
+  assert.ok((await admin("select prive.clore_saison('2026-10') as n")).rows[0].n >= 2)
+  const res = (await admin("select palier, credits, elo from public.saisons_resultats where saison = '2026-10' and joueur = $1", [B])).rows[0]
+  assert.deepEqual(res, { palier: 'or', credits: 2500, elo: 1320 })
+  assert.equal(await credits(B), avant + 2500)
+  assert.equal((await admin('select elo from public.profils where id = $1', [B])).rows[0].elo, 1160)
+  assert.equal((await admin("select prive.clore_saison('2026-10') as n")).rows[0].n, 0, 'une saison ne se clôt qu’une fois')
+  const s = await valeur(B, 'select public.saison()')
+  assert.equal(s.dernier.palier, 'or')
+  assert.equal(s.requis, 5)
+})
+
 console.log('Échanges')
 await test('chercher un joueur par le début de son pseudo', async () => {
   assert.deepEqual(await valeur(A, "select public.chercher_joueurs('doc')"), ['Docteur Bravo'])
