@@ -107,13 +107,15 @@ function demander(carte: Carte) {
     const tr = await t
     if (!tr) return
     try {
+      // Les extraits n'arrivent qu'à l'ouverture de la fiche (src/data/textes.ts) : on complète ce qui est déjà traduit
+      const deja = lire(carte.id)
       const [nm, x, q] = await Promise.all([
         // Un surnom entre crochets ([DONNÉES EXPURGÉES]…) ou une désignation seule ne se traduit pas
-        /^\[.*\]$/.test(carte.nm) || carte.nm === carte.num ? carte.nm : tr.translate(carte.nm),
-        carte.x ? tr.translate(carte.x) : undefined,
-        carte.q ? tr.translate(carte.q) : undefined,
+        deja?.nm ?? (/^\[.*\]$/.test(carte.nm) || carte.nm === carte.num ? carte.nm : tr.translate(carte.nm)),
+        deja?.x ?? (carte.x ? tr.translate(carte.x) : undefined),
+        deja?.q ?? (carte.q ? tr.translate(carte.q) : undefined),
       ])
-      garder(carte.id, { nm, x, q })
+      garder(carte.id, { nm, ...(x !== undefined && { x }), ...(q !== undefined && { q }) })
     } catch {
       // Traduction refusée pour cette carte : elle reste en VO
     } finally {
@@ -136,10 +138,12 @@ export function useCarteAffichee(carte: Carte): Carte & { auto?: boolean } {
     },
     () => (besoin ? lire(carte.id) : undefined),
   )
+  // Traduite sans ses extraits (vue en liste), puis ouverte avec : il reste les extraits à traduire
+  const manque = !!champs && ((!!carte.x && champs.x === undefined) || (!!carte.q && champs.q === undefined))
   useEffect(() => {
-    if (!besoin || champs) return
+    if (!besoin || (champs && !manque)) return
     preparerTraducteur()
     demander(carte)
-  }, [besoin, champs, carte])
+  }, [besoin, champs, manque, carte])
   return champs ? { ...carte, ...champs, auto: true } : carte
 }

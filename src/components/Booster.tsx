@@ -6,6 +6,7 @@ import { PAR_ID, PRESTIGE } from '../engine/variantes'
 import { tirerBooster } from '../state/actions'
 import { ambiance, jouer, planifier } from '../state/sons'
 import { useCarteAffichee } from '../state/traduction'
+import { prechargerTextes, useTextes } from '../data/textes'
 import { notifier, obtenir, useSauvegarde } from '../state/sauvegarde'
 import type { Carte as TCarte, Ecran } from '../types'
 import { Carte } from './Carte'
@@ -123,6 +124,8 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
       img.referrerPolicy = 'no-referrer'
       img.src = url
     }
+    // Et les extraits des Légendaires et Mythiques, que leur cinématique décrypte
+    prechargerTextes(tirage.cartes.map((t) => t.carte).filter((c) => c.ra >= 4))
   }, [base, tirage])
 
   const dechirer = useCallback(() => {
@@ -446,7 +449,7 @@ const L_DECRYPTAGE = [3.4, 5.6]
  * caviardé dont la moitié des mots se décryptent un à un. Le nom et le numéro de la carte restent noircis.
  */
 function ProtocoleLegendaire({ carte, onFini }: { carte: TCarte; onFini: () => void }) {
-  const affichee = useCarteAffichee(carte)
+  const affichee = useCarteAffichee(useTextes(carte).carte)
   const [t, setT] = useState(0)
   useEffect(() => {
     const debut = performance.now()

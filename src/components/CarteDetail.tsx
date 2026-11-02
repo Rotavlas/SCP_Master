@@ -6,6 +6,7 @@ import { TAILLE_DECK, doublonsRecyclables, exemplairesStandard, modifier, useSau
 import { recycler } from '../state/actions'
 import { useRecyclageRestant } from '../state/enLigne'
 import { useCarteAffichee } from '../state/traduction'
+import { useTextes } from '../data/textes'
 import { CREDITS_ILLUSTRATIONS } from '../data/mythiques'
 import type { Carte as TCarte } from '../types'
 import { Protocole } from './Booster'
@@ -25,7 +26,8 @@ export function CarteDetail({
 }) {
   const s = useSauvegarde()
   const restantRecyclage = useRecyclageRestant()
-  const carte = useCarteAffichee(source)
+  // Les extraits du dossier arrivent à l'ouverture de la fiche (src/data/textes.ts)
+  const carte = useCarteAffichee(useTextes(source).carte)
   const quantite = s.collection[carte.id] ?? 0
   const favori = s.favoris.includes(carte.id)
   const souhait = s.souhaits.includes(carte.id)

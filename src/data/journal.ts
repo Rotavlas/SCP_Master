@@ -12,6 +12,15 @@ export interface Entree {
 export const JOURNAL: Entree[] = [
   {
     date: '2026-11-02',
+    titre: 'Un chargement trois fois plus léger',
+    points: [
+      'Le jeu charge désormais environ 1,2 Mo au lieu de près de 4 : les extraits des dossiers (description, procédures) ne se téléchargent plus qu’à l’ouverture d’une fiche, quelques kilo-octets à la fois. Le premier écran arrive plus vite, surtout sur mobile.',
+      'Épreuve de la semaine : les questions restent les mêmes pour tous, mais l’ordre des réponses change d’un agent à l’autre. Se souffler « la C » ne sert plus à rien.',
+      'La cloche annonce le résultat de l’Épreuve le lundi, celui de la saison classée en début de mois, et prévient tout le clan quand l’anomalie du raid est reconfinée.',
+    ],
+  },
+  {
+    date: '2026-11-02',
     titre: 'L’Épreuve de la semaine et les raids de clan',
     points: [
       'Nouveau dans le hall des confrontations : l’Épreuve de la semaine. Dix questions, les mêmes pour tous les agents, des anomalies célèbres aux dossiers oubliés ; une seule tentative, 100 points par bonne réponse et jusqu’à 50 de plus selon la vitesse.',

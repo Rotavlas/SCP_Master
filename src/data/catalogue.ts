@@ -125,16 +125,17 @@ export class Base {
 
 /** Empreinte du catalogue, fixée par vite.config.ts (absente hors du site, dans la fonction Edge) */
 declare const __VERSION_CARTES__: string
-const version = () => (typeof __VERSION_CARTES__ === 'string' ? `?v=${__VERSION_CARTES__}` : '')
+export const version = () => (typeof __VERSION_CARTES__ === 'string' ? `?v=${__VERSION_CARTES__}` : '')
 
+/** Le catalogue léger, sans extraits (src/data/textes.ts) ; la fonction Edge charge le complet (serveur/commun.ts) */
 export async function chargerBase(): Promise<Base> {
-  const reponse = await fetch(`${import.meta.env.BASE_URL}data/cards.json${version()}`)
+  const reponse = await fetch(`${import.meta.env.BASE_URL}data/leger/cards.json${version()}`)
   if (!reponse.ok) throw new Error(`Base de données inaccessible (${reponse.status})`)
   return new Base((await reponse.json()) as Catalogue)
 }
 
 export async function chargerTraductions(): Promise<Traductions> {
-  const reponse = await fetch(`${import.meta.env.BASE_URL}data/cards.fr.json${version()}`)
+  const reponse = await fetch(`${import.meta.env.BASE_URL}data/leger/cards.fr.json${version()}`)
   if (!reponse.ok) throw new Error(`Traductions inaccessibles (${reponse.status})`)
   return (await reponse.json()) as Traductions
 }

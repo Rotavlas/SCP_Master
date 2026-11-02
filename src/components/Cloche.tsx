@@ -6,8 +6,14 @@ export type OngletMarche = 'encheres' | 'ventes' | 'echanges'
 
 const credits = (n?: number) => `${Number(n ?? 0).toLocaleString('fr-FR')} ₵`
 
+/** Où mène une notification : un onglet du marché, le hall des confrontations ou la page du clan */
+export type Destination = { onglet: OngletMarche; carte?: string } | { ecran: 'duel' | 'clan' }
+
+const PALIERS: Record<string, string> = { or: 'Or', argent: 'Argent', bronze: 'Bronze', participation: 'Participation' }
+const rang = (r?: number) => `${r ?? '?'}${r === 1 ? 'er' : 'e'}`
+
 /** Le texte d'une notification et l'endroit où elle mène. */
-export function decrire(n: Notification, base: Base): { texte: string; onglet: OngletMarche; carte?: string } {
+export function decrire(n: Notification, base: Base): { texte: string } & Destination {
   const c = n.donnees.carte ? base.parId.get(n.donnees.carte) : undefined
   const nom = c ? designation(c) : 'une carte'
   const variante = n.donnees.variante && n.donnees.variante !== 'std' ? ' (variante)' : ''
@@ -28,6 +34,18 @@ export function decrire(n: Notification, base: Base): { texte: string; onglet: O
       return { texte: `${n.donnees.avec ?? "L'agent"} a accepté ton échange`, onglet: 'echanges' }
     case 'echange_refuse':
       return { texte: `${n.donnees.avec ?? "L'agent"} a refusé ton échange`, onglet: 'echanges' }
+    case 'epreuve_resultat':
+      return {
+        texte: `Épreuve de la semaine : ${rang(n.donnees.rang)} sur ${n.donnees.participants ?? '?'} avec ${n.donnees.score ?? 0} points, +${credits(n.donnees.credits)}`,
+        ecran: 'duel',
+      }
+    case 'saison_resultat':
+      return {
+        texte: `Saison classée close : palier ${PALIERS[n.donnees.palier ?? ''] ?? n.donnees.palier}, ${rang(n.donnees.rang)}, +${credits(n.donnees.credits)}`,
+        ecran: 'duel',
+      }
+    case 'raid_vaincu':
+      return { texte: `Raid réussi : ${nom} est reconfiné. Réclamez votre part dans la page du clan`, ecran: 'clan' }
   }
 }
 
@@ -40,7 +58,15 @@ function depuis(le: string) {
 }
 
 /** La cloche du bandeau : compteur des non lues, liste déroulante, chaque ligne mène au marché. */
-export function Cloche({ base, voirMarche }: { base: Base; voirMarche: (onglet: OngletMarche, recherche?: string) => void }) {
+export function Cloche({
+  base,
+  voirMarche,
+  aller,
+}: {
+  base: Base
+  voirMarche: (onglet: OngletMarche, recherche?: string) => void
+  aller: (ecran: 'duel' | 'clan') => void
+}) {
   const { liste, nonLues } = useNotificationsJeu()
   const [ouverte, setOuverte] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
@@ -69,7 +95,17 @@ export function Cloche({ base, voirMarche }: { base: Base; voirMarche: (onglet: 
           if (!ouverte) void lireNotifications()
         }}
       >
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          aria-hidden="true"
+        >
           <path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9" />
           <path d="M10.3 21a1.94 1.94 0 0 0 3.4 0" />
         </svg>
@@ -79,7 +115,9 @@ export function Cloche({ base, voirMarche }: { base: Base; voirMarche: (onglet: 
         <div className="cloche-liste" role="menu">
           <p className="dossier-entete">Notifications</p>
           {liste.length === 0 ? (
-            <p className="discret">Rien pour l'instant : enchères, ventes, échanges et cartes souhaitées mises en vente apparaîtront ici.</p>
+            <p className="discret">
+              Rien pour l'instant : enchères, ventes, échanges, cartes souhaitées mises en vente, résultats de l'Épreuve et raids apparaîtront ici.
+            </p>
           ) : (
             <ul>
               {liste.map((n) => {
@@ -91,7 +129,8 @@ export function Cloche({ base, voirMarche }: { base: Base; voirMarche: (onglet: 
                       className={`cloche-ligne type-${n.type} ${n.lu ? '' : 'non-lue'}`}
                       onClick={() => {
                         setOuverte(false)
-                        voirMarche(d.onglet, d.carte)
+                        if ('ecran' in d) aller(d.ecran)
+                        else voirMarche(d.onglet, d.carte)
                       }}
                     >
                       <span>{d.texte}</span>

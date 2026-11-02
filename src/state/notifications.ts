@@ -1,5 +1,6 @@
 /**
- * Notifications de la cloche : marché, enchères, échanges, cartes souhaitées mises en vente.
+ * Notifications de la cloche : marché, enchères, échanges, cartes souhaitées mises en vente ; résultats de l'Épreuve et
+ * de la saison classée, raid de clan reconfiné.
  * Le serveur les écrit (déclencheurs de supabase/migrations/20261031090000_notifications.sql) ;
  * elles arrivent en direct et se marquent lues à l'ouverture de la cloche.
  */
@@ -15,11 +16,32 @@ export type TypeNotification =
   | 'echange_recu'
   | 'echange_accepte'
   | 'echange_refuse'
+  | 'epreuve_resultat'
+  | 'saison_resultat'
+  | 'raid_vaincu'
 
 export interface Notification {
   id: number
   type: TypeNotification
-  donnees: { carte?: string; variante?: string; enchere?: string; prix?: number; mise?: number; par?: string; acheteur?: string; vendeur?: string; de?: string; avec?: string; offre?: string }
+  donnees: {
+    carte?: string
+    variante?: string
+    enchere?: string
+    prix?: number
+    mise?: number
+    par?: string
+    acheteur?: string
+    vendeur?: string
+    de?: string
+    avec?: string
+    offre?: string
+    // Épreuve, saison classée, raid
+    rang?: number
+    participants?: number
+    score?: number
+    credits?: number
+    palier?: string
+  }
   lu: boolean
   le: string
 }

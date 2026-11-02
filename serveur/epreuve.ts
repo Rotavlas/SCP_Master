@@ -82,6 +82,22 @@ export function questionsDeLaSemaine(b: Base, semaine: string): QuestionEpreuve[
   }
 }
 
+/**
+ * Les mêmes questions pour tous, mais les réponses dans un ordre propre à chaque agent : se souffler « la C » ne sert
+ * à rien.
+ */
+export function melangerPourJoueur(questions: QuestionEpreuve[], graine: string): QuestionEpreuve[] {
+  const hasard = generateur(graine)
+  return questions.map((q) => {
+    const ordre = q.options.map((_, i) => i)
+    for (let i = ordre.length - 1; i > 0; i--) {
+      const j = Math.floor(hasard() * (i + 1))
+      ;[ordre[i], ordre[j]] = [ordre[j], ordre[i]]
+    }
+    return { ...q, options: ordre.map((i) => q.options[i]), bonne: ordre.indexOf(q.bonne) }
+  })
+}
+
 export const pointsDe = (juste: boolean, temps: number) => (juste ? POINTS + Math.round(BONUS_VITESSE * Math.max(0, 1 - temps / DUREE_QUESTION)) : 0)
 
 const score = (e: EtatEpreuve) => e.reponses.reduce((s, r) => s + r.points, 0)
@@ -135,7 +151,7 @@ async function debuter(env: Environnement, idJoueur: string) {
   if (t.termine) throw new Erreur(409, 'Vous avez déjà passé l’Épreuve de cette semaine')
   if (t.etat) return vue(t.etat)
   const b = await base(env, t.langue)
-  const etat: EtatEpreuve = { semaine: t.semaine, questions: questionsDeLaSemaine(b, t.semaine), reponses: [] }
+  const etat: EtatEpreuve = { semaine: t.semaine, questions: melangerPourJoueur(questionsDeLaSemaine(b, t.semaine), `${t.semaine}:${idJoueur}`), reponses: [] }
   await ecrire(env, idJoueur, 0, etat)
   return vue(etat)
 }

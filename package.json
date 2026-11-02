@@ -4,10 +4,13 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "predev": "node outils/catalogue_leger.mjs",
     "dev": "vite",
+    "preatelier": "node outils/catalogue_leger.mjs",
     "atelier": "vite --open /atelier.html",
     "illustrations": "node outils/illustrations_mythiques.mjs",
     "immersion": "node outils/temps_mythiques.mjs",
+    "prebuild": "node outils/catalogue_leger.mjs",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
     "cartes": "python -I outils/construire_cartes.py",

@@ -3,11 +3,11 @@
  * cinématique complète, pour travailler les illustrations. Page de développement seulement
  * (npm run atelier) : elle n'est pas publiée avec le jeu.
  */
-import { EpreuveHall, EpreuvePartie } from './components/Epreuve'
-import { Raid } from './components/Raid'
 import { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Protocole } from './components/Booster'
+import { EpreuveHall, EpreuvePartie } from './components/Epreuve'
+import { Raid } from './components/Raid'
 import { Carte } from './components/Carte'
 import { AnimationMythique } from './components/AnimationsMythiques'
 import { SceneMythique } from './components/ScenesMythiques'
@@ -179,6 +179,10 @@ function Atelier({ base }: { base: Base }) {
   const params = new URLSearchParams(location.search)
   const voir = params.get('voir')
   if (voir) return <Voir id={voir} />
+  // atelier.html?legendaire=<id> : le protocole d'ouverture d'une Légendaire, avec son extrait décrypté
+  const legendaire = params.get('legendaire')
+  const carteLegendaire = legendaire ? base.parId.get(legendaire) : undefined
+  if (carteLegendaire) return <Protocole carte={carteLegendaire} onFini={() => location.reload()} />
   const mode = params.get('mode') ?? (params.has('breche') ? 'breche' : null)
   if (mode === 'alterations') return <PlancheAlterations />
   if (mode === 'hall') {

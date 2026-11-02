@@ -248,6 +248,10 @@ export default function App() {
                 setOngletMarche(onglet)
                 aller('marche')
               }}
+              aller={(cible) => {
+                if (cible === 'clan') setOngletSocial('clan')
+                aller(cible === 'clan' ? 'social' : 'duel')
+              }}
             />
           )}
           <BoutonCompte ouvrirProfil={setProfilOuvert} />

@@ -587,6 +587,9 @@ await test('saison classée : récompense selon l’Elo, puis Elo rapprochés de
   assert.deepEqual(res, { palier: 'or', credits: 2500, elo: 1320 })
   assert.equal(await credits(B), avant + 2500)
   assert.equal((await admin('select elo from public.profils where id = $1', [B])).rows[0].elo, 1160)
+  const notif = (await admin("select donnees from public.notifications where type = 'saison_resultat' and joueur = $1", [B])).rows
+  assert.equal(notif.length, 1)
+  assert.equal(notif[0].donnees.palier, 'or')
   assert.equal((await admin("select prive.clore_saison('2026-10') as n")).rows[0].n, 0, 'une saison ne se clôt qu’une fois')
   const s = await valeur(B, 'select public.saison()')
   assert.equal(s.dernier.palier, 'or')
@@ -1101,6 +1104,27 @@ await test('raid de clan : dégâts des membres, plafond par jour, récompense d
   assert.equal(r.raid.courant.reclame, true)
   await echoue(en(R1, `select public.reclamer_raid('${raid2.courant.semaine}')`), /déjà réclamée/)
   await echoue(en(R1, "select public.reclamer_raid('2020-01-06')"), /clos/)
+})
+
+await test('notifications : résultat de l’Épreuve, raid reconfiné annoncé une fois au clan', async () => {
+  const notifs = async (j, type) =>
+    (await admin('select donnees from public.notifications where joueur = $1 and type = $2', [j, type])).rows.map((r) => r.donnees)
+  const epreuve = await notifs(R2, 'epreuve_resultat')
+  assert.equal(epreuve.length, 1)
+  assert.equal(epreuve[0].rang, 1)
+  assert.equal(epreuve[0].credits, 1500)
+  // Le raid du clan de R1 et R2 est déjà vaincu : le prochain duel terminé l'annonce
+  assert.equal((await notifs(R1, 'raid_vaincu')).length, 0)
+  const id = (await admin(`insert into prive.duels_ia (joueur, niveau) values ($1, 1) returning id`, [R1])).rows[0].id
+  await admin(`update prive.duels_ia set fin = now(), issue = 'defaite', bonnes = 0 where id = $1`, [id])
+  const raid = await notifs(R2, 'raid_vaincu')
+  assert.equal(raid.length, 1)
+  assert.match(raid[0].carte, /^scp-/)
+  assert.equal((await notifs(R1, 'raid_vaincu')).length, 1)
+  // Un autre duel : pas de seconde annonce
+  const autre = (await admin(`insert into prive.duels_ia (joueur, niveau) values ($1, 1) returning id`, [R2])).rows[0].id
+  await admin(`update prive.duels_ia set fin = now(), issue = 'victoire', bonnes = 5 where id = $1`, [autre])
+  assert.equal((await notifs(R1, 'raid_vaincu')).length, 1)
 })
 
 console.log(`\n${reussis} tests réussis${process.exitCode ? ', des échecs' : ''}.`)

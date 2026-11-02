@@ -7,3 +7,5 @@ dist
 
 .vercel
 outils/.cache
+# Catalogue léger, produit par outils/catalogue_leger.mjs
+public/data/leger

@@ -1530,6 +1530,25 @@ function questionsDeLaSemaine(b, semaine) {
 		Math.random = original;
 	}
 }
+/**
+* Les mêmes questions pour tous, mais les réponses dans un ordre propre à chaque agent : se souffler « la C » ne sert
+* à rien.
+*/
+function melangerPourJoueur(questions, graine) {
+	const hasard = generateur(graine);
+	return questions.map((q) => {
+		const ordre = q.options.map((_, i) => i);
+		for (let i = ordre.length - 1; i > 0; i--) {
+			const j = Math.floor(hasard() * (i + 1));
+			[ordre[i], ordre[j]] = [ordre[j], ordre[i]];
+		}
+		return {
+			...q,
+			options: ordre.map((i) => q.options[i]),
+			bonne: ordre.indexOf(q.bonne)
+		};
+	});
+}
 const pointsDe = (juste, temps) => juste ? 100 + Math.round(50 * Math.max(0, 1 - temps / 20)) : 0;
 const score = (e) => e.reponses.reduce((s, r) => s + r.points, 0);
 const bonnes = (e) => e.reponses.filter((r) => r.points > 0).length;
@@ -1575,7 +1594,7 @@ async function debuter$2(env, idJoueur) {
 	const b = await base(env, t.langue);
 	const etat = {
 		semaine: t.semaine,
-		questions: questionsDeLaSemaine(b, t.semaine),
+		questions: melangerPourJoueur(questionsDeLaSemaine(b, t.semaine), `${t.semaine}:${idJoueur}`),
 		reponses: []
 	};
 	await ecrire$2(env, idJoueur, 0, etat);

@@ -820,7 +820,15 @@ await test('mêmes questions pour tous, dans le même ordre', async () => {
   assert.deepEqual(a.corps, { index: 0, total: 10, score: 0, bonnes: 0, termine: false })
   const [ea, eb] = [(await tentative(A)).etat, (await tentative(B)).etat]
   assert.equal(ea.questions.length, 10)
-  assert.deepEqual(ea.questions, eb.questions)
+  // Mêmes sujets et mêmes réponses, mais rangées dans un ordre propre à chacun
+  assert.deepEqual(
+    ea.questions.map((q) => [q.sujet, q.intitule, q.options[q.bonne], [...q.options].sort()]),
+    eb.questions.map((q) => [q.sujet, q.intitule, q.options[q.bonne], [...q.options].sort()]),
+  )
+  assert.ok(
+    ea.questions.some((q, i) => q.options.join() !== eb.questions[i].options.join()),
+    'l’ordre des réponses diffère d’un agent à l’autre',
+  )
   assert.equal(new Set(ea.questions.map((q) => q.sujet)).size, 10, 'dix sujets différents')
   // Recommencer ne retire pas de nouvelles questions
   await appel('jeton-A', { action: 'epreuve_debuter' })
