@@ -3,13 +3,14 @@ import type { Base } from '../data/catalogue'
 import { appeler } from '../state/enLigne'
 import { useSauvegarde } from '../state/sauvegarde'
 import type { Ecran } from '../types'
+import { ouvrirSection } from './Section'
 
 /**
  * Les objectifs presque atteints (public.objectifs_proches) : le rapport du jour, un palier tout proche, une page
  * d'album aux deux tiers, sa part du raid, une mission bien avancée, l'Épreuve pas encore passée. Les récompenses
  * prêtes d'abord ; quatre au plus.
  */
-type Objectif =
+export type Objectif =
   | { type: 'rapport'; jour: number; serie: number }
   | { type: 'piste_prete'; paliers: number }
   | { type: 'piste'; palier: number; manque: number }
@@ -18,18 +19,21 @@ type Objectif =
   | { type: 'mission' | 'mission_prete'; titre: string; manque: number }
   | { type: 'epreuve' }
 
-const PRET = new Set(['piste_prete', 'album_pret', 'raid_pret', 'mission_prete', 'rapport'])
+/** Une récompense prête à réclamer (ou un rapport à remettre avant minuit) */
+export const PRET = new Set(['piste_prete', 'album_pret', 'raid_pret', 'mission_prete', 'rapport'])
 
-export function Objectifs({ base, aller, allerClan }: { base: Base; aller: (e: Ecran) => void; allerClan: () => void }) {
+/** Les objectifs du moment, relus quand une récompense tombe (crédits, dossiers, XP) */
+export function useObjectifs(): Objectif[] | null {
   const s = useSauvegarde()
   const [liste, setListe] = useState<Objectif[] | null>(null)
-  // Relue quand une récompense tombe (crédits, dossiers, XP)
   useEffect(() => {
     void appeler<Objectif[]>('objectifs_proches').then(setListe)
   }, [s.credits, s.boosters, s.xp, s.keterOfferts])
+  return liste
+}
 
-  if (!liste?.length) return null
-  const defiler = (id: string) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+export function Objectifs({ liste, base, aller, allerClan }: { liste: Objectif[]; base: Base; aller: (e: Ecran) => void; allerClan: () => void }) {
+  if (!liste.length) return <p className="discret">Rien d’urgent : tout est à jour.</p>
   const nom = (id: string) => {
     const c = base.parId.get(id)
     return c ? (c.num ?? c.nm) : 'l’anomalie'
@@ -40,10 +44,10 @@ export function Objectifs({ base, aller, allerClan }: { base: Base; aller: (e: E
       case 'rapport':
         return {
           texte: `Rapport du jour à remettre : jour ${o.jour}/7${o.serie ? `, ne perdez pas votre série de ${o.serie}` : ''}`,
-          action: () => defiler('rapport'),
+          action: () => ouvrirSection('quotidien', 'rapport'),
         }
       case 'piste_prete':
-        return { texte: `${o.paliers} palier${o.paliers > 1 ? 's' : ''} d’accréditation à réclamer`, action: () => defiler('piste') }
+        return { texte: `${o.paliers} palier${o.paliers > 1 ? 's' : ''} d’accréditation à réclamer`, action: () => ouvrirSection('progression', 'piste') }
       case 'piste':
         return { texte: `Palier ${o.palier} dans ${o.manque.toLocaleString('fr-FR')} XP`, action: () => aller('duel') }
       case 'album_pret':
@@ -55,9 +59,9 @@ export function Objectifs({ base, aller, allerClan }: { base: Base; aller: (e: E
       case 'raid':
         return { texte: `Raid sur ${nom(o.carte)} : encore ${o.manque} pour votre part`, action: () => aller('duel') }
       case 'mission_prete':
-        return { texte: `Mission accomplie : « ${o.titre} »`, action: () => defiler('missions') }
+        return { texte: `Mission accomplie : « ${o.titre} »`, action: () => ouvrirSection('quotidien', 'missions') }
       case 'mission':
-        return { texte: `« ${o.titre} » : encore ${o.manque}`, action: () => defiler('missions') }
+        return { texte: `« ${o.titre} » : encore ${o.manque}`, action: () => ouvrirSection('quotidien', 'missions') }
       case 'epreuve':
         return { texte: 'L’Épreuve de la semaine vous attend', action: () => aller('duel') }
     }
@@ -66,7 +70,6 @@ export function Objectifs({ base, aller, allerClan }: { base: Base; aller: (e: E
   const tries = [...liste].sort((a, b) => Number(PRET.has(b.type)) - Number(PRET.has(a.type))).slice(0, 4)
   return (
     <div className="objectifs">
-      <p className="dossier-entete">À portée de main</p>
       <ul>
         {tries.map((o, i) => {
           const d = decrire(o)

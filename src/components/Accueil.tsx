@@ -8,9 +8,10 @@ import { Carte } from './Carte'
 import { CompteARebours } from './CompteARebours'
 import { Logo } from './Logo'
 import { Missions } from './Missions'
-import { Objectifs } from './Objectifs'
+import { Objectifs, PRET, useObjectifs } from './Objectifs'
 import { Piste } from './Piste'
 import { Rapport } from './Rapport'
+import { Section } from './Section'
 
 interface Props {
   base: Base
@@ -30,6 +31,7 @@ export function Accueil({ base, aller, ouvrirCarte, allerClan }: Props) {
     if (s.agent) void tableauDuels().then(setDuels)
   }, [s.agent])
   const acc = accreditation(s.xp)
+  const objectifs = useObjectifs()
   const possedees = Object.keys(s.collection)
   const parRarete = RARETES.map(() => 0)
   for (const id of possedees) {
@@ -85,6 +87,23 @@ export function Accueil({ base, aller, ouvrirCarte, allerClan }: Props) {
 
   const progression = acc.suivant ? (s.xp - acc.xp) / (acc.suivant.xp - acc.xp) : 1
 
+  // Les badges des sections, visibles même fermées
+  const prets = objectifs?.filter((o) => PRET.has(o.type)).length ?? 0
+  const rapportDu = objectifs?.some((o) => o.type === 'rapport')
+  const missionsPretes = objectifs?.filter((o) => o.type === 'mission_prete').length ?? 0
+  const badgeQuotidien =
+    [rapportDu && 'Rapport à remettre', missionsPretes && `${missionsPretes} mission${missionsPretes > 1 ? 's' : ''} prête${missionsPretes > 1 ? 's' : ''}`]
+      .filter(Boolean)
+      .join(' · ') || undefined
+  const paliers = objectifs?.find((o) => o.type === 'piste_prete' || o.type === 'piste')
+  const paliersPrets = paliers?.type === 'piste_prete' ? paliers.paliers : 0
+  const badgeProgression =
+    paliers?.type === 'piste_prete'
+      ? `${paliersPrets} palier${paliersPrets > 1 ? 's' : ''} à réclamer`
+      : paliers?.type === 'piste'
+        ? `Palier ${paliers.palier} dans ${paliers.manque.toLocaleString('fr-FR')} XP`
+        : undefined
+
   return (
     <section className="accueil">
       <div className="bienvenue">
@@ -103,8 +122,6 @@ export function Accueil({ base, aller, ouvrirCarte, allerClan }: Props) {
           <div style={{ width: `${progression * 100}%` }} />
         </div>
       </div>
-
-      <Objectifs base={base} aller={aller} allerClan={allerClan} />
 
       <div className="tuiles">
         <button className="tuile tuile-booster" onClick={() => aller('booster')}>
@@ -135,63 +152,73 @@ export function Accueil({ base, aller, ouvrirCarte, allerClan }: Props) {
         </button>
       </div>
 
-      <div className="quotidien">
+      <Section
+        id="a-faire"
+        titre="À portée de main"
+        badge={prets ? `${prets} à réclamer` : objectifs?.length ? `${objectifs.length}` : undefined}
+        urgent={prets > 0}
+      >
+        {objectifs && <Objectifs liste={objectifs} base={base} aller={aller} allerClan={allerClan} />}
+      </Section>
+
+      <Section id="quotidien" titre="Rapport et missions" badge={badgeQuotidien} urgent={!!badgeQuotidien}>
         <Rapport />
+        <Missions sansTitre />
+      </Section>
+
+      <Section id="progression" titre="Progression" badge={badgeProgression} urgent={!!paliersPrets}>
         <Piste />
-      </div>
-
-      <Missions />
-
-      <div className="raretes-resume">
-        {RARETES.map((r, i) => (
-          <div key={r.nom}>
-            <span className="puce" style={{ background: r.couleur }} />
-            {r.nom}
-            <strong>
-              {parRarete[i]}/{base.parRarete[i].length}
-            </strong>
-          </div>
-        ))}
-      </div>
+        <div className="raretes-resume">
+          {RARETES.map((r, i) => (
+            <div key={r.nom}>
+              <span className="puce" style={{ background: r.couleur }} />
+              {r.nom}
+              <strong>
+                {parRarete[i]}/{base.parRarete[i].length}
+              </strong>
+            </div>
+          ))}
+        </div>
+      </Section>
 
       {vitrine.length > 0 && (
-        <div className="vitrine">
-          <h2>Vos dossiers les plus précieux</h2>
+        <Section id="vitrine" titre="Vos dossiers les plus précieux">
           <div className="rangee-cartes">
             {vitrine.map((c) => (
               <Carte key={c.id} carte={c} base={base} taille="p" variante={varianteAffichee(s, c.id)} onClick={() => ouvrirCarte(c.id)} />
             ))}
           </div>
-        </div>
+        </Section>
       )}
 
-      <details className="regles">
-        <summary>Comment jouer</summary>
-        <ul>
-          <li>Un dossier (booster de 5 cartes) gratuit toutes les 10 minutes, jusqu'à 10 en stock. L'intendance vend des dossiers thématiques.</li>
-          <li>Chaque carte peut sortir dans une variante rare : holographique, expurgée, archive d'origine, brèche ou sceau O5.</li>
-          <li>Le Répertoire liste toutes les fiches obtenables ; ajoutez celles que vous cherchez à votre liste de souhaits.</li>
-          <li>Le bouton VO/VF bascule les textes vers les traductions de la branche française, quand elles existent.</li>
-          <li>La rareté vient de la popularité de la page : note du wiki et nombre de pages qui la citent.</li>
-          <li>
-            <strong>Menace</strong> dépend de la longueur du dossier et de la dangerosité de l'objet ; <strong>Confinement</strong> de sa classe et de ses
-            procédures.
-          </li>
-          <li>
-            En confrontation, on libère ses anomalies chez l'adversaire et on reconfine les siennes en répondant à des questions sur elles ; chaque anomalie a
-            son effet, et la Mythique de l'équipe se manifeste quand la jauge est pleine.
-          </li>
-          <li>
-            Les duels <strong>entre agents</strong> sont le cœur du jeu : le duel classé fait gagner ou perdre de l'Elo et rapporte des crédits, le défi amical
-            se lance à un ami en ligne. Contre l'IA, trois modes et 5 duels récompensés par jour.
-          </li>
-          <li>Chaque jour, trois missions ; chaque semaine, trois de plus : crédits et dossiers à réclamer une fois accomplies.</li>
-          <li>Le Marché permet d'enchérir, de vendre et d'échanger des cartes avec les autres agents.</li>
-          <li>L'onglet Social réunit amis, clans et messages ; les Classements comparent Elo, collection, fortune et clans.</li>
-          <li>Les victoires rapportent crédits et XP. L'accréditation débloque des adversaires IA plus coriaces.</li>
-          <li>Paliers : {ACCREDITATIONS.map((a) => `N${a.niveau} à ${a.xp} XP`).join(', ')}.</li>
-        </ul>
-      </details>
+      <Section id="regles" titre="Comment jouer" ouverteParDefaut={false}>
+        <div className="regles">
+          <ul>
+            <li>Un dossier (booster de 5 cartes) gratuit toutes les 10 minutes, jusqu'à 10 en stock. L'intendance vend des dossiers thématiques.</li>
+            <li>Chaque carte peut sortir dans une variante rare : holographique, expurgée, archive d'origine, brèche ou sceau O5.</li>
+            <li>Le Répertoire liste toutes les fiches obtenables ; ajoutez celles que vous cherchez à votre liste de souhaits.</li>
+            <li>Le bouton VO/VF bascule les textes vers les traductions de la branche française, quand elles existent.</li>
+            <li>La rareté vient de la popularité de la page : note du wiki et nombre de pages qui la citent.</li>
+            <li>
+              <strong>Menace</strong> dépend de la longueur du dossier et de la dangerosité de l'objet ; <strong>Confinement</strong> de sa classe et de ses
+              procédures.
+            </li>
+            <li>
+              En confrontation, on libère ses anomalies chez l'adversaire et on reconfine les siennes en répondant à des questions sur elles ; chaque anomalie a
+              son effet, et la Mythique de l'équipe se manifeste quand la jauge est pleine.
+            </li>
+            <li>
+              Les duels <strong>entre agents</strong> sont le cœur du jeu : le duel classé fait gagner ou perdre de l'Elo et rapporte des crédits, le défi
+              amical se lance à un ami en ligne. Contre l'IA, trois modes et 5 duels récompensés par jour.
+            </li>
+            <li>Chaque jour, trois missions ; chaque semaine, trois de plus : crédits et dossiers à réclamer une fois accomplies.</li>
+            <li>Le Marché permet d'enchérir, de vendre et d'échanger des cartes avec les autres agents.</li>
+            <li>L'onglet Social réunit amis, clans et messages ; les Classements comparent Elo, collection, fortune et clans.</li>
+            <li>Les victoires rapportent crédits et XP. L'accréditation débloque des adversaires IA plus coriaces.</li>
+            <li>Paliers : {ACCREDITATIONS.map((a) => `N${a.niveau} à ${a.xp} XP`).join(', ')}.</li>
+          </ul>
+        </div>
+      </Section>
     </section>
   )
 }

@@ -22,7 +22,8 @@ interface Mission {
 const recompense = (m: Mission) =>
   [m.credits > 0 && `${m.credits} ₵`, m.dossiers > 0 && `${m.dossiers} dossier${m.dossiers > 1 ? 's' : ''}`].filter(Boolean).join(' + ')
 
-export function Missions() {
+/** `sansTitre` : dans une section du Terminal, qui porte déjà le titre */
+export function Missions({ sansTitre }: { sansTitre?: boolean } = {}) {
   const [missions, setMissions] = useState<Mission[] | null>(null)
   const [envoi, setEnvoi] = useState<string | null>(null)
   const relire = useCallback(() => void appeler<Mission[]>('missions').then((m) => m && setMissions(m)), [])
@@ -46,7 +47,7 @@ export function Missions() {
   ]
   return (
     <div className="missions" id="missions">
-      <h2>Missions</h2>
+      {!sansTitre && <h2>Missions</h2>}
       <div className="missions-groupes">
         {groupes.map(([titre, liste]) => (
           <div key={titre} className="missions-groupe">

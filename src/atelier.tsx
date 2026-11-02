@@ -9,9 +9,8 @@ import { Protocole } from './components/Booster'
 import { EpreuveHall, EpreuvePartie } from './components/Epreuve'
 import { Raid } from './components/Raid'
 import { FilClan } from './components/FilClan'
-import { Objectifs } from './components/Objectifs'
-import { Piste } from './components/Piste'
-import { Rapport } from './components/Rapport'
+import { Accueil } from './components/Accueil'
+import { modifier } from './state/sauvegarde'
 import { Carte } from './components/Carte'
 import { AnimationMythique } from './components/AnimationsMythiques'
 import { SceneMythique } from './components/ScenesMythiques'
@@ -191,13 +190,11 @@ function Atelier({ base }: { base: Base }) {
   if (mode === 'alterations') return <PlancheAlterations />
   if (mode === 'hall') {
     brancherServeurLocal()
+    // Le Terminal d'un agent de démonstration (données de src/atelierServeur.ts)
+    modifier((x) => (x.agent ? x : { ...x, agent: 'Agent atelier', xp: 3400, boosters: 4, credits: 2350 }))
     return (
       <main className="contenu">
-        <Objectifs base={base} aller={() => undefined} allerClan={() => undefined} />
-        <div className="quotidien">
-          <Rapport />
-          <Piste />
-        </div>
+        <Accueil base={base} aller={() => undefined} ouvrirCarte={() => undefined} allerClan={() => undefined} />
         <EpreuveHall lancer={() => undefined} ouvrirProfil={() => undefined} />
         <Raid base={base} />
         <FilClan base={base} />

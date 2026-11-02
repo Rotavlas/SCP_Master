@@ -43,6 +43,36 @@ export const etatAtelier = () => (duelJcj ? { etat: duelJcj.etat, secret: duelJc
 
 const enHall = new URLSearchParams(location.search).get('mode') === 'hall'
 const DEMO_HALL: Record<string, () => unknown> = {
+  tableau_duels: () => (enHall ? { elo: 1184, rang: 12, jcj: { victoires: 9, defaites: 6, nuls: 1 }, enLigne: 7, iaRestants: 3, jcjRestants: 5 } : null),
+  missions: () =>
+    enHall
+      ? [
+          { id: 'j-dossiers', periode: 'jour', titre: 'Ouvrir 3 dossiers', objectif: 3, progres: 3, credits: 60, dossiers: 0, fin: '', reclamee: false },
+          {
+            id: 'j-victoires',
+            periode: 'jour',
+            titre: 'Gagner 2 confrontations contre l’IA',
+            objectif: 2,
+            progres: 1,
+            credits: 80,
+            dossiers: 0,
+            fin: '',
+            reclamee: false,
+          },
+          { id: 'j-vendre', periode: 'jour', titre: 'Vendre une fiche au marché', objectif: 1, progres: 0, credits: 60, dossiers: 0, fin: '', reclamee: false },
+          {
+            id: 's-agents',
+            periode: 'semaine',
+            titre: 'Jouer 5 duels entre agents',
+            objectif: 5,
+            progres: 2,
+            credits: 600,
+            dossiers: 0,
+            fin: '',
+            reclamee: false,
+          },
+        ]
+      : null,
   rapport: () =>
     enHall
       ? {

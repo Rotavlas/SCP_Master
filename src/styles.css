@@ -9875,9 +9875,6 @@ body.en-partie .reco:has(.duel-fin) {
 }
 
 /* ---------- Objectifs presque atteints (accueil) ---------- */
-.objectifs {
-  margin: 1rem 0 1.2rem;
-}
 
 .objectifs ul {
   list-style: none;
@@ -9921,13 +9918,6 @@ body.en-partie .reco:has(.duel-fin) {
 }
 
 /* ---------- Rapport quotidien et piste d'accréditation (accueil) ---------- */
-.quotidien {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
-  gap: 1rem;
-  margin: 1.5rem 0;
-}
-
 .rapport,
 .piste {
   padding: 0.9rem 1rem;
@@ -10081,5 +10071,101 @@ body.en-partie .reco:has(.duel-fin) {
 @media (max-width: 520px) {
   .rapport-jours {
     grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* ---------- Sections rétractables du Terminal ---------- */
+.section-repliable {
+  margin: 0.9rem 0;
+  background: var(--panneau);
+  border: 1px solid var(--bord);
+  border-radius: 10px;
+}
+
+.section-entete {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.75rem 1rem;
+  font: inherit;
+  color: inherit;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.section-entete h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.section-entete:hover h2 {
+  color: var(--ambre);
+}
+
+.section-chevron {
+  display: inline-block;
+  font-size: 0.8rem;
+  color: var(--texte-discret, #9a8f80);
+  transition: transform 0.2s ease;
+}
+
+.section-repliable.ouverte .section-chevron {
+  transform: rotate(90deg);
+}
+
+.section-badge {
+  margin-left: auto;
+  padding: 0.15rem 0.6rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  white-space: nowrap;
+  color: var(--texte-discret, #9a8f80);
+  border: 1px solid var(--bord);
+  border-radius: 999px;
+}
+
+.section-badge.urgent {
+  color: #1a1408;
+  background: var(--ambre);
+  border-color: var(--ambre);
+  animation: palier-pret 1.6s ease-in-out infinite;
+}
+
+.section-corps {
+  padding: 0 1rem 1rem;
+  display: grid;
+  gap: 1rem;
+}
+
+/* Dans une section, les blocs n'ont plus besoin de leur propre cadre ni de leurs marges */
+.section-corps > .rapport,
+.section-corps > .piste,
+.section-corps > .regles {
+  padding: 0;
+  background: none;
+  border: none;
+}
+
+.section-corps > .missions,
+.section-corps > .raretes-resume,
+.section-corps > .rangee-cartes {
+  margin: 0;
+}
+
+.section-corps > .rapport + .missions {
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--bord);
+}
+
+@media (max-width: 520px) {
+  .section-entete {
+    flex-wrap: wrap;
+  }
+
+  .section-badge {
+    margin-left: 1.5rem;
   }
 }
