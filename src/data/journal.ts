@@ -11,6 +11,14 @@ export interface Entree {
 
 export const JOURNAL: Entree[] = [
   {
+    date: '2026-11-02',
+    titre: 'Dossiers Keter et O5 limités',
+    points: [
+      'Les dossiers Keter s’achètent trois fois par jour, les Archives du Conseil O5 une fois par jour ; le compteur repart à minuit (heure de Paris). L’Intendance indique combien il en reste.',
+      'Les dossiers gratuits et les autres dossiers ne sont pas limités.',
+    ],
+  },
+  {
     date: '2026-10-30',
     titre: 'L’anafabula efface son propre récit',
     points: [

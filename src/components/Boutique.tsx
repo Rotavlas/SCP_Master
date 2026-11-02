@@ -1,8 +1,9 @@
+import { useCallback, useEffect, useState } from 'react'
 import type { Base } from '../data/catalogue'
 import { RARETES } from '../data/catalogue'
 import { BOOSTERS, VALEUR_RECYCLAGE } from '../engine/boosters'
 import { VARIANTES } from '../engine/variantes'
-import { supprimerCompte } from '../state/enLigne'
+import { appeler, supprimerCompte } from '../state/enLigne'
 import { useSauvegarde } from '../state/sauvegarde'
 import { tirer, type Tirage } from './Booster'
 import { BoutonConfirme } from './Confirmer'
@@ -10,6 +11,10 @@ import { Logo } from './Logo'
 
 export function Boutique({ base, ouvrir }: { base: Base; ouvrir: (t: Tirage) => void }) {
   const s = useSauvegarde()
+  // Les dossiers Keter et O5 encore achetables aujourd'hui (le serveur fait foi)
+  const [restants, setRestants] = useState<Record<string, number>>({})
+  const relire = useCallback(() => void appeler<Record<string, number>>('achats_restants').then((r) => r && setRestants(r)), [])
+  useEffect(relire, [relire])
 
   return (
     <section className="boutique">
@@ -44,11 +49,19 @@ export function Boutique({ base, ouvrir }: { base: Base; ouvrir: (t: Tirage) => 
                 ) : null
               })}
             </ul>
+            {b.parJour && (
+              <p className={`achats-jour ${restants[b.id] === 0 ? 'epuise' : ''}`}>
+                {restants[b.id] === 0
+                  ? 'Plus aucun aujourd’hui · de nouveau disponible à minuit'
+                  : `${restants[b.id] ?? b.parJour} sur ${b.parJour} encore aujourd’hui`}
+              </p>
+            )}
             <button
               className="btn btn-principal"
-              disabled={s.credits < b.prix}
+              disabled={s.credits < b.prix || restants[b.id] === 0}
               onClick={async () => {
                 const t = await tirer(base, b, false)
+                relire()
                 if (t) ouvrir(t)
               }}
             >
@@ -60,7 +73,10 @@ export function Boutique({ base, ouvrir }: { base: Base; ouvrir: (t: Tirage) => 
 
       <div className="encart">
         <h3>Variantes rares</h3>
-        <p className="discret">Chaque fiche tirée peut sortir dans une version rare, à collectionner en plus de la version standard. Les dossiers Keter et O5 multiplient ces chances.</p>
+        <p className="discret">
+          Chaque fiche tirée peut sortir dans une version rare, à collectionner en plus de la version standard. Les dossiers Keter et O5 multiplient ces
+          chances.
+        </p>
         <ul className="probas probas-variantes">
           {VARIANTES.filter((v) => v.id !== 'std').map((v) => (
             <li key={v.id}>
@@ -76,10 +92,7 @@ export function Boutique({ base, ouvrir }: { base: Base; ouvrir: (t: Tirage) => 
         <h3>Gagner des crédits</h3>
         <ul>
           <li>Remporter des confrontations (plus l'adversaire est haut placé, plus le gain est élevé, +5 ₵ par bonne réponse).</li>
-          <li>
-            Recycler les doublons dans les archives :{' '}
-            {RARETES.map((r, i) => `${r.nom.toLowerCase()} ${VALEUR_RECYCLAGE[i]} ₵`).join(' · ')}.
-          </li>
+          <li>Recycler les doublons dans les archives : {RARETES.map((r, i) => `${r.nom.toLowerCase()} ${VALEUR_RECYCLAGE[i]} ₵`).join(' · ')}.</li>
         </ul>
       </div>
 

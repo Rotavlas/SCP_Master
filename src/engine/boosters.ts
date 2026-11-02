@@ -24,6 +24,8 @@ export interface TypeBooster {
   bonusVariante: number
   /** chance qu'une carte du dossier soit une Mythique (tirée à part, toujours standard) */
   mythique: number
+  /** Achats possibles par jour (heure de Paris) ; illimité sinon. Le serveur fait foi (prive.types_boosters.par_jour) */
+  parJour?: number
   couleur: string
 }
 
@@ -84,25 +86,27 @@ export const BOOSTERS: TypeBooster[] = [
   {
     id: 'keter',
     nom: 'Dossier Keter',
-    description: '5 fiches peu communes ou mieux, la dernière au moins rare. Variantes ×2.',
+    description: '5 fiches peu communes ou mieux, la dernière au moins rare. Variantes ×2. Trois par jour.',
     prix: 350,
     types: MELANGE,
     poids: [0, 0.6907, 0.24, 0.065, 0.0043],
     poidsDerniere: [0, 0, 0.7629, 0.22, 0.0171],
     bonusVariante: 2,
     mythique: 0.0012,
+    parJour: 3,
     couleur: '#8c3b33',
   },
   {
     id: 'o5',
     nom: 'Archives du Conseil O5',
-    description: '5 fiches rares ou mieux, la dernière au moins épique. Variantes ×4.',
+    description: '5 fiches rares ou mieux, la dernière au moins épique. Variantes ×4. Un par jour.',
     prix: 1200,
     types: MELANGE,
     poids: [0, 0, 0.7629, 0.22, 0.0171],
     poidsDerniere: [0, 0, 0, 0.9429, 0.0571],
     bonusVariante: 4,
     mythique: 0.004,
+    parJour: 1,
     couleur: '#2a2a2a',
   },
 ]

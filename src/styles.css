@@ -9394,3 +9394,15 @@ body.en-partie .reco:has(.duel-fin) {
     clip-path: inset(0 100% 0 0);
   }
 }
+
+/* Intendance : les dossiers Keter et O5 achetables aujourd'hui */
+.achats-jour {
+  margin: 0 0 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--ambre);
+}
+
+.achats-jour.epuise {
+  color: var(--discret);
+}

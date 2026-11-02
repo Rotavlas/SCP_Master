@@ -124,6 +124,19 @@ await test('un booster O5 coûte 1 200 crédits et ne donne que du rare ou mieux
   const mouvement = (await en(A, "select montant from public.mouvements_credits where motif = 'booster'")).rows[0]
   assert.equal(Number(mouvement.montant), -1200)
 })
+await test('dossiers Keter et O5 : un nombre limité d’achats par jour', async () => {
+  assert.deepEqual(await valeur(A, 'select public.achats_restants()'), { keter: 3, o5: 0 })
+  await echoue(en(A, "select public.ouvrir_booster('o5', false)"), /Limite du jour/)
+  await admin(`update public.profils set credits = credits + 5000 where id = '${A}'`)
+  for (let i = 0; i < 3; i++) await valeur(A, "select public.ouvrir_booster('keter', false)")
+  await echoue(en(A, "select public.ouvrir_booster('keter', false)"), /Limite du jour/)
+  assert.deepEqual(await valeur(A, 'select public.achats_restants()'), { keter: 0, o5: 0 })
+  // Les achats d'hier ne comptent plus
+  await admin(`update public.mouvements_credits set le = le - interval '1 day' where joueur = '${A}' and motif = 'booster'`)
+  assert.deepEqual(await valeur(A, 'select public.achats_restants()'), { keter: 3, o5: 1 })
+  // Les autres dossiers restent illimités
+  for (let i = 0; i < 4; i++) await valeur(A, "select public.ouvrir_booster('scp', false)")
+})
 await test('les cartes souhaitées sont retirées de la liste et les nouvelles signalées', async () => {
   const etat = await valeur(A, 'select public.mon_etat()')
   assert.ok(etat.profil.nouvelles.length > 0)
