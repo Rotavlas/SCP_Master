@@ -12,6 +12,16 @@ export interface Entree {
 export const JOURNAL: Entree[] = [
   {
     date: '2026-11-02',
+    titre: 'Les Manifestations frappent sur le plateau',
+    points: [
+      'En Reconfinement, une Manifestation ne coupe plus la partie par sa cinématique : la Mythique frappe directement sur le plateau, en quelques secondes, en accord avec son effet.',
+      'Les chaînes du Roi écarlate jaillissent des bords de l’écran et ligotent le Site adverse ; l’épée enflammée du Gate Guardian le fend sous ses ailes de lumière ; SCP-173 se rapproche à chaque clignement ; SCP-2747 rature la page et l’efface ; O5-1 appose son VETO ; la Main droite rouge se lève sur votre Site ; l’Administrateur le réécrit ; la photo de Siegel s’y développe.',
+      'En duel entre agents, la Manifestation adverse frappe votre Site de la même façon. Les cinématiques complètes restent visibles à l’ouverture des dossiers et depuis la fiche de chaque Mythique.',
+      'Le Terminal se range en sections rétractables (À portée de main, Rapport et missions, Progression, Vitrine, Comment jouer) : chacune garde son état d’une visite à l’autre, et son badge reste visible fermée.',
+    ],
+  },
+  {
+    date: '2026-11-02',
     titre: 'Des Mythiques vraiment rares, et un rapport à remettre chaque jour',
     points: [
       'Chaque Mythique n’existe plus qu’en 50 exemplaires numérotés, pour toute la vie du jeu. Une fois son édition épuisée, elle ne sort plus des dossiers (une Légendaire sort à sa place) et ne s’obtient plus qu’au marché. Une Mythique brûlée est perdue pour toujours. La fiche de chaque Mythique indique combien d’exemplaires sont déjà sortis.',

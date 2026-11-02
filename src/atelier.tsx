@@ -3,9 +3,12 @@
  * cinématique complète, pour travailler les illustrations. Page de développement seulement
  * (npm run atelier) : elle n'est pas publiée avec le jeu.
  */
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Protocole } from './components/Booster'
+import { FrappeMythique } from './components/FrappeMythique'
+import { SiteReco } from './components/Reconfinement'
+import { campReco, manifestationDe } from './engine/reconfinement'
 import { EpreuveHall, EpreuvePartie } from './components/Epreuve'
 import { Raid } from './components/Raid'
 import { FilClan } from './components/FilClan'
@@ -109,6 +112,55 @@ function EssaiMode({ base, mode }: { base: Base; mode: string }) {
   )
 }
 
+/**
+ * atelier.html?mode=frappe&carte=<id d'une Mythique> : sa Manifestation frappant un plateau de Reconfinement
+ * (&lui pour la voir lancée par l'adversaire). Sans carte : le Protocole d'urgence.
+ */
+const MYTHIQUES_FRAPPE = [
+  'entite:scarlet-king',
+  'dr-clef-s-proposal',
+  'fim:alpha-1',
+  'perso:the-administrator',
+  'perso:o5-1',
+  'perso:aaron-siegel',
+  'scp-173',
+  'scp-2747',
+  '',
+]
+
+function EssaiFrappe({ base }: { base: Base }) {
+  const params = new URLSearchParams(location.search)
+  const [carte, setCarte] = useState(params.get('carte') ?? 'entite:scarlet-king')
+  const [n, setN] = useState(0)
+  const [enCours, setEnCours] = useState(true)
+  const finFrappe = useCallback(() => setEnCours(false), [])
+  const parMoi = !params.has('lui')
+  const m = manifestationDe(carte ? [base.parId.get(carte)!] : [])
+  const rejouer = (c = carte) => {
+    setCarte(c)
+    setN(n + 1)
+    setEnCours(true)
+  }
+  return (
+    <main className="contenu">
+      <section className="reco">
+        <SiteReco camp={campReco()} titre="Dr Valois" sousTitre="Chercheur principal" adverse mainCachee={4} base={base} />
+        <div className="reco-scene">
+          <div className="actions">
+            {MYTHIQUES_FRAPPE.map((c) => (
+              <button key={c || 'urgence'} className={`btn ${c === carte ? 'btn-principal' : ''}`} onClick={() => rejouer(c)}>
+                {c ? manifestationDe([base.parId.get(c)!]).nom : 'Protocole d’urgence'}
+              </button>
+            ))}
+          </div>
+        </div>
+        <SiteReco camp={campReco()} titre="Agent atelier" base={base} manifestation={m} />
+        {enCours && <FrappeMythique key={n} m={m} parMoi={parMoi} surtitre="Manifestation" base={base} onFini={finFrappe} />}
+      </section>
+    </main>
+  )
+}
+
 /** atelier.html?mode=alterations : chaque altération d'une question, en boucle, pour en juger le rendu */
 const ALTERATIONS: Alteration[] = [
   'clignement',
@@ -188,6 +240,7 @@ function Atelier({ base }: { base: Base }) {
   if (carteLegendaire) return <Protocole carte={carteLegendaire} onFini={() => location.reload()} />
   const mode = params.get('mode') ?? (params.has('breche') ? 'breche' : null)
   if (mode === 'alterations') return <PlancheAlterations />
+  if (mode === 'frappe') return <EssaiFrappe base={base} />
   if (mode === 'hall') {
     brancherServeurLocal()
     // Le Terminal d'un agent de démonstration (données de src/atelierServeur.ts)

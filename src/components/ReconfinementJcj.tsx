@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Base } from '../data/catalogue'
 import { effetDe } from '../engine/effets'
 import { MANIFESTATION_MAX, TOURS_RECO, nature, nomSoutien, texteSoutien, type Evenement } from '../engine/reconfinement'
@@ -11,7 +11,7 @@ import { BoutonConfirme } from './Confirmer'
 import { usePleinEcran } from './pleinEcran'
 import { QuestionAlteree } from './QuestionAlteree'
 import { SiteReco } from './Reconfinement'
-import { SpectacleMythique } from './SpectacleMythique'
+import { FrappeMythique } from './FrappeMythique'
 
 type Cote = 'a' | 'b'
 
@@ -46,9 +46,10 @@ export function ReconfinementJcj({
   const moi: Cote = vue.cote
   const lui: Cote = moi === 'a' ? 'b' : 'a'
   const id = vue.id
-  // La Manifestation : rejouée chez les deux joueurs, une seule fois chacune
+  // La Manifestation : elle frappe sur le plateau des deux joueurs, une seule fois chacune
   const dejaVue = useRef(e.manifestee?.n ?? 0)
   const [spectacle, setSpectacle] = useState<EtatRecoJcj['manifestee'] | null>(null)
+  const finFrappe = useCallback(() => setSpectacle(null), [])
   useEffect(() => {
     if (e.manifestee && e.manifestee.n > dejaVue.current) {
       dejaVue.current = e.manifestee.n
@@ -258,12 +259,12 @@ export function ReconfinementJcj({
       )}
 
       {spectacle && (
-        <SpectacleMythique
-          carte={spectacle.m.carte}
+        <FrappeMythique
+          m={spectacle.m}
+          parMoi={spectacle.cote === moi}
           surtitre={spectacle.cote === moi ? 'Manifestation' : `Manifestation de ${vue.adversaire.pseudo}`}
-          titre={spectacle.m.nom}
-          texte={spectacle.m.texte}
-          onFini={() => setSpectacle(null)}
+          base={base}
+          onFini={finFrappe}
         />
       )}
     </section>

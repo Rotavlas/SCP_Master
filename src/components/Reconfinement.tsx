@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Base } from '../data/catalogue'
 import type { Adversaire } from '../engine/duel'
 import { effetDe } from '../engine/effets'
@@ -21,7 +21,7 @@ import { Carte } from './Carte'
 import { usePleinEcran } from './pleinEcran'
 import { jouer as son } from '../state/sons'
 import { QuestionAlteree } from './QuestionAlteree'
-import { SpectacleMythique } from './SpectacleMythique'
+import { FrappeMythique } from './FrappeMythique'
 
 /**
  * Le Reconfinement contre l'IA (règles : src/engine/reconfinement.ts). Chaque tour, on libère une anomalie chez
@@ -42,8 +42,9 @@ export function Reconfinement({ base, adversaire, onQuitter }: { base: Base; adv
   usePleinEcran()
   const [partie, setPartie] = useState<Partie | null>(null)
   const [regarde, setRegarde] = useState(false)
-  // La Manifestation qui vient de se déclencher, jouée en plein écran
+  // La Manifestation qui vient de se déclencher : elle frappe sur le plateau
   const [spectacle, setSpectacle] = useState<Manifestation | null>(null)
+  const finFrappe = useCallback(() => setSpectacle(null), [])
   const [ecoule, setEcoule] = useState(0)
   const [attente, setAttente] = useState(false)
   const partieRef = useRef(partie)
@@ -339,9 +340,7 @@ export function Reconfinement({ base, adversaire, onQuitter }: { base: Base; adv
         </div>
       )}
 
-      {spectacle && (
-        <SpectacleMythique carte={spectacle.carte} surtitre="Manifestation" titre={spectacle.nom} texte={spectacle.texte} onFini={() => setSpectacle(null)} />
-      )}
+      {spectacle && <FrappeMythique m={spectacle} parMoi surtitre="Manifestation" base={base} onFini={finFrappe} />}
     </section>
   )
 }
