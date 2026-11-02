@@ -43,6 +43,54 @@ export const etatAtelier = () => (duelJcj ? { etat: duelJcj.etat, secret: duelJc
 
 const enHall = new URLSearchParams(location.search).get('mode') === 'hall'
 const DEMO_HALL: Record<string, () => unknown> = {
+  rapport: () =>
+    enHall
+      ? {
+          serie: 4,
+          fait: false,
+          jour: 5,
+          recompenses: [1, 2, 3, 4, 5, 6, 7].map((jour) => ({
+            jour,
+            credits: [100, 150, 0, 250, 0, 400, 0][jour - 1],
+            dossiers: [0, 0, 1, 0, 2, 0, 0][jour - 1],
+            keter: jour === 7 ? 1 : 0,
+          })),
+        }
+      : null,
+  piste: () =>
+    enHall
+      ? {
+          xp: 3400,
+          reclame: 6,
+          atteint: 8,
+          paliers: Array.from({ length: 30 }, (_, i) => {
+            const n = i + 1
+            return { palier: n, xp: Math.round((100 * n ** 1.8) / 10) * 10, credits: 50 + 15 * n, dossiers: n % 3 ? 0 : 1, keter: n % 10 ? 0 : 1 }
+          }),
+        }
+      : null,
+  objectifs_proches: () =>
+    enHall
+      ? [
+          { type: 'rapport', jour: 5, serie: 4 },
+          { type: 'piste_prete', paliers: 2 },
+          { type: 'album', titre: 'Initiatives de Réponse Automatisée', manque: 2 },
+          { type: 'raid', carte: 'scp-682', manque: 12 },
+          { type: 'epreuve' },
+        ]
+      : null,
+  fil_clan: () =>
+    enHall
+      ? [
+          { type: 'tirage', pseudo: 'Dr Clef', carte: 'entite:scarlet-king', numero: 7, le: new Date(Date.now() - 600_000).toISOString() },
+          { type: 'raid', carte: 'scp-682', le: new Date(Date.now() - 3_600_000).toISOString() },
+          { type: 'victoire', pseudo: 'Bright', contre: 'Iris Thompson', classe: true, le: new Date(Date.now() - 7_200_000).toISOString() },
+          { type: 'epreuve', pseudo: 'Agent atelier', score: 1012, le: new Date(Date.now() - 86_400_000).toISOString() },
+          { type: 'tirage', pseudo: 'Bright', carte: 'scp-096', le: new Date(Date.now() - 2 * 86_400_000).toISOString() },
+          { type: 'album', pseudo: 'Dr Clef', page: 'Codes de confinement', le: new Date(Date.now() - 3 * 86_400_000).toISOString() },
+          { type: 'arrivee', pseudo: 'Iris Thompson', le: new Date(Date.now() - 5 * 86_400_000).toISOString() },
+        ]
+      : null,
   epreuve: () =>
     enHall
       ? {

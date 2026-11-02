@@ -132,6 +132,9 @@ export const BOOSTER_PAR_ID = Object.fromEntries(BOOSTERS.map((b) => [b.id, b]))
  * Recycler et brûler rapporte au plus 3 000 crédits par jour à plein tarif ; au-delà, 20 % de la valeur.
  * Le serveur fait foi (prive.gain_plafonne) ; ceci sert à annoncer le gain réel avant de recycler.
  */
+/** Chaque Mythique n'existe qu'en ce nombre d'exemplaires numérotés (prive.edition_mythique) */
+export const EDITION_MYTHIQUE = 50
+
 export const PLAFOND_RECYCLAGE = 3000
 export const PART_AU_DELA = 0.2
 

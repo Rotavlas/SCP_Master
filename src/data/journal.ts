@@ -12,6 +12,18 @@ export interface Entree {
 export const JOURNAL: Entree[] = [
   {
     date: '2026-11-02',
+    titre: 'Des Mythiques vraiment rares, et un rapport à remettre chaque jour',
+    points: [
+      'Chaque Mythique n’existe plus qu’en 50 exemplaires numérotés, pour toute la vie du jeu. Une fois son édition épuisée, elle ne sort plus des dossiers (une Légendaire sort à sa place) et ne s’obtient plus qu’au marché. Une Mythique brûlée est perdue pour toujours. La fiche de chaque Mythique indique combien d’exemplaires sont déjà sortis.',
+      'Rapport quotidien, sur l’accueil : une récompense par jour sur un cycle de sept, et le septième jour un dossier Keter offert. Un seul jour manqué et la série repart du premier jour.',
+      'Piste d’accréditation : trente paliers d’XP, chacun avec sa récompense (crédits, un dossier tous les trois paliers, un dossier Keter tous les dix). Les paliers atteints se réclament d’un coup.',
+      'Les dossiers Keter offerts s’ouvrent depuis la réserve et ne comptent pas dans la limite d’achat du jour.',
+      'Sur l’accueil, « À portée de main » : ce qui vous attend ou ce qui est presque atteint (rapport, paliers, pages d’album, part du raid, missions, Épreuve).',
+      'Fil du clan : Légendaires et Mythiques obtenues, victoires, Épreuves, pages d’album, raids et arrivées des sept derniers jours, dans la page du clan.',
+    ],
+  },
+  {
+    date: '2026-11-02',
     titre: 'Un chargement trois fois plus léger',
     points: [
       'Le jeu charge désormais environ 1,2 Mo au lieu de près de 4 : les extraits des dossiers (description, procédures) ne se téléchargent plus qu’à l’ouverture d’une fiche, quelques kilo-octets à la fois. Le premier écran arrive plus vite, surtout sur mobile.',

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties, type PointerEvent } from 'react'
 import { RARETES, designation, nomClasse, type Base } from '../data/catalogue'
 import { signature } from '../data/mythiques'
-import { BOOSTERS, type CarteTiree, type TypeBooster } from '../engine/boosters'
+import { BOOSTERS, EDITION_MYTHIQUE, type CarteTiree, type TypeBooster } from '../engine/boosters'
 import { PAR_ID, PRESTIGE } from '../engine/variantes'
 import { tirerBooster } from '../state/actions'
 import { ambiance, jouer, planifier } from '../state/sons'
@@ -72,6 +72,16 @@ export function Booster({ base, tirage, setTirage, aller, ouvrirCarte }: Props) 
     if (t) setTirage(t)
   }
 
+  // Un dossier Keter offert (Rapport quotidien, piste d'accréditation) s'ouvre aussi depuis la réserve
+  async function ouvrirKeterOffert() {
+    const t = await tirer(
+      base,
+      BOOSTERS.find((b) => b.id === 'keter')!,
+      true,
+    )
+    if (t) setTirage(t)
+  }
+
   if (!tirage) {
     return (
       <section className="booster-attente">
@@ -86,6 +96,11 @@ export function Booster({ base, tirage, setTirage, aller, ouvrirCarte }: Props) 
         <p className="booster-stock">
           <strong>{s.boosters}</strong> dossier{s.boosters > 1 ? 's' : ''} en stock · <CompteARebours />
         </p>
+        {s.keterOfferts > 0 && (
+          <button className="btn btn-principal btn-keter-offert" onClick={() => void ouvrirKeterOffert()}>
+            Ouvrir le dossier Keter offert{s.keterOfferts > 1 ? ` (${s.keterOfferts})` : ''}
+          </button>
+        )}
         <button className="btn" onClick={() => aller('boutique')}>
           Dossiers spécialisés à l'intendance
         </button>
@@ -163,7 +178,7 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
     jouer.retourner(t.carte.ra, t.variante !== 'std')
     if (tirage.souhaits.has(t.carte.id)) notifier(`Souhait exaucé : ${t.carte.num ?? t.carte.nm}`, 'succes')
     if (t.variante !== 'std') notifier(`Variante ${PAR_ID[t.variante].nom} !`, 'rare')
-    if (t.carte.ra === 5) notifier(`Mythique : ${designation(t.carte)}${t.numero ? `, exemplaire n° ${t.numero}` : ''}`, 'rare')
+    if (t.carte.ra === 5) notifier(`Mythique : ${designation(t.carte)}${t.numero ? `, exemplaire n° ${t.numero}/${EDITION_MYTHIQUE}` : ''}`, 'rare')
   }, [index, tirage])
 
   const avancer = useCallback(() => {
@@ -214,7 +229,7 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
     const t = rafale && tirage.cartes[rafale[0]]
     if (t) {
       jouer.retourner(t.carte.ra, t.variante !== 'std')
-      if (t.carte.ra === 5) notifier(`Mythique : ${designation(t.carte)}${t.numero ? `, exemplaire n° ${t.numero}` : ''}`, 'rare')
+      if (t.carte.ra === 5) notifier(`Mythique : ${designation(t.carte)}${t.numero ? `, exemplaire n° ${t.numero}/${EDITION_MYTHIQUE}` : ''}`, 'rare')
       else notifier(`Légendaire : ${designation(t.carte)}`, 'rare')
     }
     setRafale((r) => r && r.slice(1))
@@ -345,7 +360,7 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
           {revelee && carte.ra >= 3 && variante === 'std' && (
             <div className={`banniere-variante ${carte.ra === 5 ? 'banniere-mythique' : ''}`} style={{ ['--fx' as string]: couleurFx }}>
               {RARETES[carte.ra].nom}
-              {carte.ra === 5 && numero ? ` · exemplaire n° ${numero}` : ''}
+              {carte.ra === 5 && numero ? ` · exemplaire n° ${numero}/${EDITION_MYTHIQUE}` : ''}
             </div>
           )}
         </div>

@@ -90,6 +90,7 @@ export interface ProfilServeur {
   affichage: Record<string, IdVariante>
   langue: Langue
   souvenir_importe: boolean
+  keter_offerts?: number
 }
 
 interface EtatServeur {
@@ -107,6 +108,7 @@ export function appliquerProfil(s: Sauvegarde, p: ProfilServeur): Sauvegarde {
     credits: Number(p.credits),
     xp: p.xp,
     boosters: p.boosters,
+    keterOfferts: p.keter_offerts ?? 0,
     dernierBooster: Date.parse(p.dernier_booster),
     meilleurAdversaire: p.meilleur_adversaire,
     stats: { ...s.stats, ...p.stats },
@@ -287,4 +289,14 @@ export function useRecyclageRestant(): number | null {
     }
   }, [credits])
   return restant
+}
+
+/** L'édition de chaque Mythique (exemplaires sortis sur 50), relue après chaque dossier ouvert */
+export function useEditionsMythiques(): Record<string, { emis: number; total: number }> | null {
+  const [e, setE] = useState<Record<string, { emis: number; total: number }> | null>(null)
+  const ouverts = useSauvegarde().stats.boostersOuverts
+  useEffect(() => {
+    void appeler<Record<string, { emis: number; total: number }>>('editions_mythiques').then(setE)
+  }, [ouverts])
+  return e
 }

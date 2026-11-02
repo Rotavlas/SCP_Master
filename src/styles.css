@@ -9873,3 +9873,213 @@ body.en-partie .reco:has(.duel-fin) {
     justify-self: center;
   }
 }
+
+/* ---------- Objectifs presque atteints (accueil) ---------- */
+.objectifs {
+  margin: 1rem 0 1.2rem;
+}
+
+.objectifs ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 0.5rem;
+}
+
+.objectif {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.6rem 0.8rem;
+  text-align: left;
+  font: inherit;
+  font-size: 0.9rem;
+  color: inherit;
+  background: var(--panneau);
+  border: 1px solid var(--bord);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.objectif:hover {
+  border-color: var(--ambre);
+  transform: translateY(-1px);
+}
+
+.objectif.pret {
+  border-color: var(--ambre);
+  box-shadow: 0 0 14px rgba(240, 180, 60, 0.22);
+}
+
+.objectif span {
+  color: var(--ambre);
+}
+
+/* ---------- Rapport quotidien et piste d'accréditation (accueil) ---------- */
+.quotidien {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(22rem, 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0;
+}
+
+.rapport,
+.piste {
+  padding: 0.9rem 1rem;
+  background: var(--panneau);
+  border: 1px solid var(--bord);
+  border-radius: 10px;
+}
+
+.rapport-entete {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.8rem;
+  margin-bottom: 0.7rem;
+}
+
+.rapport-entete h3 {
+  margin: 0.15rem 0 0;
+}
+
+.rapport-jours {
+  list-style: none;
+  margin: 0 0 0.6rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 0.3rem;
+}
+
+.rapport-jours li {
+  display: grid;
+  gap: 0.2rem;
+  justify-items: center;
+  padding: 0.45rem 0.2rem;
+  text-align: center;
+  background: var(--panneau-2);
+  border: 1px solid var(--bord);
+  border-radius: 6px;
+  font-size: 0.72rem;
+  line-height: 1.2;
+}
+
+.rapport-jour {
+  font-family: var(--mono);
+  color: var(--texte-discret, #9a8f80);
+}
+
+.rapport-jours li.fait {
+  background: rgba(60, 160, 90, 0.18);
+  border-color: rgba(60, 160, 90, 0.6);
+}
+
+.rapport-jours li.courant {
+  border-color: var(--ambre);
+  box-shadow: 0 0 12px rgba(240, 180, 60, 0.3);
+}
+
+.rapport-jours li.keter {
+  background: linear-gradient(160deg, rgba(160, 30, 30, 0.35), var(--panneau-2));
+  border-color: rgba(200, 50, 50, 0.6);
+}
+
+.rapport-jours li.keter.fait {
+  background: rgba(60, 160, 90, 0.18);
+}
+
+.piste-paliers {
+  list-style: none;
+  margin: 0 0 0.6rem;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(30, 1fr);
+  gap: 2px;
+}
+
+.piste-paliers li {
+  height: 0.9rem;
+  background: var(--panneau-2);
+  border: 1px solid var(--bord);
+  border-radius: 2px;
+}
+
+.piste-paliers li.dossier {
+  height: 1.15rem;
+  align-self: end;
+}
+
+.piste-paliers li.keter {
+  height: 1.4rem;
+  align-self: end;
+  border-color: rgba(200, 50, 50, 0.7);
+}
+
+.piste-paliers li.atteint {
+  background: var(--ambre);
+  border-color: var(--ambre);
+  animation: palier-pret 1.6s ease-in-out infinite;
+}
+
+.piste-paliers li.reclame {
+  background: #3d8a58;
+  border-color: #3d8a58;
+}
+
+@keyframes palier-pret {
+  50% {
+    opacity: 0.55;
+  }
+}
+
+.btn-keter-offert {
+  background: linear-gradient(135deg, #7a1a1a, #c0392b);
+  border-color: #c0392b;
+}
+
+/* ---------- Fil du clan ---------- */
+.fil-clan ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+  max-height: 18rem;
+  overflow-y: auto;
+}
+
+.fil-clan li {
+  display: grid;
+  grid-template-columns: 1.4rem 1fr auto;
+  align-items: baseline;
+  gap: 0.5rem;
+  padding: 0.3rem 0.4rem;
+  font-size: 0.88rem;
+  border-bottom: 1px solid var(--bord);
+}
+
+.fil-clan li.rare {
+  color: var(--ambre);
+}
+
+.fil-icone {
+  text-align: center;
+  font-family: var(--mono);
+}
+
+.fil-clan small {
+  color: var(--texte-discret, #9a8f80);
+  white-space: nowrap;
+}
+
+@media (max-width: 520px) {
+  .rapport-jours {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}

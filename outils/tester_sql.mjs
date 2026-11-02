@@ -103,7 +103,9 @@ await test('les exemplaires tirés sont bien enregistrés, avec un numéro de s�
   assert.deepEqual(r, { n: 15, series: 15 })
 })
 await test('un booster payant ne sort pas du stock et exige des crédits', async () => {
-  await echoue(en(A, "select public.ouvrir_booster('keter', true)"), /pas gratuitement/)
+  await echoue(en(A, "select public.ouvrir_booster('o5', true)"), /pas gratuitement/)
+  // Un Keter ne sort de la réserve que s'il a été offert (Rapport quotidien, piste d'accréditation)
+  await echoue(en(A, "select public.ouvrir_booster('keter', true)"), /Keter offert/)
   await echoue(en(A, "select public.ouvrir_booster('keter', false)"), /Crédits insuffisants/)
 })
 await test('un booster O5 coûte 1 200 crédits et ne donne que du rare ou mieux', async () => {
@@ -1125,6 +1127,119 @@ await test('notifications : résultat de l’Épreuve, raid reconfiné annoncé 
   const autre = (await admin(`insert into prive.duels_ia (joueur, niveau) values ($1, 1) returning id`, [R2])).rows[0].id
   await admin(`update prive.duels_ia set fin = now(), issue = 'victoire', bonnes = 5 where id = $1`, [autre])
   assert.equal((await notifs(R1, 'raid_vaincu')).length, 1)
+})
+
+console.log('Rareté, Rapport quotidien, piste, fil du clan')
+const raretesDe = async (tirage) => {
+  const ids = tirage.cartes.map((c) => c.id)
+  return (await admin('select id, ra from public.cartes where id = any($1)', [ids])).rows
+}
+await test('Mythiques en édition limitée : épuisées, le tirage donne une Légendaire ; le dernier exemplaire porte le n° 50', async () => {
+  const sauvegarde = (
+    await admin("select carte_id, dernier from prive.compteurs_serie where variante = 'std' and carte_id in (select id from public.cartes where ra = 5)")
+  ).rows
+  const mythiques = (await admin('select id from public.cartes where ra = 5 order by id')).rows.map((r) => r.id)
+  await admin("update prive.types_boosters set mythique = 1 where id = 'standard'")
+  for (const id of mythiques)
+    await admin(
+      "insert into prive.compteurs_serie (carte_id, variante, dernier) values ($1, 'std', 50) on conflict (carte_id, variante) do update set dernier = 50",
+      [id],
+    )
+  await admin(`update public.profils set boosters = 5 where id = '${R1}'`)
+  try {
+    const epuise = await valeur(R1, "select public.ouvrir_booster('standard', true)")
+    const r1 = await raretesDe(epuise)
+    assert.equal(r1.length, 5)
+    assert.ok(
+      r1.every((c) => c.ra === 4),
+      'cinq Légendaires à la place des Mythiques épuisées',
+    )
+    // Un seul exemplaire restant : une seule Mythique, numérotée 50, puis plus rien
+    await admin("update prive.compteurs_serie set dernier = 49 where carte_id = $1 and variante = 'std'", [mythiques[0]])
+    const dernier = await valeur(R1, "select public.ouvrir_booster('standard', true)")
+    const r2 = await raretesDe(dernier)
+    assert.equal(r2.filter((c) => c.ra === 5).length, 1)
+    assert.equal(dernier.cartes.find((c) => c.id === mythiques[0]).n, 50)
+    assert.equal(r2.filter((c) => c.ra === 4).length, 4)
+    const editions = await valeur(R1, 'select public.editions_mythiques()')
+    assert.equal(Object.keys(editions).length, mythiques.length)
+    assert.deepEqual(editions[mythiques[0]], { emis: 50, total: 50 })
+    const suivi = (await admin('select * from prive.rarete() where rarete = 5')).rows
+    assert.equal(suivi.length, mythiques.length)
+    assert.ok(suivi.every((s) => s.restants === 0))
+  } finally {
+    await admin("update prive.types_boosters set mythique = 0.0004 where id = 'standard'")
+    await admin("delete from prive.compteurs_serie where variante = 'std' and carte_id in (select id from public.cartes where ra = 5)")
+    for (const s of sauvegarde) await admin("insert into prive.compteurs_serie (carte_id, variante, dernier) values ($1, 'std', $2)", [s.carte_id, s.dernier])
+  }
+})
+await test('dossier Keter offert : ouvert depuis la réserve, hors limite du jour, une fois', async () => {
+  await admin(`update public.profils set keter_offerts = 1, boosters = 2 where id = '${R1}'`)
+  const avant = await credits(R1)
+  const t = await valeur(R1, "select public.ouvrir_booster('keter', true)")
+  assert.equal(t.cartes.length, 5)
+  assert.equal(t.profil.keter_offerts, 0)
+  assert.equal(t.profil.boosters, 2, 'le stock gratuit n’est pas touché')
+  assert.equal(await credits(R1), avant, 'gratuit')
+  assert.equal((await valeur(R1, 'select public.achats_restants()')).keter, 3, 'ne compte pas dans les achats du jour')
+  await echoue(en(R1, "select public.ouvrir_booster('keter', true)"), /Keter offert/)
+  await echoue(en(R1, "select public.ouvrir_booster('o5', true)"), /gratuitement/)
+})
+await test('Rapport quotidien : un par jour, la série avance, un jour manqué la remet à zéro, le 7e donne un Keter', async () => {
+  const avant = await credits(R1)
+  const j1 = await valeur(R1, 'select public.reclamer_rapport()')
+  assert.equal(j1.jour, 1)
+  assert.equal(await credits(R1), avant + 100)
+  assert.equal(j1.rapport.fait, true)
+  await echoue(en(R1, 'select public.reclamer_rapport()'), /déjà remis/)
+  // Réclamé hier : la série continue
+  await admin(`update prive.rapports set dernier = dernier - 1 where joueur = '${R1}'`)
+  assert.equal((await valeur(R1, 'select public.rapport()')).jour, 2)
+  assert.equal((await valeur(R1, 'select public.reclamer_rapport()')).jour, 2)
+  // Deux jours sans : retour au jour 1
+  await admin(`update prive.rapports set dernier = dernier - 2 where joueur = '${R1}'`)
+  const perdu = await valeur(R1, 'select public.rapport()')
+  assert.equal(perdu.serie, 0)
+  assert.equal(perdu.jour, 1)
+  assert.equal((await valeur(R1, 'select public.reclamer_rapport()')).jour, 1)
+  // Six jours d'affilée : le septième offre un dossier Keter, puis le cycle reprend
+  await admin(`update prive.rapports set serie = 6, dernier = dernier - 1 where joueur = '${R1}'`)
+  const j7 = await valeur(R1, 'select public.reclamer_rapport()')
+  assert.equal(j7.jour, 7)
+  assert.equal(j7.profil.keter_offerts, 1)
+  await admin(`update prive.rapports set dernier = dernier - 1 where joueur = '${R1}'`)
+  assert.equal((await valeur(R1, 'select public.reclamer_rapport()')).jour, 1)
+})
+await test('piste d’accréditation : paliers atteints réclamés d’un coup, une seule fois', async () => {
+  await admin(`update public.profils set xp = 1000, boosters = 0 where id = '${R1}'`)
+  const p = await valeur(R1, 'select public.piste()')
+  assert.equal(p.paliers.length, 30)
+  assert.equal(p.atteint, 3)
+  assert.equal(p.reclame, 0)
+  const avant = await credits(R1)
+  const r = await valeur(R1, 'select public.reclamer_piste()')
+  assert.deepEqual(r.gains, { paliers: 3, credits: 65 + 80 + 95, dossiers: 1, keter: 0 })
+  assert.equal(await credits(R1), avant + 240)
+  assert.equal(r.profil.boosters, 1)
+  await echoue(en(R1, 'select public.reclamer_piste()'), /Aucun palier/)
+  await admin(`update public.profils set xp = 6400 where id = '${R1}'`)
+  const r2 = await valeur(R1, 'select public.reclamer_piste()')
+  assert.equal(r2.gains.paliers, 7)
+  assert.equal(r2.gains.keter, 1, 'le 10e palier offre un Keter')
+})
+await test('fil du clan et objectifs presque atteints', async () => {
+  const fil = await valeur(R2, 'select public.fil_clan()')
+  assert.ok(fil.some((e) => e.type === 'raid'))
+  assert.ok(
+    fil.some((e) => e.type === 'tirage' && e.pseudo === 'Raideur Un'),
+    'les Légendaires de R1',
+  )
+  assert.equal(await valeur(B, 'select public.fil_clan()'), null, 'sans clan, pas de fil')
+  const o = await valeur(R2, 'select public.objectifs_proches()')
+  const types = o.map((x) => x.type)
+  assert.ok(types.includes('rapport'), 'R2 n’a pas remis son rapport')
+  assert.ok(types.includes('epreuve'))
+  assert.ok(types.includes('piste'))
 })
 
 console.log(`\n${reussis} tests réussis${process.exitCode ? ', des échecs' : ''}.`)

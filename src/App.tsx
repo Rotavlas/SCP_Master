@@ -259,7 +259,17 @@ export default function App() {
       )}
 
       <main className="contenu" key={ecran}>
-        {ecran === 'accueil' && <Accueil base={base} aller={aller} ouvrirCarte={setCarteOuverte} />}
+        {ecran === 'accueil' && (
+          <Accueil
+            base={base}
+            aller={aller}
+            ouvrirCarte={setCarteOuverte}
+            allerClan={() => {
+              setOngletSocial('clan')
+              aller('social')
+            }}
+          />
+        )}
         {ecran === 'booster' && <Booster base={base} tirage={tirage} setTirage={setTirage} aller={aller} ouvrirCarte={setCarteOuverte} />}
         {ecran === 'collection' && <Collection base={base} ouvrirCarte={setCarteOuverte} />}
         {ecran === 'repertoire' && <Repertoire base={base} ouvrirCarte={setCarteOuverte} />}

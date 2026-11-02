@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Base } from '../data/catalogue'
 import { defier } from '../state/jcj'
+import { FilClan } from './FilClan'
 import { Raid } from './Raid'
 import { useSauvegarde } from '../state/sauvegarde'
 import {
@@ -361,6 +362,7 @@ function MonClanVue({ base, clan, recharger, ouvrirProfil }: { base: Base; clan:
         </div>
 
         <Raid base={base} />
+        <FilClan base={base} />
 
         {clan.candidatures && clan.candidatures.length > 0 && (
           <>

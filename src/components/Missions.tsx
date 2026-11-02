@@ -45,7 +45,7 @@ export function Missions() {
     ['Cette semaine', missions.filter((m) => m.periode === 'semaine')],
   ]
   return (
-    <div className="missions">
+    <div className="missions" id="missions">
       <h2>Missions</h2>
       <div className="missions-groupes">
         {groupes.map(([titre, liste]) => (

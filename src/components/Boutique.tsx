@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Base } from '../data/catalogue'
 import { RARETES } from '../data/catalogue'
-import { BOOSTERS, PART_AU_DELA, PLAFOND_RECYCLAGE, VALEUR_RECYCLAGE } from '../engine/boosters'
+import { BOOSTERS, EDITION_MYTHIQUE, PART_AU_DELA, PLAFOND_RECYCLAGE, VALEUR_RECYCLAGE } from '../engine/boosters'
 import { FRAIS_VENTE } from '../engine/marche'
 import { VARIANTES } from '../engine/variantes'
 import { appeler, supprimerCompte, useRecyclageRestant } from '../state/enLigne'
@@ -36,7 +36,10 @@ export function Boutique({ base, ouvrir }: { base: Base; ouvrir: (t: Tirage) => 
                   // Tirée à part : une chance par carte, comme les autres raretés (en moyenne un dossier sur N)
                   const surN = Math.round(1 / (1 - (1 - b.mythique) ** 5))
                   return (
-                    <li key={r.nom} title={`En moyenne un dossier sur ${surN.toLocaleString('fr-FR')}, sans garantie`}>
+                    <li
+                      key={r.nom}
+                      title={`En moyenne un dossier sur ${surN.toLocaleString('fr-FR')}, sans garantie. Chaque Mythique n'existe qu'en ${EDITION_MYTHIQUE} exemplaires : épuisée, une Légendaire sort à sa place`}
+                    >
                       <span className="puce" style={{ background: r.couleur }} />
                       {r.nom} <strong>{(b.mythique * 100).toLocaleString('fr-FR', { maximumFractionDigits: 2 })} %</strong>
                     </li>

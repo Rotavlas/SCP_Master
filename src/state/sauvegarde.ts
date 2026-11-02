@@ -27,6 +27,8 @@ export interface Sauvegarde {
   credits: number
   xp: number
   boosters: number
+  /** dossiers Keter offerts (Rapport quotidien, piste d'accréditation), ouverts depuis la réserve */
+  keterOfferts: number
   /** horodatage du dernier booster gratuit crédité */
   dernierBooster: number
   stats: { duels: number; victoires: number; boostersOuverts: number; bonnesReponses: number; questions: number }
@@ -54,6 +56,7 @@ function neuve(): Sauvegarde {
     credits: 0,
     xp: 0,
     boosters: 0,
+    keterOfferts: 0,
     dernierBooster: Date.now(),
     stats: { duels: 0, victoires: 0, boostersOuverts: 0, bonnesReponses: 0, questions: 0 },
     meilleurAdversaire: 0,

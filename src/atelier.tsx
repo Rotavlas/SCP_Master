@@ -8,6 +8,10 @@ import { createRoot } from 'react-dom/client'
 import { Protocole } from './components/Booster'
 import { EpreuveHall, EpreuvePartie } from './components/Epreuve'
 import { Raid } from './components/Raid'
+import { FilClan } from './components/FilClan'
+import { Objectifs } from './components/Objectifs'
+import { Piste } from './components/Piste'
+import { Rapport } from './components/Rapport'
 import { Carte } from './components/Carte'
 import { AnimationMythique } from './components/AnimationsMythiques'
 import { SceneMythique } from './components/ScenesMythiques'
@@ -189,8 +193,14 @@ function Atelier({ base }: { base: Base }) {
     brancherServeurLocal()
     return (
       <main className="contenu">
+        <Objectifs base={base} aller={() => undefined} allerClan={() => undefined} />
+        <div className="quotidien">
+          <Rapport />
+          <Piste />
+        </div>
         <EpreuveHall lancer={() => undefined} ouvrirProfil={() => undefined} />
         <Raid base={base} />
+        <FilClan base={base} />
       </main>
     )
   }

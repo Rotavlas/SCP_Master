@@ -8,14 +8,19 @@ import { Carte } from './Carte'
 import { CompteARebours } from './CompteARebours'
 import { Logo } from './Logo'
 import { Missions } from './Missions'
+import { Objectifs } from './Objectifs'
+import { Piste } from './Piste'
+import { Rapport } from './Rapport'
 
 interface Props {
   base: Base
   aller: (e: Ecran) => void
   ouvrirCarte: (id: string) => void
+  /** La page du clan (raid à réclamer) */
+  allerClan: () => void
 }
 
-export function Accueil({ base, aller, ouvrirCarte }: Props) {
+export function Accueil({ base, aller, ouvrirCarte, allerClan }: Props) {
   const s = useSauvegarde()
   const [nom, setNom] = useState('')
   const [occupe, setOccupe] = useState(false)
@@ -99,6 +104,8 @@ export function Accueil({ base, aller, ouvrirCarte }: Props) {
         </div>
       </div>
 
+      <Objectifs base={base} aller={aller} allerClan={allerClan} />
+
       <div className="tuiles">
         <button className="tuile tuile-booster" onClick={() => aller('booster')}>
           <span className="tuile-titre">Ouvrir un dossier</span>
@@ -126,6 +133,11 @@ export function Accueil({ base, aller, ouvrirCarte }: Props) {
           <span className="tuile-valeur">{s.credits.toLocaleString('fr-FR')} ₵</span>
           <span className="tuile-sous">crédits disponibles</span>
         </button>
+      </div>
+
+      <div className="quotidien">
+        <Rapport />
+        <Piste />
       </div>
 
       <Missions />

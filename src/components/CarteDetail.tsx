@@ -4,7 +4,7 @@ import { VALEUR_RECYCLAGE, boostersPour, gainPlafonne } from '../engine/boosters
 import { VARIANTES } from '../engine/variantes'
 import { TAILLE_DECK, doublonsRecyclables, exemplairesStandard, modifier, useSauvegarde, varianteAffichee } from '../state/sauvegarde'
 import { recycler } from '../state/actions'
-import { useRecyclageRestant } from '../state/enLigne'
+import { useEditionsMythiques, useRecyclageRestant } from '../state/enLigne'
 import { useCarteAffichee } from '../state/traduction'
 import { useTextes } from '../data/textes'
 import { CREDITS_ILLUSTRATIONS } from '../data/mythiques'
@@ -26,6 +26,7 @@ export function CarteDetail({
 }) {
   const s = useSauvegarde()
   const restantRecyclage = useRecyclageRestant()
+  const editions = useEditionsMythiques()
   // Les extraits du dossier arrivent à l'ouverture de la fiche (src/data/textes.ts)
   const carte = useCarteAffichee(useTextes(source).carte)
   const quantite = s.collection[carte.id] ?? 0
@@ -67,6 +68,15 @@ export function CarteDetail({
     ['Menace / Confinement', `${carte.atk} / ${carte.def}`],
     ['Exemplaires', s.reserves[carte.id] ? `${quantite} (dont ${s.reserves[carte.id]} en vente ou en échange)` : String(quantite)],
   ]
+  // Une Mythique n'existe qu'en 50 exemplaires numérotés : combien en sont déjà sortis
+  const edition = carte.ra === 5 ? editions?.[carte.id] : undefined
+  if (edition)
+    fiche.push([
+      'Édition limitée',
+      edition.emis >= edition.total
+        ? `épuisée : ${edition.total} exemplaires, ne s'obtient plus qu'au marché`
+        : `${edition.emis}/${edition.total} exemplaires sortis, encore ${edition.total - edition.emis}`,
+    ])
   if (carte.k === 's') fiche.push(['Série', `${carte.s ? `Série ${carte.s}` : 'SCP-001'} · ${carte.y}`])
   else if (carte.y) fiche.push(['Publication', String(carte.y)])
 
