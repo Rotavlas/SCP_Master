@@ -802,4 +802,72 @@ await test('quitter la file', async () => {
   assert.equal((await admin('select count(*)::int as n from prive.file_jcj')).rows[0].n, 0)
 })
 
+console.log('Épreuve de la semaine')
+const tentative = async (joueur) => (await admin('select * from prive.epreuves where joueur = $1', [joueur])).rows[0]
+await test('les fonctions epreuve_* sont réservées à la clé de service', async () => {
+  await assert.rejects(
+    db.transaction(async (tx) => {
+      await tx.exec('set local role authenticated')
+      await tx.query(`select public.epreuve_preparer('${A}')`)
+    }),
+  )
+})
+await test('mêmes questions pour tous, dans le même ordre', async () => {
+  const a = await appel('jeton-A', { action: 'epreuve_debuter' })
+  const b = await appel('jeton-B', { action: 'epreuve_debuter' })
+  assert.equal(a.statut, 200, a.texte)
+  assert.equal(b.statut, 200, b.texte)
+  assert.deepEqual(a.corps, { index: 0, total: 10, score: 0, bonnes: 0, termine: false })
+  const [ea, eb] = [(await tentative(A)).etat, (await tentative(B)).etat]
+  assert.equal(ea.questions.length, 10)
+  assert.deepEqual(ea.questions, eb.questions)
+  assert.equal(new Set(ea.questions.map((q) => q.sujet)).size, 10, 'dix sujets différents')
+  // Recommencer ne retire pas de nouvelles questions
+  await appel('jeton-A', { action: 'epreuve_debuter' })
+  assert.deepEqual((await tentative(A)).etat.questions, ea.questions)
+})
+await test('la question ne livre pas sa réponse ; points selon la vitesse', async () => {
+  const q = await appel('jeton-A', { action: 'epreuve_question' })
+  assert.equal(q.statut, 200, q.texte)
+  assert.ok(!q.texte.includes('"bonne"'))
+  assert.equal(q.corps.question.options.length, 4)
+  const bonne = (await tentative(A)).etat.questions[0].bonne
+  horloge += 4000
+  const ok = await appel('jeton-A', { action: 'epreuve_repondre', choix: bonne })
+  assert.equal(ok.statut, 200, ok.texte)
+  assert.equal(ok.corps.points, 100 + Math.round(50 * (1 - 4 / 20)))
+  assert.equal(ok.corps.index, 1)
+  // Répondre deux fois à la même question : refusé
+  assert.equal((await appel('jeton-A', { action: 'epreuve_repondre', choix: bonne })).statut, 409)
+})
+await test('revenir sur une question affichée garde son chronomètre ; partir trop longtemps la perd', async () => {
+  await appel('jeton-A', { action: 'epreuve_question' })
+  horloge += 5000
+  const encore = await appel('jeton-A', { action: 'epreuve_question' })
+  assert.equal(encore.corps.index, 1)
+  assert.equal(Math.round(encore.corps.ecoule), 5)
+  horloge += 60_000
+  const suite = await appel('jeton-A', { action: 'epreuve_question' })
+  assert.equal(suite.corps.manquee, true)
+  assert.equal(suite.corps.index, 2)
+})
+await test('dix réponses : terminée, une seule tentative par semaine', async () => {
+  for (let i = 2; i < 10; i++) {
+    if (i > 2) await appel('jeton-A', { action: 'epreuve_question' })
+    const bonne = (await tentative(A)).etat.questions[i].bonne
+    horloge += 2000
+    const r = await appel('jeton-A', { action: 'epreuve_repondre', choix: i % 2 ? bonne : (bonne + 1) % 4 })
+    assert.equal(r.statut, 200, r.texte)
+  }
+  const t = await tentative(A)
+  assert.equal(t.termine, true)
+  assert.equal(t.bonnes, 1 + 4)
+  assert.equal(
+    t.score,
+    t.etat.reponses.reduce((s, r) => s + r.points, 0),
+  )
+  assert.equal((await appel('jeton-A', { action: 'epreuve_debuter' })).statut, 409)
+  assert.equal((await appel('jeton-A', { action: 'epreuve_question' })).statut, 409)
+})
+
 console.log(`\n${reussis} tests réussis${process.exitCode ? ', des échecs' : ''}.`)

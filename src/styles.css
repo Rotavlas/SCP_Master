@@ -9702,3 +9702,174 @@ body.en-partie .reco:has(.duel-fin) {
 .palier-bronze {
   --couleur-palier: #c98a52;
 }
+
+/* ---------- Épreuve de la semaine (hall des duels) ---------- */
+.epreuve-hall {
+  display: grid;
+  grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+  gap: 1.2rem;
+  margin: 1.5rem 0;
+  padding: 1rem 1.2rem;
+  background: linear-gradient(135deg, rgba(240, 180, 60, 0.07), transparent 60%), var(--panneau);
+  border: 1px solid var(--bord);
+  border-top: 3px solid var(--ambre);
+  border-radius: 10px;
+}
+
+.epreuve-intro h2 {
+  margin: 0.2rem 0 0.4rem;
+}
+
+.epreuve-moi strong,
+.epreuve-score {
+  font-family: var(--mono);
+  color: var(--ambre);
+}
+
+.epreuve-classement ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.25rem;
+}
+
+.epreuve-classement li {
+  display: grid;
+  grid-template-columns: 1.8rem 1fr auto auto;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.3rem 0.5rem;
+  background: var(--panneau-2);
+  border-radius: 6px;
+  font-size: 0.9rem;
+}
+
+.epreuve-rang {
+  font-family: var(--mono);
+  text-align: center;
+  color: var(--texte-discret, #9a8f80);
+}
+
+.epreuve-classement .rang-1 .epreuve-rang {
+  color: #e8c25a;
+  font-weight: 700;
+}
+
+.epreuve-classement .rang-2 .epreuve-rang {
+  color: #c4ccd6;
+}
+
+.epreuve-classement .rang-3 .epreuve-rang {
+  color: #c98a52;
+}
+
+.epreuve-depart {
+  max-width: 34rem;
+  margin: 12vh auto 0;
+  text-align: center;
+}
+
+.epreuve-bandeau {
+  align-items: center;
+}
+
+.epreuve-progression {
+  display: flex;
+  gap: 0.3rem;
+  justify-content: center;
+  margin: 0.4rem 0 1rem;
+}
+
+.epreuve-progression span {
+  width: 2rem;
+  height: 0.35rem;
+  border-radius: 999px;
+  background: var(--panneau-2);
+  border: 1px solid var(--bord);
+}
+
+.epreuve-progression span.faite {
+  background: var(--ambre);
+  border-color: var(--ambre);
+}
+
+.epreuve-question {
+  max-width: 46rem;
+  margin: 0 auto;
+}
+
+@media (max-width: 760px) {
+  .epreuve-hall {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ---------- Raid de clan ---------- */
+.raid {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1rem;
+  margin: 1rem 0;
+  padding: 0.9rem 1rem;
+  background: linear-gradient(135deg, rgba(180, 30, 30, 0.12), transparent 65%), var(--panneau-2);
+  border: 1px solid rgba(180, 40, 40, 0.5);
+  border-radius: 10px;
+}
+
+.raid.vaincue {
+  border-color: var(--vert);
+  background: linear-gradient(135deg, rgba(60, 160, 90, 0.12), transparent 65%), var(--panneau-2);
+}
+
+.raid-corps h3 {
+  margin: 0.15rem 0 0.5rem;
+}
+
+.raid-jauge {
+  position: relative;
+  height: 1.3rem;
+  margin-bottom: 0.6rem;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid var(--bord);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.raid-jauge > div {
+  position: absolute;
+  inset: 0 auto 0 0;
+  background: linear-gradient(90deg, #6b1010, #c0392b);
+  transition: width 0.8s ease;
+}
+
+.raid-jauge span {
+  position: relative;
+  display: block;
+  text-align: center;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  line-height: 1.3rem;
+}
+
+.raid-contributeurs {
+  margin: 0.6rem 0 0;
+  padding-left: 1.2rem;
+  display: grid;
+  gap: 0.15rem;
+  font-size: 0.85rem;
+}
+
+.raid-contributeurs li span:first-child {
+  margin-right: 0.5rem;
+}
+
+@media (max-width: 600px) {
+  .raid {
+    grid-template-columns: 1fr;
+  }
+
+  .raid-cible {
+    justify-self: center;
+  }
+}

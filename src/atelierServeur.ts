@@ -22,6 +22,10 @@ interface Ligne {
 
 const parties = new Map<string, Ligne>()
 
+/** L'Épreuve de la semaine simulée ; ?semaine=AAAA-MM-JJ pour en voir une autre */
+let epreuve: (Ligne & { termine: boolean }) | null = null
+const semaineAtelier = new URLSearchParams(location.search).get('semaine') ?? '2026-11-02'
+
 /** Le duel entre joueurs simulé (les colonnes de public.duels_jcj et prive.duels_jcj_secret) */
 let duelJcj: {
   id: string
@@ -36,6 +40,49 @@ const ecouteurs = new Set<() => void>()
 
 /** L'état complet de la partie en cours, bonne réponse comprise : pour tester depuis la console de l'atelier */
 export const etatAtelier = () => (duelJcj ? { etat: duelJcj.etat, secret: duelJcj.secret } : [...parties.values()].at(-1)?.etat)
+
+const enHall = new URLSearchParams(location.search).get('mode') === 'hall'
+const DEMO_HALL: Record<string, () => unknown> = {
+  epreuve: () =>
+    enHall
+      ? {
+          semaine: semaineAtelier,
+          fin: new Date(Date.now() + 4 * 86_400_000).toISOString(),
+          moi: { score: 1012, bonnes: 8, termine: true, rang: 3 },
+          participants: 27,
+          classement: [
+            { pseudo: 'Dr Clef', score: 1288, bonnes: 9, duree: 141, rang: 1 },
+            { pseudo: 'Iris Thompson', score: 1120, bonnes: 8, duree: 160, rang: 2 },
+            { pseudo: 'Agent atelier', score: 1012, bonnes: 8, duree: 175, rang: 3 },
+            { pseudo: 'Bright', score: 870, bonnes: 7, duree: 190, rang: 4 },
+          ],
+          dernier: { semaine: '2026-10-26', score: 940, rang: 5, credits: 500 },
+        }
+      : null,
+  raid: () =>
+    enHall
+      ? {
+          fin: new Date(Date.now() + 4 * 86_400_000).toISOString(),
+          requis: 40,
+          credits: 500,
+          courant: {
+            semaine: semaineAtelier,
+            cible: 'scp-682',
+            pv: 850,
+            degats: 512,
+            vaincue: false,
+            moi: 96,
+            reclame: false,
+            contributeurs: [
+              { pseudo: 'Dr Clef', degats: 210 },
+              { pseudo: 'Agent atelier', degats: 96 },
+              { pseudo: 'Bright', degats: 206 },
+            ],
+          },
+          precedent: { semaine: '2026-10-26', cible: 'scp-106', pv: 850, degats: 900, vaincue: true, moi: 120, reclame: false, contributeurs: [] },
+        }
+      : null,
+}
 
 export function brancherServeurLocal(equipe: string[] = EQUIPE_DEMO) {
   if (!supabase || (window as unknown as { serveurLocal?: boolean }).serveurLocal) return
@@ -72,6 +119,13 @@ export function brancherServeurLocal(equipe: string[] = EQUIPE_DEMO) {
       case 'duel_clore':
         parties.delete(p.p_duel)
         return json({ credits: 0, xp: 0, profil: null })
+      // L'Épreuve de la semaine : une tentative en mémoire, à recommencer en rechargeant la page
+      case 'epreuve_preparer':
+        return json({ semaine: semaineAtelier, langue: 'vo', etat: epreuve?.etat ?? null, version: epreuve?.version ?? 0, termine: epreuve?.termine ?? false })
+      case 'epreuve_ecrire':
+        if ((epreuve?.version ?? 0) !== p.p_version || epreuve?.termine) return json(false)
+        epreuve = { etat: p.p_etat, version: p.p_version + 1, termine: p.p_termine }
+        return json(true)
       // Les duels entre joueurs : un seul, contre l'adversaire simulé
       case 'jcj_entrer_file':
         if (!duelJcj || duelJcj.statut === 'termine') {
@@ -130,6 +184,12 @@ export function brancherServeurLocal(equipe: string[] = EQUIPE_DEMO) {
     return r.ok ? { data: r.data, error: null } : { data: null, error: { message: r.data.message as string } }
   }
   Object.defineProperty(supabase, 'functions', { value: { invoke }, configurable: true })
+  // Le classement de l'Épreuve et le raid ne se lisent qu'en ligne : ici, des données de démonstration (?mode=hall)
+  const vraiRpc = supabase.rpc.bind(supabase)
+  Object.defineProperty(supabase, 'rpc', {
+    value: (nom: string, params?: object) => (nom in DEMO_HALL ? Promise.resolve({ data: DEMO_HALL[nom](), error: null }) : vraiRpc(nom, params)),
+    configurable: true,
+  })
   // Le direct : chaque écriture du duel prévient l'écran, comme Realtime
   const canal = {
     on: (_t: string, _f: unknown, rappel: () => void) => {

@@ -1030,4 +1030,77 @@ await test('supprimer son compte anonymise ses messages et libère sa place de c
   assert.equal((await admin(`select count(*)::int as n from prive.amities where '${E}' in (de, vers)`)).rows[0].n, 0)
 })
 
+console.log('Économie, Épreuve, raid')
+const R1 = '00000000-0000-0000-0000-0000000000b1'
+const R2 = '00000000-0000-0000-0000-0000000000b2'
+await db.exec(`insert into auth.users (id) values ('${R1}'), ('${R2}')`)
+await admin(`update public.profils set pseudo = 'Raideur Un' where id = '${R1}'`)
+await admin(`update public.profils set pseudo = 'Raideur Deux' where id = '${R2}'`)
+await test('tableau de bord de l’économie : créés, détruits, net, motifs, résumé', async () => {
+  const jours = (await admin('select * from prive.economie(3)')).rows
+  assert.equal(jours.length, 3)
+  const auj = jours[0]
+  const net = (
+    await admin("select coalesce(sum(montant), 0)::bigint as n from public.mouvements_credits where (le at time zone 'Europe/Paris')::date = $1", [auj.jour])
+  ).rows[0].n
+  assert.equal(String(auj.net), String(net))
+  assert.ok(Number(auj.crees) >= 0 && Number(auj.detruits) >= 0)
+  assert.ok((await admin('select * from prive.economie_motifs(2)')).rows.length > 0)
+  const r = (await admin('select prive.economie_resume() as r')).rows[0].r
+  assert.ok(r.joueurs >= 2 && r.plus_riches.length >= 2)
+  await echoue(en(A, 'select * from prive.economie()'), /permission denied/)
+})
+await test('Épreuve : classement par score puis vitesse, récompenses une seule fois', async () => {
+  const semaine = (await admin('select prive.semaine_precedente() as s')).rows[0].s
+  await admin(
+    `insert into prive.epreuves (joueur, semaine, etat, score, bonnes, termine, debut, fin) values
+       ($1, $3, '{}', 900, 6, true, now() - interval '8 days', now() - interval '8 days' + interval '3 minutes'),
+       ($2, $3, '{}', 900, 6, true, now() - interval '8 days', now() - interval '8 days' + interval '2 minutes')`,
+    [R1, R2, semaine],
+  )
+  const [ca, cb] = [await credits(R1), await credits(R2)]
+  assert.equal((await admin('select prive.clore_epreuve() as n')).rows[0].n, 2)
+  assert.equal(await credits(R2), cb + 1500, 'le plus rapide gagne à score égal')
+  assert.equal(await credits(R1), ca + 1000)
+  assert.equal((await admin('select prive.clore_epreuve() as n')).rows[0].n, 0)
+  const e = await valeur(R2, 'select public.epreuve()')
+  assert.equal(e.dernier.rang, 1)
+  assert.equal(e.moi, null)
+})
+await test('raid de clan : dégâts des membres, plafond par jour, récompense des contributeurs', async () => {
+  const clan = '00000000-0000-0000-0000-0000000c1a00'
+  await admin(`insert into prive.clans (id, nom, tag) values ('${clan}', 'Raideurs', 'RAID')`)
+  await admin(
+    `insert into prive.membres_clan (joueur, clan, role, rejoint_le) values ($1, '${clan}', 'chef', now() - interval '30 days'), ($2, '${clan}', 'membre', now() - interval '30 days')`,
+    [R1, R2],
+  )
+  const raid0 = await valeur(R1, 'select public.raid()')
+  assert.equal(raid0.courant.pv, 450)
+  assert.match(raid0.courant.cible, /^scp-/)
+  assert.equal(raid0.courant.degats, 0)
+  assert.equal(await valeur(B, 'select public.raid()'), null, 'sans clan, pas de raid')
+  // Dix victoires de R2 maintenant : 10 × (5 × 3 + 15) = 300, plafonnées à 150 par jour
+  await admin(`insert into prive.duels_ia (joueur, niveau, fin, issue, bonnes) select $1, 1, now(), 'victoire', 5 from generate_series(1, 10)`, [R2])
+  const raid1 = await valeur(R2, 'select public.raid()')
+  assert.equal(raid1.courant.moi, 150)
+  assert.equal(raid1.courant.vaincue, false)
+  await echoue(en(R2, `select public.reclamer_raid('${raid1.courant.semaine}')`), /pas encore reconfinée/)
+  // Deux autres jours de la semaine, pour les deux membres : l'anomalie tombe
+  for (const jours of [1, 2])
+    for (const j of [R1, R2])
+      await admin(
+        `insert into prive.duels_ia (joueur, niveau, fin, issue, bonnes) select $1, 1, prive.debut_de_la_semaine() + make_interval(days => $2, hours => 12), 'victoire', 5 from generate_series(1, 10)`,
+        [j, jours],
+      )
+  const raid2 = await valeur(R1, 'select public.raid()')
+  assert.equal(raid2.courant.vaincue, true)
+  assert.ok(raid2.courant.moi >= 40)
+  const avant = await credits(R1)
+  const r = await valeur(R1, `select public.reclamer_raid('${raid2.courant.semaine}')`)
+  assert.equal(Number(r.profil.credits), avant + 500)
+  assert.equal(r.raid.courant.reclame, true)
+  await echoue(en(R1, `select public.reclamer_raid('${raid2.courant.semaine}')`), /déjà réclamée/)
+  await echoue(en(R1, "select public.reclamer_raid('2020-01-06')"), /clos/)
+})
+
 console.log(`\n${reussis} tests réussis${process.exitCode ? ', des échecs' : ''}.`)

@@ -12,6 +12,16 @@ export interface Entree {
 export const JOURNAL: Entree[] = [
   {
     date: '2026-11-02',
+    titre: 'L’Épreuve de la semaine et les raids de clan',
+    points: [
+      'Nouveau dans le hall des confrontations : l’Épreuve de la semaine. Dix questions, les mêmes pour tous les agents, des anomalies célèbres aux dossiers oubliés ; une seule tentative, 100 points par bonne réponse et jusqu’à 50 de plus selon la vitesse.',
+      'Le classement se fige le lundi : 1 500 ₵ au premier, 1 000 ₵ aux deux suivants, 500 ₵ jusqu’au dixième, 100 ₵ pour tous les autres. À score égal, le plus rapide passe devant.',
+      'Raids de clan : chaque semaine, une anomalie Keter (SCP-682, SCP-096, SCP-106…) à reconfiner ensemble. Chaque duel des membres l’entame, l’Épreuve aussi, au plus 150 par agent et par jour.',
+      'Si elle tombe avant lundi, chaque membre qui a infligé au moins 40 réclame 500 ₵ et un dossier, depuis la page du clan.',
+    ],
+  },
+  {
+    date: '2026-11-02',
     titre: 'Une économie plus serrée, et le Dossier Apollyon',
     points: [
       'Les dossiers Keter s’achètent trois fois par jour, les Archives du Conseil O5 une fois par jour ; le compteur repart à minuit (heure de Paris). L’Intendance indique combien il en reste.',

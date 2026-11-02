@@ -3,6 +3,8 @@
  * cinématique complète, pour travailler les illustrations. Page de développement seulement
  * (npm run atelier) : elle n'est pas publiée avec le jeu.
  */
+import { EpreuveHall, EpreuvePartie } from './components/Epreuve'
+import { Raid } from './components/Raid'
 import { useEffect, useState } from 'react'
 import { createRoot } from 'react-dom/client'
 import { Protocole } from './components/Booster'
@@ -57,7 +59,7 @@ function Voir({ id }: { id: string }) {
 }
 
 /**
- * atelier.html?mode=reco|breche|eclair : une confrontation contre l'IA, jouée avec le vrai code du serveur en local
+ * atelier.html?mode=reco|breche|eclair|epreuve : une confrontation contre l'IA, jouée avec le vrai code du serveur en local
  * (src/atelierServeur.ts) ; &equipe=id1,id2… pour changer l'équipe de démonstration, &niveau=1…5 pour l'adversaire.
  */
 /** atelier.html?mode=jcj : un Reconfinement entre joueurs, contre un adversaire simulé (src/atelierServeur.ts) */
@@ -91,7 +93,9 @@ function EssaiMode({ base, mode }: { base: Base; mode: string }) {
         ) : (
           <Tuto etapes={mode === 'reco' ? ETAPES_RECO : ETAPES_ECLAIR} cle="atelier" onFermer={() => setTuto(false)} />
         ))}
-      {mode === 'reco' ? (
+      {mode === 'epreuve' ? (
+        <EpreuvePartie key={n} onQuitter={quitter} />
+      ) : mode === 'reco' ? (
         <Reconfinement key={n} base={base} adversaire={adversaire} onQuitter={quitter} />
       ) : mode === 'eclair' ? (
         <DuelEclair key={n} base={base} adversaire={adversaire} onQuitter={quitter} />
@@ -177,6 +181,15 @@ function Atelier({ base }: { base: Base }) {
   if (voir) return <Voir id={voir} />
   const mode = params.get('mode') ?? (params.has('breche') ? 'breche' : null)
   if (mode === 'alterations') return <PlancheAlterations />
+  if (mode === 'hall') {
+    brancherServeurLocal()
+    return (
+      <main className="contenu">
+        <EpreuveHall lancer={() => undefined} ouvrirProfil={() => undefined} />
+        <Raid base={base} />
+      </main>
+    )
+  }
   if (mode) {
     brancherServeurLocal(params.get('equipe')?.split(','))
     return mode === 'jcj' ? <EssaiJcj base={base} /> : <EssaiMode base={base} mode={mode} />

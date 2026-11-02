@@ -22,6 +22,7 @@ import { Carte } from './Carte'
 import { meilleureEquipe } from './Collection'
 import { DuelEclair } from './DuelEclair'
 import { DuelJcj } from './DuelJcj'
+import { EpreuveHall, EpreuvePartie } from './Epreuve'
 import { Reconfinement } from './Reconfinement'
 import { CLE_TUTO_BRECHE, TutoBreche, Tuto, tutoVu } from './TutoBreche'
 import { CLE_TUTO_ECLAIR, CLE_TUTO_RECO, ETAPES_ECLAIR, ETAPES_RECO } from './TutoModes'
@@ -73,6 +74,8 @@ export function Duel({ base, aller, ouvrirProfil }: { base: Base; aller: (e: Ecr
   // Duel contre un autre joueur, affiché à la place du hall
   const [duelJcj, setDuelJcj] = useState<string | null>(null)
   const [restantsIA, setRestantsIA] = useState<number | null>(null)
+  // L'Épreuve de la semaine, affichée à la place du hall
+  const [epreuve, setEpreuve] = useState(false)
   const [duelDemarre, oublierDemarre] = useDuelDemarre()
   useEffect(() => {
     if (duelDemarre) {
@@ -105,6 +108,7 @@ export function Duel({ base, aller, ouvrirProfil }: { base: Base; aller: (e: Ecr
     else setTuto({ ensuite: a })
   }
 
+  if (epreuve) return <EpreuvePartie onQuitter={() => setEpreuve(false)} />
   if (duelJcj) return <DuelJcj id={duelJcj} base={base} ouvrirProfil={ouvrirProfil} onQuitter={() => setDuelJcj(null)} />
 
   if (adversaire) {
@@ -150,6 +154,8 @@ export function Duel({ base, aller, ouvrirProfil }: { base: Base; aller: (e: Ecr
       </div>
 
       <HallJcj pret={equipe.length === TAILLE_DECK} ouvrir={ouvrirJcj} ouvrirProfil={ouvrirProfil} surTableau={(t) => setRestantsIA(t.iaRestants)} />
+
+      <EpreuveHall lancer={() => setEpreuve(true)} ouvrirProfil={ouvrirProfil} />
 
       <div className="titre-entrainement">
         <h2>Contre l'IA</h2>

@@ -12,6 +12,7 @@ import { genererQuestion } from '../src/engine/quiz'
 import type { Langue } from '../src/types'
 import { Erreur, GRACE, base, joueur, rpc, texte, type Environnement } from './commun'
 import { ACTIONS_BRECHE, traiterBreche } from './breche'
+import { ACTIONS_EPREUVE, traiterEpreuve } from './epreuve'
 import { ACTIONS_JCJ, traiterJcj } from './jcj'
 import { ACTIONS_RECO, traiterReco } from './reconfinement'
 
@@ -249,6 +250,10 @@ export async function traiter(req: Request, env: Environnement): Promise<Respons
         // Reconfinement contre l'IA : serveur/reconfinement.ts
         if (typeof corps.action === 'string' && ACTIONS_RECO.has(corps.action)) {
           return repondreJson(200, await traiterReco(env, idJoueur, corps.action, corps, maintenant))
+        }
+        // L'Épreuve de la semaine : serveur/epreuve.ts
+        if (typeof corps.action === 'string' && ACTIONS_EPREUVE.has(corps.action)) {
+          return repondreJson(200, await traiterEpreuve(env, idJoueur, corps.action, corps, maintenant))
         }
         // Duels entre joueurs : serveur/jcj.ts
         if (typeof corps.action === 'string' && ACTIONS_JCJ.has(corps.action)) {

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import type { Base } from '../data/catalogue'
 import { defier } from '../state/jcj'
+import { Raid } from './Raid'
 import { useSauvegarde } from '../state/sauvegarde'
 import {
   COUT_CLAN,
@@ -198,7 +199,12 @@ function Amis({ ouvrirProfil, ecrire }: { ouvrirProfil: (p: string) => void; ecr
                 </span>
                 <span className="discret">{a.elo}</span>
                 <span className="actions-ligne">
-                  <button className="btn" disabled={!a.enLigne} title={a.enLigne ? 'Duel amical, sans Elo' : 'Hors ligne'} onClick={() => void defier(a.pseudo)}>
+                  <button
+                    className="btn"
+                    disabled={!a.enLigne}
+                    title={a.enLigne ? 'Duel amical, sans Elo' : 'Hors ligne'}
+                    onClick={() => void defier(a.pseudo)}
+                  >
                     Défier
                   </button>
                   <button className="btn" onClick={() => ecrire(a.pseudo)}>
@@ -353,6 +359,8 @@ function MonClanVue({ base, clan, recharger, ouvrirProfil }: { base: Base; clan:
             {clan.description && <p className="description-clan">{clan.description}</p>}
           </div>
         </div>
+
+        <Raid base={base} />
 
         {clan.candidatures && clan.candidatures.length > 0 && (
           <>
@@ -630,9 +638,7 @@ function Chat({ destinataire, ouvrirProfil }: { destinataire: Destinataire; ouvr
           const suite = i > 0 && messages[i - 1].pseudo === m.pseudo
           return (
             <div key={m.id} className={`bulle ${m.moi ? 'moi' : ''} ${suite ? 'suite' : ''}`}>
-              {!suite && !m.moi && (
-                <Pseudo className="auteur" pseudo={m.pseudo} onClick={() => ouvrirProfil(m.pseudo)} />
-              )}
+              {!suite && !m.moi && <Pseudo className="auteur" pseudo={m.pseudo} onClick={() => ouvrirProfil(m.pseudo)} />}
               <p>{m.texte}</p>
               <span className="heure">
                 {new Date(m.creeLe).toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}

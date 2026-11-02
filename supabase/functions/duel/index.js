@@ -441,7 +441,7 @@ function appliquerEcho(options, bonne, retirees = []) {
 	return options.map((o, i) => i === cible ? imiter(options[bonne]) : o);
 }
 // src/data/catalogue.ts
-const RARETES = [
+const RARETES$1 = [
 	{
 		nom: "Commune",
 		couleur: "#9aa3a8"
@@ -604,7 +604,7 @@ function designation(carte) {
 var Base = class Base {
 	cartes;
 	parId = /* @__PURE__ */ new Map();
-	parRarete = RARETES.map(() => []);
+	parRarete = RARETES$1.map(() => []);
 	/** Cartes par type puis par rareté */
 	parType = /* @__PURE__ */ new Map();
 	prefixeImage;
@@ -619,7 +619,7 @@ var Base = class Base {
 		} : c) : catalogue.cartes;
 		this.prefixeImage = catalogue.prefixeImage;
 		this.genere = catalogue.genere;
-		for (const k of ORDRE_TYPES) this.parType.set(k, RARETES.map(() => []));
+		for (const k of ORDRE_TYPES) this.parType.set(k, RARETES$1.map(() => []));
 		for (const c of this.cartes) {
 			this.parId.set(c.id, c);
 			this.parRarete[c.ra].push(c);
@@ -1242,7 +1242,7 @@ const ACTIONS_BRECHE = /* @__PURE__ */ new Set([
 	"breche_jouer",
 	"breche_repondre"
 ]);
-async function lire$3(env, id, joueur) {
+async function lire$4(env, id, joueur) {
 	const r = await rpc(env, "duel_lire", {
 		p_duel: id,
 		p_joueur: joueur
@@ -1253,7 +1253,7 @@ async function lire$3(env, id, joueur) {
 		version: r.version
 	};
 }
-async function ecrire$2(env, id, joueur, version, etat) {
+async function ecrire$3(env, id, joueur, version, etat) {
 	if (!await rpc(env, "duel_ecrire", {
 		p_duel: id,
 		p_joueur: joueur,
@@ -1291,7 +1291,7 @@ function vuePublique$1(etat) {
 		bonnes: etat.bonnes
 	};
 }
-async function debuter$2(env, idJoueur, corps) {
+async function debuter$3(env, idJoueur, corps) {
 	const adversaire = ADVERSAIRES.find((a) => a.niveau === corps.niveau);
 	if (!adversaire) throw new Erreur(400, "Adversaire inconnu");
 	const prep = await rpc(env, "duel_preparer", {
@@ -1313,7 +1313,7 @@ async function debuter$2(env, idJoueur, corps) {
 		phase: "choix",
 		initiative: null
 	};
-	await ecrire$2(env, prep.id, idJoueur, 0, etat);
+	await ecrire$3(env, prep.id, idJoueur, 0, etat);
 	return {
 		id: prep.id,
 		...vuePublique$1(etat)
@@ -1321,7 +1321,7 @@ async function debuter$2(env, idJoueur, corps) {
 }
 async function jouer$2(env, idJoueur, corps, maintenant) {
 	const id = texte(corps.id);
-	const { etat, version } = await lire$3(env, id, idJoueur);
+	const { etat, version } = await lire$4(env, id, idJoueur);
 	if (etat.phase !== "choix") throw new Erreur(409, "Une question attend déjà votre réponse");
 	const idCarte = texte(corps.carte);
 	if (!etat.main.includes(idCarte)) throw new Erreur(400, "Cette carte n'est plus dans votre main");
@@ -1343,7 +1343,7 @@ async function jouer$2(env, idJoueur, corps, maintenant) {
 	const q = genererQuestion(b, carte, carteIA, false);
 	const qIA = genererQuestion(b, carteIA, carte, false);
 	const reponseIA = reponseAdversaire(adversaire, qIA);
-	await ecrire$2(env, id, idJoueur, version, {
+	await ecrire$3(env, id, idJoueur, version, {
 		...etat,
 		phase: "question",
 		coup: {
@@ -1374,9 +1374,9 @@ async function jouer$2(env, idJoueur, corps, maintenant) {
 		tempsIA: reponseIA.temps
 	};
 }
-async function repondre$3(env, idJoueur, corps, maintenant) {
+async function repondre$4(env, idJoueur, corps, maintenant) {
 	const id = texte(corps.id);
-	const { etat, version } = await lire$3(env, id, idJoueur);
+	const { etat, version } = await lire$4(env, id, idJoueur);
 	if (etat.phase !== "question" || !etat.question || !etat.coup || !etat.coupIA || !etat.reponseIA || etat.debut === void 0) throw new Erreur(409, "Aucune question en cours");
 	const q = etat.question;
 	const ecoule = (maintenant - etat.debut) / 1e3;
@@ -1434,7 +1434,7 @@ async function repondre$3(env, idJoueur, corps, maintenant) {
 	};
 	if (!terminee$1(etat.tour, r.joueur, r.ia)) {
 		const pret = await preparerTour(env, suivant);
-		await ecrire$2(env, id, idJoueur, version, pret);
+		await ecrire$3(env, id, idJoueur, version, pret);
 		return {
 			...resultat,
 			...vuePublique$1(pret),
@@ -1462,8 +1462,184 @@ async function repondre$3(env, idJoueur, corps, maintenant) {
 }
 async function traiterBreche(env, idJoueur, action, corps, maintenant) {
 	switch (action) {
-		case "breche_debuter": return debuter$2(env, idJoueur, corps);
+		case "breche_debuter": return debuter$3(env, idJoueur, corps);
 		case "breche_jouer": return jouer$2(env, idJoueur, corps, maintenant);
+		default: return repondre$4(env, idJoueur, corps, maintenant);
+	}
+}
+// serveur/epreuve.ts
+const ACTIONS_EPREUVE = /* @__PURE__ */ new Set([
+	"epreuve_debuter",
+	"epreuve_question",
+	"epreuve_repondre"
+]);
+/** Des anomalies célèbres aux dossiers oubliés : la rareté du sujet de chaque question */
+const RARETES = [
+	4,
+	4,
+	3,
+	3,
+	3,
+	2,
+	2,
+	2,
+	1,
+	1
+];
+/** Générateur pseudo-aléatoire (mulberry32) amorcé par une chaîne */
+function generateur(graine) {
+	let h = 1779033703 ^ graine.length;
+	for (let i = 0; i < graine.length; i++) {
+		h = Math.imul(h ^ graine.charCodeAt(i), 3432918353);
+		h = h << 13 | h >>> 19;
+	}
+	let a = h >>> 0;
+	return () => {
+		a = a + 1831565813 | 0;
+		let t = Math.imul(a ^ a >>> 15, 1 | a);
+		t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+		return ((t ^ t >>> 14) >>> 0) / 4294967296;
+	};
+}
+/**
+* Les dix questions d'une semaine. Le générateur de questions tire avec Math.random : on le remplace le temps de ce
+* calcul synchrone, si bien que deux appels pour la même semaine donnent exactement les mêmes questions.
+*/
+function questionsDeLaSemaine(b, semaine) {
+	const original = Math.random;
+	Math.random = generateur(`epreuve:${semaine}`);
+	try {
+		const dejaVues = /* @__PURE__ */ new Set();
+		return RARETES.map((ra) => {
+			const candidates = (b.parType.get("s")?.[ra] ?? b.parRarete[ra]).filter((c) => !dejaVues.has(c.id));
+			const sujet = candidates[Math.floor(Math.random() * candidates.length)];
+			dejaVues.add(sujet.id);
+			const autres = b.parRarete[ra];
+			let autre = autres[Math.floor(Math.random() * autres.length)];
+			if (autre.id === sujet.id) autre = autres[(autres.indexOf(autre) + 1) % autres.length];
+			const q = genererQuestion(b, sujet, autre, true);
+			return {
+				sujet: sujet.id,
+				intitule: q.intitule,
+				document: q.document,
+				options: q.options,
+				bonne: q.bonne
+			};
+		});
+	} finally {
+		Math.random = original;
+	}
+}
+const pointsDe = (juste, temps) => juste ? 100 + Math.round(50 * Math.max(0, 1 - temps / 20)) : 0;
+const score = (e) => e.reponses.reduce((s, r) => s + r.points, 0);
+const bonnes = (e) => e.reponses.filter((r) => r.points > 0).length;
+const lire$3 = (env, idJoueur) => rpc(env, "epreuve_preparer", { p_joueur: idJoueur });
+async function ecrire$2(env, idJoueur, version, etat) {
+	if (!await rpc(env, "epreuve_ecrire", {
+		p_joueur: idJoueur,
+		p_semaine: etat.semaine,
+		p_version: version,
+		p_etat: etat,
+		p_score: score(etat),
+		p_bonnes: bonnes(etat),
+		p_termine: etat.reponses.length >= 10
+	})) throw new Erreur(409, version === 0 ? "Épreuve déjà commencée cette semaine" : "L’épreuve a changé entre-temps : rechargez la page");
+}
+/** Ce que voit le joueur : jamais les bonnes réponses à venir */
+function vue$1(e) {
+	return {
+		index: e.reponses.length,
+		total: 10,
+		score: score(e),
+		bonnes: bonnes(e),
+		termine: e.reponses.length >= 10
+	};
+}
+function questionVue(e, maintenant) {
+	const q = e.questions[e.reponses.length];
+	return {
+		...vue$1(e),
+		question: {
+			intitule: q.intitule,
+			document: q.document,
+			options: q.options
+		},
+		duree: 20,
+		ecoule: e.debut === void 0 ? 0 : (maintenant - e.debut) / 1e3
+	};
+}
+async function debuter$2(env, idJoueur) {
+	const t = await lire$3(env, idJoueur);
+	if (t.termine) throw new Erreur(409, "Vous avez déjà passé l’Épreuve de cette semaine");
+	if (t.etat) return vue$1(t.etat);
+	const b = await base(env, t.langue);
+	const etat = {
+		semaine: t.semaine,
+		questions: questionsDeLaSemaine(b, t.semaine),
+		reponses: []
+	};
+	await ecrire$2(env, idJoueur, 0, etat);
+	return vue$1(etat);
+}
+async function question(env, idJoueur, maintenant) {
+	const t = await lire$3(env, idJoueur);
+	if (!t.etat) throw new Erreur(404, "Commencez d’abord l’Épreuve");
+	if (t.termine) throw new Erreur(409, "Épreuve terminée");
+	const etat = t.etat;
+	if (etat.debut !== void 0 && (maintenant - etat.debut) / 1e3 <= 23) return questionVue(etat, maintenant);
+	let manquee = false;
+	if (etat.debut !== void 0) {
+		etat.reponses.push({
+			choix: null,
+			temps: 20,
+			points: 0
+		});
+		manquee = true;
+	}
+	if (etat.reponses.length >= 10) {
+		etat.debut = void 0;
+		await ecrire$2(env, idJoueur, t.version, etat);
+		return {
+			...vue$1(etat),
+			manquee
+		};
+	}
+	etat.debut = maintenant;
+	await ecrire$2(env, idJoueur, t.version, etat);
+	return {
+		...questionVue(etat, maintenant),
+		manquee
+	};
+}
+async function repondre$3(env, idJoueur, corps, maintenant) {
+	const t = await lire$3(env, idJoueur);
+	const etat = t.etat;
+	if (!etat || t.termine || etat.debut === void 0) throw new Erreur(409, "Aucune question en cours");
+	const q = etat.questions[etat.reponses.length];
+	const ecoule = (maintenant - etat.debut) / 1e3;
+	const choix = corps.choix;
+	const choixRetenu = typeof choix === "number" && Number.isInteger(choix) && choix >= 0 && choix < q.options.length && ecoule <= 23 ? choix : null;
+	const temps = Math.min(20, ecoule);
+	const points = pointsDe(choixRetenu === q.bonne, temps);
+	etat.reponses.push({
+		choix: choixRetenu,
+		temps,
+		points
+	});
+	etat.debut = void 0;
+	await ecrire$2(env, idJoueur, t.version, etat);
+	return {
+		...vue$1(etat),
+		bonne: q.bonne,
+		choix: choixRetenu,
+		temps,
+		points
+	};
+}
+async function traiterEpreuve(env, idJoueur, action, corps, maintenant) {
+	switch (action) {
+		case "epreuve_debuter": return debuter$2(env, idJoueur);
+		case "epreuve_question": return question(env, idJoueur, maintenant);
 		default: return repondre$3(env, idJoueur, corps, maintenant);
 	}
 }
@@ -3051,6 +3227,7 @@ async function traiter(req, env) {
 			default:
 				if (typeof corps.action === "string" && ACTIONS_BRECHE.has(corps.action)) return repondreJson(200, await traiterBreche(env, idJoueur, corps.action, corps, maintenant));
 				if (typeof corps.action === "string" && ACTIONS_RECO.has(corps.action)) return repondreJson(200, await traiterReco(env, idJoueur, corps.action, corps, maintenant));
+				if (typeof corps.action === "string" && ACTIONS_EPREUVE.has(corps.action)) return repondreJson(200, await traiterEpreuve(env, idJoueur, corps.action, corps, maintenant));
 				if (typeof corps.action === "string" && ACTIONS_JCJ.has(corps.action)) return repondreJson(200, await traiterJcj(env, idJoueur, corps.action, corps, maintenant));
 				throw new Erreur(400, "Action inconnue");
 		}
