@@ -1750,6 +1750,71 @@ function partitionAnafabula(c: AudioContext, sortie: GainNode, salle: GainNode, 
   for (let k = 0; k < 22; k++) p.son(10.95 + k * 0.03, 'touche', { gain: 0.16, vitesse: 0.62, r: 0.1 })
 }
 
+/**
+ * Les Auteurs (24 s, components/AnimationsMythiques.tsx, LesAuteurs) : une pièce calme, une horloge, et un piano
+ * qui semble remarquer le joueur. « Toi » se chuchote ; la phrase « Il n'y a pas de chance ici » tombe sur un
+ * accord faux ; une notification sonne quand ils prennent l'onglet ; au plantage, la musique se coupe net, puis
+ * reprend doucement pour « Pardon. C'était moi. », et monte pendant qu'ils écrivent la carte.
+ */
+function partitionAuteurs(c: AudioContext, sortie: GainNode, salle: GainNode, b: Construction) {
+  const p = partition(c, sortie, salle, b)
+  // Un piano : une attaque nette, une octave douce, une longue extinction
+  const piano = (t: number, f: number, g = 0.05) => {
+    p.note(t, f, { duree: 0.02, relache: 2.2, gain: g, type: 'triangle', attaque: 0.004, r: 0.5 })
+    p.note(t, f * 2, { duree: 0.02, relache: 1.2, gain: g * 0.3, attaque: 0.004, r: 0.5 })
+  }
+  // L'horloge : elle s'arrête pendant le plantage
+  for (let t = 0.5; t < 23; t += 1) if (t < 15.2 || t > 16.6) p.son(t, 'touche', { gain: t > 13.6 && t < 15.2 ? 0.2 : 0.1, vitesse: 0.55, r: 0.3 })
+  // Un bourdon très doux, coupé net au plantage
+  p.bourdon(
+    [55, 82.4],
+    'triangle',
+    [
+      [0, 260],
+      [23, 260],
+    ],
+    [
+      [0.5, 0.03],
+      [15.15, 0.035],
+      [15.2, 0.0001],
+      [16.7, 0.0001],
+      [18, 0.04],
+      [23.4, 0.0001],
+    ],
+  )
+  // Bonjour : trois notes qui hésitent
+  piano(0.6, 659.25)
+  piano(1.1, 587.33)
+  piano(1.6, 523.25)
+  // « Pas ton agent. Toi. » : une note grave, et le mot chuchoté
+  piano(2.6, 130.81, 0.08)
+  p.chuchoter(2.75, 0.35, { gain: 0.08 })
+  // Les comptes : des notes qui tombent comme des chiffres
+  for (let i = 0; i < 6; i++) piano(3.9 + i * 0.38, [784, 698.46, 659.25, 587.33, 523.25, 493.88][i], 0.035)
+  // « Il n'y a pas de chance ici. » : un accord faux
+  for (const f of [261.63, 277.18, 369.99, 392]) piano(10.5, f, 0.045)
+  // « Regarde ton onglet. » : une notification
+  p.note(12.0, 1318.5, { duree: 0.05, relache: 0.35, gain: 0.05, attaque: 0.004, r: 0.3 })
+  p.note(12.12, 1760, { duree: 0.05, relache: 0.45, gain: 0.05, attaque: 0.004, r: 0.3 })
+  // Le plantage : un accord d'erreur, puis le silence
+  for (const f of [440, 466.16]) p.note(15.2, f, { duree: 0.3, relache: 0.05, gain: 0.04, type: 'square', attaque: 0.004, r: 0.1 })
+  // « Pardon. C'était moi. » : la musique revient, chaude
+  for (const f of [261.63, 329.63, 392, 523.25]) piano(16.75, f, 0.035)
+  // Ils écrivent la carte : un arpège qui monte
+  ;[261.63, 329.63, 392, 493.88, 523.25, 659.25, 783.99, 987.77].forEach((f, i) => piano(17.9 + i * 0.28, f, 0.04))
+  // La fin : un accord résolu, et un chœur très doux
+  for (const f of [261.63, 392, 523.25, 659.25]) piano(21.6, f, 0.04)
+  p.choeur(
+    [261.63, 329.63, 392],
+    [
+      [21.4, 0.0001],
+      [22.2, 0.04],
+      [23.4, 0.0001],
+    ],
+    VOYELLE_OU,
+  )
+}
+
 /** Les ambiances, par nom */
 const AMBIANCES: Record<string, (c: AudioContext, sortie: GainNode, salle: GainNode, b: Construction) => void> = {
   // Un brasier : le feu qui crépite et gronde, une basse qui respire
@@ -1838,6 +1903,7 @@ const AMBIANCES: Record<string, (c: AudioContext, sortie: GainNode, salle: GainN
   siegel: partitionSiegel,
   statue: partitionStatue,
   anafabula: partitionAnafabula,
+  auteurs: partitionAuteurs,
   // Un bureau la nuit : le silence, une horloge
   bureau: (c, sortie, _salle, b) => {
     bourdon(c, sortie, [50], 'sine', 200, 0.02, b)
@@ -1858,6 +1924,7 @@ const ENTREE: Record<string, number> = {
   siegel: 0.02,
   statue: 0.02,
   anafabula: 0.02,
+  auteurs: 0.2,
 }
 
 /** Lance une ambiance (rien si le son est coupé) ; l'arrêter la fait disparaître en fondu. */

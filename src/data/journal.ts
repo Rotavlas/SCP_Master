@@ -22,6 +22,7 @@ export const JOURNAL: Entree[] = [
       'Les dossiers gratuits et les autres dossiers ne sont pas limités.',
       'De nouvelles anomalies ont leur effet : SCP-939 imite (une fausse réponse copie presque la bonne), SCP-087 plonge la question dans le noir (on ne la lit qu’à la lueur de sa lampe), SCP-2521 transforme l’intitulé en points, SCP-3000 dévore la mémoire, SCP-3008 égare les réponses, SCP-035 possède, MalO apparaît du coin de l’œil ; les propositions pour SCP-001 font vaciller la réalité.',
       'Les Protocoles ont leur pouvoir en Reconfinement : IRA-5 reconfine d’office, CODE RED divise la brèche par quatre, CODE GREEN décontamine, CODE AMBER donne du temps, Montauk vide la jauge adverse, Patmos reconfine d’office les deux tours suivants, CK soigne, XK frappe les deux Sites.',
+      'Les Auteurs ont leur musique : un piano qui semble vous remarquer, un « toi » chuchoté, une notification quand ils prennent votre onglet, le silence au plantage, puis la musique qui revient pendant qu’ils écrivent la carte.',
     ],
   },
   {

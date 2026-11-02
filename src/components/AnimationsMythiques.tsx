@@ -821,8 +821,8 @@ function LesAuteurs() {
       requestAnimationFrame(image)
     }
     requestAnimationFrame(image)
-    // Le son : un bureau silencieux, le plantage, la rature du titre, la page qui se referme
-    const fond = ambiance('bureau')
+    // Le son : leur partition (state/sons.ts, partitionAuteurs), le plantage, la rature du titre, la page qui se referme
+    const fond = ambiance('auteurs')
     const sons = planifier([
       [PLANTAGE[0], jouer.plantage],
       [20.3, jouer.plume],
