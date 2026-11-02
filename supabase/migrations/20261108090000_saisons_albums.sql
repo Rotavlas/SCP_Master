@@ -19,6 +19,7 @@ create table if not exists public.saisons_resultats (
   primary key (saison, joueur)
 );
 alter table public.saisons_resultats enable row level security;
+drop policy if exists "ses résultats de saison" on public.saisons_resultats;
 create policy "ses résultats de saison" on public.saisons_resultats for select to authenticated using (auth.uid() = joueur);
 revoke all on public.saisons_resultats from anon, authenticated;
 grant select on public.saisons_resultats to authenticated;
