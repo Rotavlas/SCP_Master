@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import type { Base } from '../data/catalogue'
 import { effetDe } from '../engine/effets'
-import { MANIFESTATION_MAX, SOUTIENS, TOURS_RECO, nature, soutien, type Evenement } from '../engine/reconfinement'
+import { MANIFESTATION_MAX, TOURS_RECO, nature, nomSoutien, texteSoutien, type Evenement } from '../engine/reconfinement'
 import { abandonner, jouerCarteJcj, manifesterEnDuel, repondreJcj, type EtatRecoJcj, type VueDuel } from '../state/jcj'
 import { useSauvegarde, varianteAffichee } from '../state/sauvegarde'
 import { jouer as son } from '../state/sons'
@@ -174,7 +174,7 @@ export function ReconfinementJcj({
         {e.phase === 'question' && carteMoi && carteLui && (
           <div className="reco-face-a-face">
             <div className={`reco-carte ia ${nature(carteLui)} ${voile ? 'voilee' : ''}`}>
-              <span className="reco-etiquette">{nature(carteLui) === 'anomalie' ? '⚠ S’échappe' : `Soutien · ${SOUTIENS[soutien(carteLui)].nom}`}</span>
+              <span className="reco-etiquette">{nature(carteLui) === 'anomalie' ? '⚠ S’échappe' : `Soutien · ${nomSoutien(carteLui)}`}</span>
               <Carte carte={carteLui} base={base} taille="m" inclinable={false} caviardee={!!q && !e.repondu[moi]} />
               {voile && (
                 <button className="btn btn-regarder" onClick={() => setRegarde(true)}>
@@ -220,7 +220,7 @@ export function ReconfinementJcj({
               )}
             </div>
             <div className={`reco-carte joueur ${nature(carteMoi)}`}>
-              <span className="reco-etiquette">{nature(carteMoi) === 'anomalie' ? 'Libérée' : `Soutien · ${SOUTIENS[soutien(carteMoi)].nom}`}</span>
+              <span className="reco-etiquette">{nature(carteMoi) === 'anomalie' ? 'Libérée' : `Soutien · ${nomSoutien(carteMoi)}`}</span>
               <Carte carte={carteMoi} base={base} taille="m" variante={varianteAffichee(s, carteMoi.id)} inclinable={false} />
             </div>
           </div>
@@ -248,8 +248,8 @@ export function ReconfinementJcj({
                 onClick={() => void envoyer(() => jouerCarteJcj(id, c.id))}
               >
                 <Carte carte={c} base={base} taille="p" variante={varianteAffichee(s, c.id)} inclinable={false} />
-                <span className={`reco-badge ${n}`} title={n === 'anomalie' ? ef.texte : SOUTIENS[soutien(c)].texte}>
-                  {n === 'anomalie' ? `${ef.icone} ${ef.nom}` : `✚ ${SOUTIENS[soutien(c)].nom}`}
+                <span className={`reco-badge ${n}`} title={n === 'anomalie' ? ef.texte : texteSoutien(c)}>
+                  {n === 'anomalie' ? `${ef.icone} ${ef.nom}` : `✚ ${nomSoutien(c)}`}
                 </span>
               </button>
             )

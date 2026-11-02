@@ -7,7 +7,7 @@
  * L'état de la partie est enregistré dans prive.duels_ia par les fonctions SQL duel_* (clé de service).
  */
 import { ADVERSAIRES, DUREE_QUESTION, INTEGRITE_MAX, MANCHES, deckAdversaire, degats, reponseAdversaire } from '../src/engine/duel'
-import { DUREE_TEMPORELLE, effetDe } from '../src/engine/effets'
+import { DUREE_TEMPORELLE, appliquerEcho, effetDe } from '../src/engine/effets'
 import { genererQuestion } from '../src/engine/quiz'
 import type { Langue } from '../src/types'
 import { Erreur, GRACE, base, joueur, rpc, texte, type Environnement } from './commun'
@@ -108,6 +108,8 @@ async function jouer(env: Environnement, idJoueur: string, corps: Record<string,
   // Duel éclair : chaque carte altère la question de l'autre camp (src/engine/effets.ts)
   const effet = effetDe(carte)
   const effetIA = effetDe(carteIA)
+  // SCP-939 imite : une des fausses réponses copie presque la bonne (pour les deux camps : la question est commune)
+  if (effetIA.alteration === 'echo' || effet.alteration === 'echo') q.options = appliquerEcho(q.options, q.bonne)
   const duree = effetIA.alteration === 'temporel' ? DUREE_TEMPORELLE : DUREE_QUESTION
   const dureeIA = effet.alteration === 'temporel' ? DUREE_TEMPORELLE : DUREE_QUESTION
   const brute = reponseAdversaire({ ...adversaire, precision: adversaire.precision - (effet.alteration ? 0.15 : 0) }, q)

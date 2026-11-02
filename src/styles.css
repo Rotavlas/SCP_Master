@@ -9567,3 +9567,35 @@ body.en-partie .reco:has(.duel-fin) {
     grid-row: 2;
   }
 }
+
+/* SCP-087 : le noir complet, sauf autour de la lampe (le pointeur) */
+.voile-obscurite {
+  position: absolute;
+  inset: -0.6rem;
+  z-index: 2;
+  pointer-events: none;
+  border-radius: 10px;
+  background: radial-gradient(circle 120px at var(--lx, 50%) var(--ly, 40%), transparent 0, rgba(0, 0, 0, 0.55) 70px, rgba(2, 2, 2, 0.985) 140px);
+}
+
+/* SCP-2521 : l'intitulé n'est plus que des points */
+.alteration-pictogrammes h2 {
+  letter-spacing: 0.08em;
+  word-break: break-all;
+}
+
+/* SCP-939 : les réponses se doublent d'un écho, l'une d'elles imite la bonne */
+.alteration-echo .option span:last-child {
+  text-shadow:
+    3px 0 0 rgba(255, 90, 80, 0.35),
+    -3px 0 0 rgba(90, 160, 255, 0.3);
+  animation: echo 2.8s ease-in-out infinite;
+}
+
+@keyframes echo {
+  50% {
+    text-shadow:
+      -2px 1px 0 rgba(255, 90, 80, 0.35),
+      2px -1px 0 rgba(90, 160, 255, 0.3);
+  }
+}

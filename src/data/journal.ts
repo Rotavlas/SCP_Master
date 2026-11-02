@@ -20,6 +20,8 @@ export const JOURNAL: Entree[] = [
       'La taxe du marché passe à 10 % de chaque vente.',
       'Missions : chaque jour, trois missions tirées pour vous (ouvrir des dossiers, gagner contre l’IA, enchaîner les bonnes réponses, jouer un duel entre agents, recycler, vendre), et chaque semaine trois plus longues. La progression se suit sur l’accueil ; crédits et dossiers se réclament une fois l’objectif atteint.',
       'Les dossiers gratuits et les autres dossiers ne sont pas limités.',
+      'De nouvelles anomalies ont leur effet : SCP-939 imite (une fausse réponse copie presque la bonne), SCP-087 plonge la question dans le noir (on ne la lit qu’à la lueur de sa lampe), SCP-2521 transforme l’intitulé en points, SCP-3000 dévore la mémoire, SCP-3008 égare les réponses, SCP-035 possède, MalO apparaît du coin de l’œil ; les propositions pour SCP-001 font vaciller la réalité.',
+      'Les Protocoles ont leur pouvoir en Reconfinement : IRA-5 reconfine d’office, CODE RED divise la brèche par quatre, CODE GREEN décontamine, CODE AMBER donne du temps, Montauk vide la jauge adverse, Patmos reconfine d’office les deux tours suivants, CK soigne, XK frappe les deux Sites.',
     ],
   },
   {

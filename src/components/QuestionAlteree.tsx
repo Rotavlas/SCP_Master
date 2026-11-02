@@ -115,13 +115,31 @@ export function QuestionAlteree({
 
   const intitule = useMemo(() => {
     if (actif === 'effacement') return question.intitule.replace(/\S/g, '█')
+    // SCP-2521 : chaque mot devient des points, séparés par des barres
+    if (actif === 'pictogrammes')
+      return question.intitule
+        .split(/\s+/)
+        .map((m) => '●'.repeat(Math.min(6, m.length)))
+        .join('|')
     return question.intitule
   }, [actif, question.intitule])
 
+  // SCP-087 : la lampe suit le pointeur (souris ou doigt) ; tout le reste est noir
+  const [lampe, setLampe] = useState({ x: 50, y: 40 })
+  const suivreLampe = (e: React.PointerEvent<HTMLDivElement>) => {
+    const r = e.currentTarget.getBoundingClientRect()
+    setLampe({ x: ((e.clientX - r.left) / r.width) * 100, y: ((e.clientY - r.top) / r.height) * 100 })
+  }
+
   return (
-    <div className={`question-alteree ${actif ? `alteration-${actif}` : ''} ${glitch ? 'glitch' : ''}`}>
+    <div
+      className={`question-alteree ${actif ? `alteration-${actif}` : ''} ${glitch ? 'glitch' : ''}`}
+      onPointerMove={actif === 'obscurite' ? suivreLampe : undefined}
+      onPointerDown={actif === 'obscurite' ? suivreLampe : undefined}
+      style={actif === 'obscurite' ? ({ '--lx': `${lampe.x}%`, '--ly': `${lampe.y}%` } as React.CSSProperties) : undefined}
+    >
       <h2 className={actif === 'antimemetique' ? 's-efface' : ''}>{intitule}</h2>
-      {question.document && actif !== 'effacement' && (
+      {question.document && actif !== 'effacement' && actif !== 'pictogrammes' && (
         <blockquote className={`document ${actif === 'antimemetique' ? 's-efface' : ''}`} lang="en">
           {question.document}
         </blockquote>
@@ -150,7 +168,7 @@ export function QuestionAlteree({
         })}
       </div>
       {/* Éclairs, paupières : par-dessus la question, sans bloquer les clics */}
-      {(actif === 'visuel' || actif === 'clignement') && <div className={`voile-${actif}`} aria-hidden="true" />}
+      {(actif === 'visuel' || actif === 'clignement' || actif === 'obscurite') && <div className={`voile-${actif}`} aria-hidden="true" />}
     </div>
   )
 }

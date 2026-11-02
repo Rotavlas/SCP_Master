@@ -87,19 +87,98 @@ export interface Reconfinement {
   attenuation: number
 }
 
+// ---------- Les Protocoles qui ont leur propre pouvoir ----------
+
+/** En plus de neutraliser l'anomalie qui arrive, certains Protocoles agissent selon leur nature */
+export interface PouvoirProtocole {
+  texte: string
+  /** L'anomalie qui arrive est reconfinée d'office */
+  auto?: boolean
+  /** Facteur de la brèche qui arrive (0,5 pour un Protocole ordinaire) */
+  attenuation?: number
+  /** Secondes de plus pour répondre */
+  tempsBonus?: number
+  /** Après le tour : soin du Site, contagion purgée, jauge adverse vidée, reconfinements d'office, dégâts aux deux Sites */
+  soin?: number
+  purge?: boolean
+  vidange?: number
+  reconfinementsAuto?: number
+  frappeLesDeux?: number
+}
+
+export const POUVOIRS_PROTOCOLES: Record<string, PouvoirProtocole> = {
+  'proto:ira-5': { texte: 'Closing Time : l’anomalie qui arrive est reconfinée d’office.', auto: true },
+  'proto:code-red': { texte: 'Agresseur de grande taille : la brèche qui arrive est divisée par quatre.', attenuation: 0.25 },
+  'proto:code-green': { texte: 'Décontamination : toute contagion de votre Site disparaît.', purge: true },
+  'proto:code-amber': { texte: 'Filtres mémétiques : 8 secondes de plus pour reconfiner.', tempsBonus: 8 },
+  'proto:110-montauk': { texte: 'Le rituel retient l’ennemi : sa jauge de Manifestation perd 50.', vidange: 50 },
+  'proto:patmos': { texte: 'Ordre d’urgence : vos deux prochains reconfinements réussissent d’office.', reconfinementsAuto: 2 },
+  'proto:ck': { texte: 'Restructuration de la réalité : votre Site regagne 25 points.', soin: 25 },
+  'proto:xk': { texte: 'Fin du monde : les deux Sites perdent 20 points.', frappeLesDeux: 20 },
+}
+
+/** Le nom court d'un soutien : celui du pouvoir d'un Protocole (« Closing Time »), sinon celui de son rôle */
+export const nomSoutien = (c: Carte) =>
+  soutien(c) === 'protocole' && POUVOIRS_PROTOCOLES[c.id] ? POUVOIRS_PROTOCOLES[c.id].texte.split(' :')[0] : SOUTIENS[soutien(c)].nom
+
+/** Ce que fait une carte de soutien, avec le pouvoir propre d'un Protocole */
+export const texteSoutien = (c: Carte) =>
+  soutien(c) === 'protocole' && POUVOIRS_PROTOCOLES[c.id] ? POUVOIRS_PROTOCOLES[c.id].texte : SOUTIENS[soutien(c)].texte
+
 export function preparerReconfinement(anomalie: Carte, defenseur: CampReco, soutienDefenseur: Carte | null): Reconfinement {
   const effet = effetDe(anomalie)
   const s = soutienDefenseur && nature(soutienDefenseur) === 'soutien' ? soutien(soutienDefenseur) : null
+  const pouvoir = s === 'protocole' ? POUVOIRS_PROTOCOLES[soutienDefenseur!.id] : undefined
   const neutralise = s === 'protocole'
   const dissipe = neutralise || s === 'personnel'
   let duree = DUREE_RECO
   if (effet.alteration === 'temporel' && !dissipe) duree = DUREE_TEMPORELLE
   if (defenseur.questionsCourtes > 0) duree = 8
   if (s === 'personnel') duree += 8
+  duree += pouvoir?.tempsBonus ?? 0
   const retirees = Math.min(2, (s === 'fim' ? (soutienDefenseur!.ra >= 3 ? 2 : 1) : 0) + (defenseur.questionsFaciles > 0 ? 2 : 0))
   const auto =
-    defenseur.reconfinementsAuto > 0 || (s === 'fim' && aConfine(soutienDefenseur!, anomalie)) ? 'reussite' : defenseur.echecsAuto > 0 ? 'echec' : null
-  return { effet, alteree: !dissipe && !!effet.alteration, actif: !neutralise, duree, retirees, auto, attenuation: neutralise ? 0.5 : 1 }
+    defenseur.reconfinementsAuto > 0 || pouvoir?.auto || (s === 'fim' && aConfine(soutienDefenseur!, anomalie))
+      ? 'reussite'
+      : defenseur.echecsAuto > 0
+        ? 'echec'
+        : null
+  return {
+    effet,
+    alteree: !dissipe && !!effet.alteration,
+    actif: !neutralise,
+    duree,
+    retirees,
+    auto,
+    attenuation: neutralise ? (pouvoir?.attenuation ?? 0.5) : 1,
+  }
+}
+
+/** Après le tour, le pouvoir d'un Protocole joué par `auteur` (camps modifiés en place) */
+export function appliquerProtocole(protocole: Carte, auteur: 'joueur' | 'ia', camps: Record<'joueur' | 'ia', CampReco>, ev: Evenement[]) {
+  const p = POUVOIRS_PROTOCOLES[protocole.id]
+  if (!p) return
+  const moi = camps[auteur]
+  const lui = camps[auteur === 'joueur' ? 'ia' : 'joueur']
+  const nom = protocole.num ?? protocole.nm
+  if (p.soin) {
+    moi.integrite = Math.min(INTEGRITE_SITE, moi.integrite + p.soin)
+    ev.push({ camp: auteur, type: 'soin', valeur: p.soin, texte: `${nom} : +${p.soin}` })
+  }
+  if (p.purge && moi.poison > 0) {
+    moi.poison = 0
+    ev.push({ camp: auteur, type: 'soin', texte: `${nom} : contamination purgée` })
+  }
+  if (p.vidange) {
+    lui.manifestation = Math.max(0, lui.manifestation - p.vidange)
+    ev.push({ camp: auteur === 'joueur' ? 'ia' : 'joueur', type: 'jauge', valeur: p.vidange, texte: `${nom} : la jauge adverse perd ${p.vidange}` })
+  }
+  if (p.reconfinementsAuto) moi.reconfinementsAuto += p.reconfinementsAuto
+  if (p.frappeLesDeux) {
+    for (const c of [moi, lui]) c.integrite = Math.max(0, c.integrite - p.frappeLesDeux)
+    ev.push({ camp: auteur, type: 'breche', valeur: p.frappeLesDeux, texte: `${nom} : la fin du monde, −${p.frappeLesDeux}` })
+    ev.push({ camp: auteur === 'joueur' ? 'ia' : 'joueur', type: 'breche', valeur: p.frappeLesDeux, texte: `${nom} : la fin du monde, −${p.frappeLesDeux}` })
+  }
 }
 
 export interface Issue {

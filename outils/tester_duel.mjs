@@ -472,6 +472,37 @@ await test('la Manifestation suit la Mythique de l’équipe, sinon le Protocole
   assert.equal(camps.joueur.manifeste, true)
 })
 
+await test('SCP-939 imite la bonne réponse, à une lettre près', async () => {
+  const options = ['The Sculpture', 'Mr. Baseball', 'Cash or Ash', 'The Squeaky Wheel']
+  const echo = E.appliquerEcho(options, 0, [1])
+  const imitee = echo.findIndex((o, i) => i !== 0 && o !== options[i])
+  assert.ok(imitee > 0 && imitee !== 1, 'une fausse réponse, jamais une retirée, imite la bonne')
+  assert.notEqual(echo[imitee], options[0])
+  assert.equal(echo[imitee].length, options[0].length)
+  assert.equal(echo[0], options[0], 'la bonne réponse ne bouge pas')
+})
+await test('les propositions pour SCP-001 et les grandes figures ont leur effet', async () => {
+  assert.equal(E.effetDe({ id: 'scp-x', t: [], s: 0, k: 's' }).id, 'proposition-001')
+  assert.equal(E.effetDe({ id: 'scp-087', t: [] }).alteration, 'obscurite')
+  assert.equal(E.effetDe({ id: 'scp-2521', t: [] }).alteration, 'pictogrammes')
+})
+await test('les Protocoles ont leur pouvoir : IRA-5 reconfine d’office, CODE RED divise par quatre', async () => {
+  const a = carteR('s', 60, 0, { id: 'scp-x', t: [] })
+  assert.equal(RC.preparerReconfinement(a, RC.campReco(), carteR('o', 0, 0, { id: 'proto:ira-5' })).auto, 'reussite')
+  const rouge = RC.preparerReconfinement(a, RC.campReco(), carteR('o', 0, 0, { id: 'proto:code-red' }))
+  assert.equal(RC.degatsAnomalie(a, rouge, { reconfinee: false, temps: 3 }), Math.round(60 * 0.5 * 0.25))
+  const camps = { joueur: { ...RC.campReco(), poison: 4, integrite: 100 }, ia: { ...RC.campReco(), manifestation: 80 } }
+  const ev = []
+  RC.appliquerProtocole(carteR('o', 0, 0, { id: 'proto:code-green' }), 'joueur', camps, ev)
+  RC.appliquerProtocole(carteR('o', 0, 0, { id: 'proto:110-montauk' }), 'joueur', camps, ev)
+  RC.appliquerProtocole(carteR('o', 0, 0, { id: 'proto:ck' }), 'joueur', camps, ev)
+  RC.appliquerProtocole(carteR('o', 0, 0, { id: 'proto:patmos' }), 'joueur', camps, ev)
+  assert.equal(camps.joueur.poison, 0)
+  assert.equal(camps.ia.manifestation, 30)
+  assert.equal(camps.joueur.integrite, 125)
+  assert.equal(camps.joueur.reconfinementsAuto, 2)
+})
+
 console.log('Reconfinement : serveur')
 await admin('delete from prive.duels_ia where joueur = $1', [B])
 await test('une partie complète, arbitrée et récompensée par le serveur', async () => {

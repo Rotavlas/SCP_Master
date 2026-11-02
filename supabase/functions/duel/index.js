@@ -325,6 +325,59 @@ const SIGNATURES = {
 		texte: "Inoffensif : il ne fait aucun dégât, mais votre Site regagne 20 points.",
 		special: "inoffensif"
 	},
+	"scp-3000": {
+		id: "scp-3000",
+		nom: "Anantashesha",
+		icone: "◌",
+		texte: "Elle dévore la mémoire : la question s’efface au bout de 3 secondes, et sa brèche frappe fort.",
+		alteration: "antimemetique",
+		force: 1.6
+	},
+	"scp-939": {
+		id: "scp-939",
+		nom: "Mille voix",
+		icone: "❝",
+		texte: "Elle imite : une des fausses réponses copie presque la bonne, à une lettre près.",
+		alteration: "echo"
+	},
+	"scp-3008": {
+		id: "scp-3008",
+		nom: "Magasin infini",
+		icone: "⤧",
+		texte: "Les réponses se perdent dans les rayons ; même reconfiné, il garde 30 % de sa brèche.",
+		alteration: "spatial",
+		tenace: .3
+	},
+	"scp-087": {
+		id: "scp-087",
+		nom: "L’escalier",
+		icone: "◑",
+		texte: "Le noir complet : on ne lit la question qu’à la lueur de sa lampe (la souris, le doigt).",
+		alteration: "obscurite"
+	},
+	"scp-2521": {
+		id: "scp-2521",
+		nom: "●●|●●●●●|●●|●",
+		icone: "●",
+		texte: "Il prend tout ce qu’on écrit sur lui : l’intitulé de la question devient des points.",
+		alteration: "pictogrammes"
+	},
+	"scp-1471": {
+		id: "scp-1471",
+		nom: "MalO",
+		icone: "◧",
+		texte: "Elle apparaît du coin de l’œil : des éclairs traversent la question.",
+		alteration: "visuel",
+		force: 1.2
+	},
+	"scp-035": {
+		id: "scp-035",
+		nom: "Masque possessif",
+		icone: "☍",
+		texte: "Il possède : les réponses se brouillent, et même reconfiné il inflige 50 %.",
+		alteration: "memetique",
+		tenace: .5
+	},
 	"scp-2747": {
 		id: "scp-2747",
 		nom: "Anafabula",
@@ -346,11 +399,46 @@ const SANS_EFFET = {
 	icone: "·",
 	texte: "Elle ne compte que sur sa Menace."
 };
+/** Les propositions pour SCP-001 : des vérités fondatrices */
+const PROPOSITION_001 = {
+	id: "proposition-001",
+	nom: "Proposition 001",
+	icone: "✶",
+	texte: "Une vérité fondatrice : la réalité vacille, et sa brèche frappe plus fort.",
+	alteration: "realite",
+	force: 1.4
+};
 function effetDe(c) {
 	const signature = SIGNATURES[c.id];
 	if (signature) return signature;
+	if (c.s === 0 && (c.k ?? "s") === "s") return PROPOSITION_001;
 	const tags = new Set(c.t ?? []);
 	return FAMILLES.find((f) => f.tags.some((t) => tags.has(t)))?.effet ?? SANS_EFFET;
+}
+/**
+* SCP-939 imite : une réponse presque identique à la bonne, deux lettres voisines échangées dans son plus long
+* mot (ou une lettre doublée s'il est trop court).
+*/
+function imiter(texte) {
+	const mots = texte.split(" ");
+	let i = 0;
+	mots.forEach((m, k) => {
+		if (m.length > mots[i].length) i = k;
+	});
+	const m = mots[i];
+	if (m.length >= 4) {
+		const j = 1 + Math.floor(Math.random() * (m.length - 3));
+		mots[i] = m.slice(0, j) + m[j + 1] + m[j] + m.slice(j + 2);
+	} else mots[i] = m + m.slice(-1);
+	const copie = mots.join(" ");
+	return copie === texte ? `${texte} ` : copie;
+}
+/** Remplace une mauvaise réponse par l'imitation de la bonne (les autres options ne bougent pas) */
+function appliquerEcho(options, bonne, retirees = []) {
+	const candidates = options.map((_, i) => i).filter((i) => i !== bonne && !retirees.includes(i));
+	if (!candidates.length) return options;
+	const cible = candidates[Math.floor(Math.random() * candidates.length)];
+	return options.map((o, i) => i === cible ? imiter(options[bonne]) : o);
 }
 // src/data/catalogue.ts
 const RARETES = [
@@ -1401,17 +1489,53 @@ const campReco = () => ({
 });
 /** Une FIM a confiné ce SCP dans le wiki (ses liens sont des désignations : « SCP-173 ») */
 const aConfine = (fim, a) => fim.k === "f" && !!a.num && !!fim.lie?.includes(a.num);
+const POUVOIRS_PROTOCOLES = {
+	"proto:ira-5": {
+		texte: "Closing Time : l’anomalie qui arrive est reconfinée d’office.",
+		auto: true
+	},
+	"proto:code-red": {
+		texte: "Agresseur de grande taille : la brèche qui arrive est divisée par quatre.",
+		attenuation: .25
+	},
+	"proto:code-green": {
+		texte: "Décontamination : toute contagion de votre Site disparaît.",
+		purge: true
+	},
+	"proto:code-amber": {
+		texte: "Filtres mémétiques : 8 secondes de plus pour reconfiner.",
+		tempsBonus: 8
+	},
+	"proto:110-montauk": {
+		texte: "Le rituel retient l’ennemi : sa jauge de Manifestation perd 50.",
+		vidange: 50
+	},
+	"proto:patmos": {
+		texte: "Ordre d’urgence : vos deux prochains reconfinements réussissent d’office.",
+		reconfinementsAuto: 2
+	},
+	"proto:ck": {
+		texte: "Restructuration de la réalité : votre Site regagne 25 points.",
+		soin: 25
+	},
+	"proto:xk": {
+		texte: "Fin du monde : les deux Sites perdent 20 points.",
+		frappeLesDeux: 20
+	}
+};
 function preparerReconfinement(anomalie, defenseur, soutienDefenseur) {
 	const effet = effetDe(anomalie);
 	const s = soutienDefenseur && nature(soutienDefenseur) === "soutien" ? soutien(soutienDefenseur) : null;
+	const pouvoir = s === "protocole" ? POUVOIRS_PROTOCOLES[soutienDefenseur.id] : void 0;
 	const neutralise = s === "protocole";
 	const dissipe = neutralise || s === "personnel";
 	let duree = 20;
 	if (effet.alteration === "temporel" && !dissipe) duree = 12;
 	if (defenseur.questionsCourtes > 0) duree = 8;
 	if (s === "personnel") duree += 8;
+	duree += pouvoir?.tempsBonus ?? 0;
 	const retirees = Math.min(2, (s === "fim" ? soutienDefenseur.ra >= 3 ? 2 : 1 : 0) + (defenseur.questionsFaciles > 0 ? 2 : 0));
-	const auto = defenseur.reconfinementsAuto > 0 || s === "fim" && aConfine(soutienDefenseur, anomalie) ? "reussite" : defenseur.echecsAuto > 0 ? "echec" : null;
+	const auto = defenseur.reconfinementsAuto > 0 || pouvoir?.auto || s === "fim" && aConfine(soutienDefenseur, anomalie) ? "reussite" : defenseur.echecsAuto > 0 ? "echec" : null;
 	return {
 		effet,
 		alteree: !dissipe && !!effet.alteration,
@@ -1419,8 +1543,58 @@ function preparerReconfinement(anomalie, defenseur, soutienDefenseur) {
 		duree,
 		retirees,
 		auto,
-		attenuation: neutralise ? .5 : 1
+		attenuation: neutralise ? pouvoir?.attenuation ?? .5 : 1
 	};
+}
+/** Après le tour, le pouvoir d'un Protocole joué par `auteur` (camps modifiés en place) */
+function appliquerProtocole(protocole, auteur, camps, ev) {
+	const p = POUVOIRS_PROTOCOLES[protocole.id];
+	if (!p) return;
+	const moi = camps[auteur];
+	const lui = camps[auteur === "joueur" ? "ia" : "joueur"];
+	const nom = protocole.num ?? protocole.nm;
+	if (p.soin) {
+		moi.integrite = Math.min(150, moi.integrite + p.soin);
+		ev.push({
+			camp: auteur,
+			type: "soin",
+			valeur: p.soin,
+			texte: `${nom} : +${p.soin}`
+		});
+	}
+	if (p.purge && moi.poison > 0) {
+		moi.poison = 0;
+		ev.push({
+			camp: auteur,
+			type: "soin",
+			texte: `${nom} : contamination purgée`
+		});
+	}
+	if (p.vidange) {
+		lui.manifestation = Math.max(0, lui.manifestation - p.vidange);
+		ev.push({
+			camp: auteur === "joueur" ? "ia" : "joueur",
+			type: "jauge",
+			valeur: p.vidange,
+			texte: `${nom} : la jauge adverse perd ${p.vidange}`
+		});
+	}
+	if (p.reconfinementsAuto) moi.reconfinementsAuto += p.reconfinementsAuto;
+	if (p.frappeLesDeux) {
+		for (const c of [moi, lui]) c.integrite = Math.max(0, c.integrite - p.frappeLesDeux);
+		ev.push({
+			camp: auteur,
+			type: "breche",
+			valeur: p.frappeLesDeux,
+			texte: `${nom} : la fin du monde, −${p.frappeLesDeux}`
+		});
+		ev.push({
+			camp: auteur === "joueur" ? "ia" : "joueur",
+			type: "breche",
+			valeur: p.frappeLesDeux,
+			texte: `${nom} : la fin du monde, −${p.frappeLesDeux}`
+		});
+	}
 }
 const DEGATS_BASE = .5;
 /** Dégâts d'une anomalie qui fait brèche, ou de ce qu'elle inflige malgré tout une fois reconfinée */
@@ -1714,11 +1888,13 @@ function lancer(etat, secret, b, maintenant) {
 		};
 		if (!r.auto) {
 			const q = questionReconfinement(b, anomalie);
+			const retirees = aRetirer$1(q.options, q.bonne, r.retirees);
+			const options = r.alteree && r.effet.alteration === "echo" ? appliquerEcho(q.options, q.bonne, retirees) : q.options;
 			pub.question = {
 				intitule: q.intitule,
 				document: q.document,
-				options: q.options,
-				retirees: aRetirer$1(q.options, q.bonne, r.retirees),
+				options,
+				retirees,
 				duree: r.duree
 			};
 			secret.bonnes[x] = q.bonne;
@@ -1797,6 +1973,10 @@ function resoudre$2(etat, secret, b, maintenant) {
 		]) consommes[camp(y)][k] = true;
 	}
 	finDeTour(C, consommes, ev);
+	for (const x of COTES$1) {
+		const c = b.parId.get(cartes[x]);
+		if (nature(c) === "soutien" && soutien(c) === "protocole") appliquerProtocole(c, camp(x), C, ev);
+	}
 	etat.camps = {
 		a: C.joueur,
 		b: C.ia
@@ -2411,12 +2591,14 @@ async function jouer$1(env, idJoueur, corps, maintenant) {
 		const reco = preparerReconfinement(carteIA, etat.joueur, carte);
 		if (!reco.auto) {
 			const q = questionReconfinement(b, carteIA);
+			const retirees = aRetirer(q.options, q.bonne, reco.retirees);
+			const options = reco.alteree && reco.effet.alteration === "echo" ? appliquerEcho(q.options, q.bonne, retirees) : q.options;
 			const question = {
 				intitule: q.intitule,
 				document: q.document,
-				options: q.options,
+				options,
 				bonne: q.bonne,
-				retirees: aRetirer(q.options, q.bonne, reco.retirees),
+				retirees,
 				duree: reco.duree
 			};
 			await ecrire$1(env, id, idJoueur, version, {
@@ -2431,8 +2613,8 @@ async function jouer$1(env, idJoueur, corps, maintenant) {
 				question: {
 					intitule: q.intitule,
 					document: q.document,
-					options: q.options,
-					retirees: question.retirees,
+					options,
+					retirees,
 					duree: reco.duree
 				},
 				reco: {
@@ -2536,6 +2718,7 @@ async function resoudre(env, id, idJoueur, version, etat, b, issueJoueur, repons
 		]) consommes.joueur[k] = true;
 	}
 	finDeTour(camps, consommes, evenements);
+	for (const [x, c] of [["joueur", carte], ["ia", carteIA]]) if (nature(c) === "soutien" && soutien(c) === "protocole") appliquerProtocole(c, x, camps, evenements);
 	if (camps.ia.manifestation >= 100 && !camps.ia.manifeste && camps.ia.integrite > 0) evenements.push(...manifester(URGENCE, "ia", camps, mains));
 	const suivant = {
 		...etat,
@@ -2707,6 +2890,7 @@ async function jouer(env, idJoueur, corps, maintenant) {
 	const q = surMaCarte ? genererQuestion(b, carte, carteIA, false) : genererQuestion(b, carteIA, carte, true);
 	const effet = effetDe(carte);
 	const effetIA = effetDe(carteIA);
+	if (effetIA.alteration === "echo" || effet.alteration === "echo") q.options = appliquerEcho(q.options, q.bonne);
 	const duree = effetIA.alteration === "temporel" ? 12 : 20;
 	const dureeIA = effet.alteration === "temporel" ? 12 : 20;
 	const brute = reponseAdversaire({

@@ -103,7 +103,20 @@ function EssaiMode({ base, mode }: { base: Base; mode: string }) {
 }
 
 /** atelier.html?mode=alterations : chaque altération d'une question, en boucle, pour en juger le rendu */
-const ALTERATIONS: Alteration[] = ['clignement', 'memetique', 'antimemetique', 'effacement', 'realite', 'spatial', 'visuel', 'sonore', 'temporel']
+const ALTERATIONS: Alteration[] = [
+  'clignement',
+  'memetique',
+  'antimemetique',
+  'effacement',
+  'realite',
+  'spatial',
+  'visuel',
+  'sonore',
+  'temporel',
+  'echo',
+  'obscurite',
+  'pictogrammes',
+]
 
 function PlancheAlterations() {
   const [debut, setDebut] = useState(() => Date.now())

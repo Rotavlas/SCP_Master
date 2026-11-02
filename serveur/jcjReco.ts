@@ -6,11 +6,12 @@
  * restent dans l'état secret. Ces fonctions ne touchent pas au réseau : serveur/jcj.ts les lit et les écrit.
  */
 import type { Base } from '../src/data/catalogue'
-import type { Effet } from '../src/engine/effets'
+import { appliquerEcho, type Effet } from '../src/engine/effets'
 import { questionReconfinement } from '../src/engine/quiz'
 import {
   MANIFESTATION_MAX,
   appliquerLiberation,
+  appliquerProtocole,
   campReco,
   finDeTour,
   gainReponse,
@@ -134,7 +135,10 @@ function lancer(etat: EtatRecoJcj, secret: SecretRecoJcj, b: Base, maintenant: n
     const pub: RecoPublic = { effet: r.effet, alteree: r.alteree, actif: r.actif, auto: r.auto }
     if (!r.auto) {
       const q = questionReconfinement(b, anomalie)
-      pub.question = { intitule: q.intitule, document: q.document, options: q.options, retirees: aRetirer(q.options, q.bonne, r.retirees), duree: r.duree }
+      const retirees = aRetirer(q.options, q.bonne, r.retirees)
+      // SCP-939 imite : une des fausses réponses copie presque la bonne
+      const options = r.alteree && r.effet.alteration === 'echo' ? appliquerEcho(q.options, q.bonne, retirees) : q.options
+      pub.question = { intitule: q.intitule, document: q.document, options, retirees, duree: r.duree }
       secret.bonnes[x] = q.bonne
       duree = Math.max(duree, r.duree)
     }
@@ -186,6 +190,11 @@ function resoudre(etat: EtatRecoJcj, secret: SecretRecoJcj, b: Base, maintenant:
     for (const k of ['reconfinementsAuto', 'questionsCourtes', 'echecsAuto', 'questionsFaciles'] as const) consommes[camp(y)][k] = true
   }
   finDeTour(C, consommes, ev)
+  // Le pouvoir propre des Protocoles joués ce tour (après la fin du tour : il vaut pour les tours suivants)
+  for (const x of COTES) {
+    const c = b.parId.get(cartes[x])!
+    if (nature(c) === 'soutien' && soutien(c) === 'protocole') appliquerProtocole(c, camp(x), C, ev)
+  }
   etat.camps = { a: C.joueur, b: C.ia }
   etat.mains = { a: mains.joueur, b: mains.ia }
   etat.dernier = { tour: etat.tour, cartes, evenements: ev.map((e) => ({ ...e, cote: cote(e.camp) })), reponses }

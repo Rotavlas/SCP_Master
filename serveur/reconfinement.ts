@@ -8,6 +8,7 @@ import type { Base } from '../src/data/catalogue'
 import { ADVERSAIRES, deckAdversaire, reponseAdversaire } from '../src/engine/duel'
 import {
   appliquerLiberation,
+  appliquerProtocole,
   campReco,
   choisirIAReco,
   finDeTour,
@@ -27,6 +28,7 @@ import {
   type Evenement,
   type Reconfinement,
 } from '../src/engine/reconfinement'
+import { appliquerEcho } from '../src/engine/effets'
 import { questionReconfinement } from '../src/engine/quiz'
 import type { Carte, Langue } from '../src/types'
 import { Erreur, GRACE, base, rpc, texte, type Environnement } from './commun'
@@ -158,18 +160,14 @@ async function jouer(env: Environnement, idJoueur: string, corps: Record<string,
     const reco = preparerReconfinement(carteIA, etat.joueur, carte)
     if (!reco.auto) {
       const q = questionReconfinement(b, carteIA)
-      const question = {
-        intitule: q.intitule,
-        document: q.document,
-        options: q.options,
-        bonne: q.bonne,
-        retirees: aRetirer(q.options, q.bonne, reco.retirees),
-        duree: reco.duree,
-      }
+      const retirees = aRetirer(q.options, q.bonne, reco.retirees)
+      // SCP-939 imite : une des fausses réponses copie presque la bonne
+      const options = reco.alteree && reco.effet.alteration === 'echo' ? appliquerEcho(q.options, q.bonne, retirees) : q.options
+      const question = { intitule: q.intitule, document: q.document, options, bonne: q.bonne, retirees, duree: reco.duree }
       await ecrire(env, id, idJoueur, version, { ...suivant, phase: 'question', question, reco, debut: maintenant })
       return {
         ...revelation,
-        question: { intitule: q.intitule, document: q.document, options: q.options, retirees: question.retirees, duree: reco.duree },
+        question: { intitule: q.intitule, document: q.document, options, retirees, duree: reco.duree },
         reco: { effet: reco.effet, alteree: reco.alteree, actif: reco.actif },
       }
     }
@@ -258,6 +256,12 @@ async function resoudre(
     for (const k of ['reconfinementsAuto', 'questionsCourtes', 'echecsAuto', 'questionsFaciles'] as const) consommes.joueur[k] = true
   }
   finDeTour(camps, consommes, evenements)
+  // Le pouvoir propre des Protocoles joués ce tour (après la fin du tour : il vaut pour les tours suivants)
+  for (const [x, c] of [
+    ['joueur', carte],
+    ['ia', carteIA],
+  ] as [Cote, Carte][])
+    if (nature(c) === 'soutien' && soutien(c) === 'protocole') appliquerProtocole(c, x, camps, evenements)
   // L'IA se manifeste dès que sa jauge est pleine (Protocole d'urgence)
   if (camps.ia.manifestation >= MANIFESTATION_MAX && !camps.ia.manifeste && camps.ia.integrite > 0) {
     evenements.push(...manifester(URGENCE, 'ia', camps, mains))

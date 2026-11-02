@@ -10,7 +10,23 @@
 import type { Carte } from '../types'
 
 /** Ce que l'anomalie fait à la question de celui qui doit la reconfiner */
-export type Alteration = 'memetique' | 'antimemetique' | 'effacement' | 'temporel' | 'realite' | 'spatial' | 'visuel' | 'sonore' | 'clignement' | 'visage'
+export type Alteration =
+  | 'memetique'
+  | 'antimemetique'
+  | 'effacement'
+  | 'temporel'
+  | 'realite'
+  | 'spatial'
+  | 'visuel'
+  | 'sonore'
+  | 'clignement'
+  | 'visage'
+  // SCP-939 : une fausse réponse imite la bonne (le serveur la réécrit, voir imiter)
+  | 'echo'
+  // SCP-087 : la question est dans le noir, éclairée seulement autour du pointeur
+  | 'obscurite'
+  // SCP-2521 : l'intitulé devient des points
+  | 'pictogrammes'
 
 /** Effets à part, réglés par le serveur */
 export type Special = 'lent' | 'visage' | 'poche' | 'remede' | 'inoffensif'
@@ -123,6 +139,59 @@ const SIGNATURES: Record<string, Effet> = {
     texte: 'Inoffensif : il ne fait aucun dégât, mais votre Site regagne 20 points.',
     special: 'inoffensif',
   },
+  'scp-3000': {
+    id: 'scp-3000',
+    nom: 'Anantashesha',
+    icone: '◌',
+    texte: 'Elle dévore la mémoire : la question s’efface au bout de 3 secondes, et sa brèche frappe fort.',
+    alteration: 'antimemetique',
+    force: 1.6,
+  },
+  'scp-939': {
+    id: 'scp-939',
+    nom: 'Mille voix',
+    icone: '❝',
+    texte: 'Elle imite : une des fausses réponses copie presque la bonne, à une lettre près.',
+    alteration: 'echo',
+  },
+  'scp-3008': {
+    id: 'scp-3008',
+    nom: 'Magasin infini',
+    icone: '⤧',
+    texte: 'Les réponses se perdent dans les rayons ; même reconfiné, il garde 30 % de sa brèche.',
+    alteration: 'spatial',
+    tenace: 0.3,
+  },
+  'scp-087': {
+    id: 'scp-087',
+    nom: 'L’escalier',
+    icone: '◑',
+    texte: 'Le noir complet : on ne lit la question qu’à la lueur de sa lampe (la souris, le doigt).',
+    alteration: 'obscurite',
+  },
+  'scp-2521': {
+    id: 'scp-2521',
+    nom: '●●|●●●●●|●●|●',
+    icone: '●',
+    texte: 'Il prend tout ce qu’on écrit sur lui : l’intitulé de la question devient des points.',
+    alteration: 'pictogrammes',
+  },
+  'scp-1471': {
+    id: 'scp-1471',
+    nom: 'MalO',
+    icone: '◧',
+    texte: 'Elle apparaît du coin de l’œil : des éclairs traversent la question.',
+    alteration: 'visuel',
+    force: 1.2,
+  },
+  'scp-035': {
+    id: 'scp-035',
+    nom: 'Masque possessif',
+    icone: '☍',
+    texte: 'Il possède : les réponses se brouillent, et même reconfiné il inflige 50 %.',
+    alteration: 'memetique',
+    tenace: 0.5,
+  },
   'scp-2747': {
     id: 'scp-2747',
     nom: 'Anafabula',
@@ -135,9 +204,47 @@ const SIGNATURES: Record<string, Effet> = {
 
 export const SANS_EFFET: Effet = { id: 'aucun', nom: 'Sans effet notable', icone: '·', texte: 'Elle ne compte que sur sa Menace.' }
 
-export function effetDe(c: Pick<Carte, 'id' | 't'>): Effet {
+/** Les propositions pour SCP-001 : des vérités fondatrices */
+const PROPOSITION_001: Effet = {
+  id: 'proposition-001',
+  nom: 'Proposition 001',
+  icone: '✶',
+  texte: 'Une vérité fondatrice : la réalité vacille, et sa brèche frappe plus fort.',
+  alteration: 'realite',
+  force: 1.4,
+}
+
+export function effetDe(c: Pick<Carte, 'id' | 't'> & Partial<Pick<Carte, 's' | 'k'>>): Effet {
   const signature = SIGNATURES[c.id]
   if (signature) return signature
+  if (c.s === 0 && (c.k ?? 's') === 's') return PROPOSITION_001
   const tags = new Set(c.t ?? [])
   return FAMILLES.find((f) => f.tags.some((t) => tags.has(t)))?.effet ?? SANS_EFFET
+}
+
+/**
+ * SCP-939 imite : une réponse presque identique à la bonne, deux lettres voisines échangées dans son plus long
+ * mot (ou une lettre doublée s'il est trop court).
+ */
+export function imiter(texte: string): string {
+  const mots = texte.split(' ')
+  let i = 0
+  mots.forEach((m, k) => {
+    if (m.length > mots[i].length) i = k
+  })
+  const m = mots[i]
+  if (m.length >= 4) {
+    const j = 1 + Math.floor(Math.random() * (m.length - 3))
+    mots[i] = m.slice(0, j) + m[j + 1] + m[j] + m.slice(j + 2)
+  } else mots[i] = m + m.slice(-1)
+  const copie = mots.join(' ')
+  return copie === texte ? `${texte} ` : copie
+}
+
+/** Remplace une mauvaise réponse par l'imitation de la bonne (les autres options ne bougent pas) */
+export function appliquerEcho(options: string[], bonne: number, retirees: number[] = []): string[] {
+  const candidates = options.map((_, i) => i).filter((i) => i !== bonne && !retirees.includes(i))
+  if (!candidates.length) return options
+  const cible = candidates[Math.floor(Math.random() * candidates.length)]
+  return options.map((o, i) => (i === cible ? imiter(options[bonne]) : o))
 }

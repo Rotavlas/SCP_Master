@@ -6,10 +6,10 @@ import {
   INTEGRITE_SITE,
   MANIFESTATION_MAX,
   SEUIL_RAPIDE,
-  SOUTIENS,
+  nomSoutien,
+  texteSoutien,
   TOURS_RECO,
   nature,
-  soutien,
   type CampReco,
   type Evenement,
   type Manifestation,
@@ -220,7 +220,7 @@ export function Reconfinement({ base, adversaire, onQuitter }: { base: Base; adv
         {t && carteIA && p.jouee && p.phase !== 'choix' && (
           <div className="reco-face-a-face">
             <div className={`reco-carte ia ${nature(carteIA)} ${voile ? 'voilee' : ''}`}>
-              <span className="reco-etiquette">{nature(carteIA) === 'anomalie' ? '⚠ S’échappe' : `Soutien · ${SOUTIENS[soutien(carteIA)].nom}`}</span>
+              <span className="reco-etiquette">{nature(carteIA) === 'anomalie' ? '⚠ S’échappe' : `Soutien · ${nomSoutien(carteIA)}`}</span>
               {/* Caviardée pendant la question : son surnom donnerait la réponse */}
               <Carte carte={carteIA} base={base} taille="m" inclinable={false} caviardee={p.phase === 'question'} />
               {voile && (
@@ -300,7 +300,7 @@ export function Reconfinement({ base, adversaire, onQuitter }: { base: Base; adv
                       ? `Reconfiné par ${adversaire.nom}`
                       : `Brèche chez ${adversaire.nom}`
                     : 'Libérée'
-                  : `Soutien · ${SOUTIENS[soutien(p.jouee)].nom}`}
+                  : `Soutien · ${nomSoutien(p.jouee)}`}
               </span>
               <Carte carte={p.jouee} base={base} taille="m" variante={varianteAffichee(s, p.jouee.id)} inclinable={false} />
             </div>
@@ -324,13 +324,13 @@ export function Reconfinement({ base, adversaire, onQuitter }: { base: Base; adv
             return (
               <button key={c.id} className={`reco-main-carte ${n} ${c.ra === 5 ? 'ultime' : ''}`} disabled={attente} onClick={() => void jouer(c)}>
                 <Carte carte={c} base={base} taille="p" variante={varianteAffichee(s, c.id)} inclinable={false} />
-                <span className={`reco-badge ${n}`} title={n === 'anomalie' ? e.texte : SOUTIENS[soutien(c)].texte}>
+                <span className={`reco-badge ${n}`} title={n === 'anomalie' ? e.texte : texteSoutien(c)}>
                   {n === 'anomalie' ? (
                     <>
                       <span aria-hidden="true">{e.icone}</span> {e.nom}
                     </>
                   ) : (
-                    <>✚ {SOUTIENS[soutien(c)].nom}</>
+                    <>✚ {nomSoutien(c)}</>
                   )}
                 </span>
               </button>
@@ -446,13 +446,9 @@ export function SiteReco({
           {mainVue.map((c, i) => {
             const e = effetDe(c)
             return (
-              <div
-                key={`${c.id}-${i}`}
-                className={`main-vue-carte ${nature(c)}`}
-                title={nature(c) === 'anomalie' ? `${e.nom} : ${e.texte}` : SOUTIENS[soutien(c)].texte}
-              >
+              <div key={`${c.id}-${i}`} className={`main-vue-carte ${nature(c)}`} title={nature(c) === 'anomalie' ? `${e.nom} : ${e.texte}` : texteSoutien(c)}>
                 <Carte carte={c} base={base} taille="p" inclinable={false} />
-                <span className={`reco-badge ${nature(c)}`}>{nature(c) === 'anomalie' ? `${e.icone} ${e.nom}` : `✚ ${SOUTIENS[soutien(c)].nom}`}</span>
+                <span className={`reco-badge ${nature(c)}`}>{nature(c) === 'anomalie' ? `${e.icone} ${e.nom}` : `✚ ${nomSoutien(c)}`}</span>
               </div>
             )
           })}
