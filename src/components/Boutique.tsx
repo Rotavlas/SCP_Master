@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useState } from 'react'
 import type { Base } from '../data/catalogue'
 import { RARETES } from '../data/catalogue'
-import { BOOSTERS, VALEUR_RECYCLAGE } from '../engine/boosters'
+import { BOOSTERS, PART_AU_DELA, PLAFOND_RECYCLAGE, VALEUR_RECYCLAGE } from '../engine/boosters'
+import { FRAIS_VENTE } from '../engine/marche'
 import { VARIANTES } from '../engine/variantes'
-import { appeler, supprimerCompte } from '../state/enLigne'
+import { appeler, supprimerCompte, useRecyclageRestant } from '../state/enLigne'
 import { useSauvegarde } from '../state/sauvegarde'
 import { tirer, type Tirage } from './Booster'
 import { BoutonConfirme } from './Confirmer'
@@ -15,6 +16,7 @@ export function Boutique({ base, ouvrir }: { base: Base; ouvrir: (t: Tirage) => 
   const [restants, setRestants] = useState<Record<string, number>>({})
   const relire = useCallback(() => void appeler<Record<string, number>>('achats_restants').then((r) => r && setRestants(r)), [])
   useEffect(relire, [relire])
+  const restantRecyclage = useRecyclageRestant()
 
   return (
     <section className="boutique">
@@ -49,11 +51,15 @@ export function Boutique({ base, ouvrir }: { base: Base; ouvrir: (t: Tirage) => 
                 ) : null
               })}
             </ul>
-            {b.parJour && (
+            {(b.parJour || b.parSemaine) && (
               <p className={`achats-jour ${restants[b.id] === 0 ? 'epuise' : ''}`}>
-                {restants[b.id] === 0
-                  ? 'Plus aucun aujourd’hui · de nouveau disponible à minuit'
-                  : `${restants[b.id] ?? b.parJour} sur ${b.parJour} encore aujourd’hui`}
+                {b.parJour
+                  ? restants[b.id] === 0
+                    ? 'Plus aucun aujourd’hui · de nouveau disponible à minuit'
+                    : `${restants[b.id] ?? b.parJour} sur ${b.parJour} encore aujourd’hui`
+                  : restants[b.id] === 0
+                    ? 'Déjà ouvert cette semaine · de nouveau disponible lundi'
+                    : 'Un seul par semaine'}
               </p>
             )}
             <button
@@ -92,7 +98,12 @@ export function Boutique({ base, ouvrir }: { base: Base; ouvrir: (t: Tirage) => 
         <h3>Gagner des crédits</h3>
         <ul>
           <li>Remporter des confrontations (plus l'adversaire est haut placé, plus le gain est élevé, +5 ₵ par bonne réponse).</li>
-          <li>Recycler les doublons dans les archives : {RARETES.map((r, i) => `${r.nom.toLowerCase()} ${VALEUR_RECYCLAGE[i]} ₵`).join(' · ')}.</li>
+          <li>
+            Recycler les doublons dans les archives : {RARETES.map((r, i) => `${r.nom.toLowerCase()} ${VALEUR_RECYCLAGE[i]} ₵`).join(' · ')}. Recycler et brûler
+            rapporte au plus {PLAFOND_RECYCLAGE.toLocaleString('fr-FR')} ₵ par jour à plein tarif, puis {PART_AU_DELA * 100} % de la valeur
+            {restantRecyclage !== null && ` (encore ${restantRecyclage.toLocaleString('fr-FR')} ₵ aujourd’hui)`}.
+          </li>
+          <li>Vendre au marché : une taxe de {FRAIS_VENTE * 100} % est prélevée sur chaque vente.</li>
         </ul>
       </div>
 

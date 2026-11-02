@@ -7,7 +7,7 @@ import type { IdVariante } from './variantes'
  * qui reprend exactement ces valeurs : les deux doivent rester synchronisés.
  */
 
-export type IdBooster = 'standard' | 'scp' | 'contes' | 'personnel' | 'keter' | 'o5'
+export type IdBooster = 'standard' | 'scp' | 'contes' | 'personnel' | 'keter' | 'o5' | 'apollyon'
 
 export interface TypeBooster {
   id: IdBooster
@@ -26,6 +26,8 @@ export interface TypeBooster {
   mythique: number
   /** Achats possibles par jour (heure de Paris) ; illimité sinon. Le serveur fait foi (prive.types_boosters.par_jour) */
   parJour?: number
+  /** Achats possibles par semaine (du lundi au dimanche, heure de Paris) */
+  parSemaine?: number
   couleur: string
 }
 
@@ -109,9 +111,35 @@ export const BOOSTERS: TypeBooster[] = [
     parJour: 1,
     couleur: '#2a2a2a',
   },
+  {
+    id: 'apollyon',
+    nom: 'Dossier Apollyon',
+    description: '5 fiches épiques ou mieux, la dernière Légendaire à coup sûr. Variantes ×6, Mythiques bien plus probables. Un par semaine.',
+    prix: 4000,
+    types: MELANGE,
+    poids: [0, 0, 0, 0.85, 0.15],
+    poidsDerniere: [0, 0, 0, 0, 1],
+    bonusVariante: 6,
+    mythique: 0.012,
+    parSemaine: 1,
+    couleur: '#3a0d0a',
+  },
 ]
 
 export const BOOSTER_PAR_ID = Object.fromEntries(BOOSTERS.map((b) => [b.id, b])) as Record<IdBooster, TypeBooster>
+
+/**
+ * Recycler et brûler rapporte au plus 3 000 crédits par jour à plein tarif ; au-delà, 20 % de la valeur.
+ * Le serveur fait foi (prive.gain_plafonne) ; ceci sert à annoncer le gain réel avant de recycler.
+ */
+export const PLAFOND_RECYCLAGE = 3000
+export const PART_AU_DELA = 0.2
+
+/** Le gain réel d'un recyclage de valeur `brut`, quand il reste `restant` crédits à plein tarif aujourd'hui */
+export function gainPlafonne(brut: number, restant: number): number {
+  const plein = Math.max(0, Math.min(brut, restant))
+  return plein + Math.floor((brut - plein) * PART_AU_DELA)
+}
 
 /** Valeur en crédits d'un doublon recyclé (« amnésique administré »). */
 export const VALEUR_RECYCLAGE = [5, 12, 35, 90, 300, 2500]

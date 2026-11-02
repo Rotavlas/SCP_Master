@@ -27,7 +27,7 @@ export interface Tirage {
 const valeur = (t: CarteTiree) => t.carte.ra * 10 + (5 - PRESTIGE.indexOf(t.variante))
 
 /** Niveau d'accréditation inscrit sur chaque dossier scellé */
-const NIVEAUX_DOSSIER: Record<string, number> = { standard: 1, scp: 2, contes: 2, personnel: 3, keter: 4, o5: 5 }
+const NIVEAUX_DOSSIER: Record<string, number> = { standard: 1, scp: 2, contes: 2, personnel: 3, keter: 4, o5: 5, apollyon: 6 }
 
 /** Durée de la cinématique d'une Légendaire (ms), en phase avec .protocole-legendaire */
 const DUREE_PROTOCOLE_LEGENDAIRE = 7900

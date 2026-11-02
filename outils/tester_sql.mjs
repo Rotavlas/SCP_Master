@@ -125,17 +125,37 @@ await test('un booster O5 coûte 1 200 crédits et ne donne que du rare ou mieux
   assert.equal(Number(mouvement.montant), -1200)
 })
 await test('dossiers Keter et O5 : un nombre limité d’achats par jour', async () => {
-  assert.deepEqual(await valeur(A, 'select public.achats_restants()'), { keter: 3, o5: 0 })
+  assert.deepEqual(await valeur(A, 'select public.achats_restants()'), { keter: 3, o5: 0, apollyon: 1 })
   await echoue(en(A, "select public.ouvrir_booster('o5', false)"), /Limite du jour/)
   await admin(`update public.profils set credits = credits + 5000 where id = '${A}'`)
   for (let i = 0; i < 3; i++) await valeur(A, "select public.ouvrir_booster('keter', false)")
   await echoue(en(A, "select public.ouvrir_booster('keter', false)"), /Limite du jour/)
-  assert.deepEqual(await valeur(A, 'select public.achats_restants()'), { keter: 0, o5: 0 })
+  assert.deepEqual(await valeur(A, 'select public.achats_restants()'), { keter: 0, o5: 0, apollyon: 1 })
   // Les achats d'hier ne comptent plus
   await admin(`update public.mouvements_credits set le = le - interval '1 day' where joueur = '${A}' and motif = 'booster'`)
-  assert.deepEqual(await valeur(A, 'select public.achats_restants()'), { keter: 3, o5: 1 })
+  assert.deepEqual(await valeur(A, 'select public.achats_restants()'), { keter: 3, o5: 1, apollyon: 1 })
   // Les autres dossiers restent illimités
   for (let i = 0; i < 4; i++) await valeur(A, "select public.ouvrir_booster('scp', false)")
+})
+await test('le Dossier Apollyon : un par semaine, une Légendaire garantie', async () => {
+  await admin(`update public.profils set credits = credits + 10000 where id = '${A}'`)
+  const r = await valeur(A, "select public.ouvrir_booster('apollyon', false)")
+  const raretes = (
+    await admin(
+      `select c.ra from jsonb_array_elements($1::jsonb) with ordinality t(carte, rang) join public.cartes c on c.id = t.carte ->> 'id' order by t.rang`,
+      [JSON.stringify(r.cartes)],
+    )
+  ).rows.map((x) => x.ra)
+  assert.ok(
+    raretes.every((ra) => ra >= 3),
+    `raretés ${raretes}`,
+  )
+  assert.ok(raretes[4] >= 4, 'la dernière est au moins légendaire')
+  await echoue(en(A, "select public.ouvrir_booster('apollyon', false)"), /Limite de la semaine/)
+  assert.equal((await valeur(A, 'select public.achats_restants()')).apollyon, 0)
+  // La semaine d'avant ne compte plus
+  await admin(`update public.mouvements_credits set le = le - interval '8 days' where joueur = '${A}' and reference = 'apollyon'`)
+  assert.equal((await valeur(A, 'select public.achats_restants()')).apollyon, 1)
 })
 await test('les cartes souhaitées sont retirées de la liste et les nouvelles signalées', async () => {
   const etat = await valeur(A, 'select public.mon_etat()')
@@ -173,7 +193,13 @@ await test('une Mythique se recycle 2 500 ₵ et compte dans le classement des l
   const avant = await valeur(A, "select (public.classement('legendaires') -> 'moi' ->> 'valeur')::int")
   assert.ok(avant >= 5, `légendaires et mythiques : ${avant}`)
   const n = (await admin(`select count(*)::int as n from public.exemplaires where proprietaire = '${A}' and carte_id = $1`, [id])).rows[0].n
-  if (n >= 2) assert.equal(await valeur(A, "select (public.recycler_doublons($1) ->> 'gain')::int", [id]), (n - 1) * 2500)
+  if (n >= 2) {
+    // Plafond du jour remis à zéro : 3 000 à plein tarif, 20 % au-delà
+    await admin(`update public.mouvements_credits set le = le - interval '1 day' where joueur = '${A}' and motif in ('recyclage', 'brulage')`)
+    const brut = (n - 1) * 2500
+    const plein = Math.min(brut, 3000)
+    assert.equal(await valeur(A, "select (public.recycler_doublons($1) ->> 'gain')::int", [id]), plein + Math.floor((brut - plein) * 0.2))
+  }
 })
 await test('boosters gratuits recrédités avec le temps, 10 au maximum', async () => {
   await admin(`update public.profils set boosters = 0, dernier_booster = now() - interval '35 minutes' where id = '${A}'`)
@@ -216,8 +242,10 @@ await test('le schéma privé est inaccessible', async () => {
 
 console.log('Recyclage')
 await test('recycle les doublons standard et garde un exemplaire', async () => {
-  // Les boosters précédents sont aléatoires : on part d'une situation connue pour cette carte
+  // Les boosters précédents sont aléatoires : on part d'une situation connue pour cette carte, et d'un plafond du
+  // jour intact (les recyclages des tests précédents ne comptent pas)
   await admin(`delete from public.exemplaires where proprietaire = '${A}' and carte_id = 'scp-096'`)
+  await admin(`update public.mouvements_credits set le = le - interval '1 day' where joueur = '${A}' and motif in ('recyclage', 'brulage')`)
   await admin(
     `insert into public.exemplaires (proprietaire, carte_id, numero_serie, origine) select '${A}', 'scp-096', 900 + g, 'booster' from generate_series(1, 3) g`,
   )
@@ -408,12 +436,12 @@ await test("l'historique des mises donne le pseudo de chaque enchérisseur, et l
 await test('une vente qui a reçu une mise ne peut plus être retirée', async () => {
   await echoue(en(A, 'select public.annuler_enchere($1)', [vente]), /déjà reçu une mise/)
 })
-await test('à échéance : la carte part au meilleur enchérisseur, le vendeur touche la mise moins 5 %', async () => {
+await test('à échéance : la carte part au meilleur enchérisseur, le vendeur touche la mise moins 10 % de taxe', async () => {
   const avant = await credits(A)
   await echoir(vente)
   const m = await valeur(A, 'select public.marche()')
   assert.ok(!m.ouvertes.some((e) => e.id === vente))
-  assert.equal(await credits(A), avant + 120 - 6)
+  assert.equal(await credits(A), avant + 120 - 12)
   const ex = (
     await admin('select x.proprietaire, x.origine, x.bloque_par from public.encheres e join public.exemplaires x on x.id = e.exemplaire where e.id = $1', [
       vente,
@@ -489,10 +517,25 @@ await test('brûlage groupé : les doublons gardent un exemplaire, « un » brû
   assert.equal(await possede(B, 'scp-096', 'std'), 1)
   assert.equal(await possede(B, 'scp-096', 'holo'), 1)
   assert.equal(r.detruits, attendus)
+  // Ce qui a été gagné avant aujourd'hui ne compte pas dans le plafond du jour
+  await admin(`update public.mouvements_credits set le = le - interval '1 day' where joueur = '${B}' and motif in ('recyclage', 'brulage')`)
   assert.equal((await valeur(B, "select public.bruler_lot(array['scp-173'], 'un')")).gain, [5, 12, 35, 90, 300, 2500][ra])
   assert.equal(await possede(B, 'scp-173', 'std'), 0)
   await echoue(en(B, "select public.bruler_lot(array['scp-173'], 'autre')"), /inconnu/)
   await echoue(en(null, "select public.bruler_lot(array['scp-173'], 'un')"), /permission denied/)
+})
+
+await test('recycler et brûler : 3 000 ₵ par jour à plein tarif, 20 % au-delà', async () => {
+  await admin(`update public.mouvements_credits set le = le - interval '1 day' where joueur = '${B}' and motif in ('recyclage', 'brulage')`)
+  assert.equal(await valeur(B, 'select public.recyclage_restant()'), 3000)
+  const mythique = (await admin('select id from public.cartes where ra = 5 limit 1')).rows[0].id
+  await donner(B, mythique, 2)
+  // 2 500 à plein tarif : il reste 500
+  assert.equal((await valeur(B, `select public.bruler_lot(array['${mythique}'], 'un')`)).gain, 2500)
+  assert.equal(await valeur(B, 'select public.recyclage_restant()'), 500)
+  // La suivante : 500 à plein tarif, puis 20 % des 2 000 restants
+  assert.equal((await valeur(B, `select public.bruler_lot(array['${mythique}'], 'un')`)).gain, 500 + 400)
+  assert.equal(await valeur(B, 'select public.recyclage_restant()'), 0)
 })
 
 console.log('Échanges')

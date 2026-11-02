@@ -16,8 +16,8 @@ export const DUREES: { minutes: number; nom: string }[] = [
   { minutes: 10080, nom: '7 jours' },
 ]
 
-/** Frais prélevés au vendeur sur le prix de vente */
-export const FRAIS_VENTE = 0.05
+/** Taxe prélevée au vendeur sur le prix de vente (ces crédits sortent du jeu) */
+export const FRAIS_VENTE = 0.1
 
 /** Une mise dépasse la précédente d'au moins 5 % (et d'au moins 1 crédit) */
 export function miseMinimale(mise: number | null, prixDepart: number): number {

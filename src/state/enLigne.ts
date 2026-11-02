@@ -1,8 +1,8 @@
 import { createClient, type SupabaseClient } from '@supabase/supabase-js'
-import { useSyncExternalStore } from 'react'
+import { useEffect, useState, useSyncExternalStore } from 'react'
 import type { IdVariante } from '../engine/variantes'
 import type { Langue } from '../types'
-import { notifier, remplacer, sauvegardeVide, surModification, vider, type Sauvegarde } from './sauvegarde'
+import { notifier, remplacer, sauvegardeVide, surModification, useSauvegarde, vider, type Sauvegarde } from './sauvegarde'
 
 /**
  * Connexion à Supabase : le jeu se joue uniquement en ligne. Sans VITE_SUPABASE_URL
@@ -270,4 +270,21 @@ export async function deconnexion() {
 
 export async function supprimerCompte() {
   if (await appeler<boolean>('supprimer_mon_compte')) await supabase?.auth.signOut()
+}
+
+/**
+ * Ce qu'il reste à gagner à plein tarif aujourd'hui en recyclant et en brûlant (3 000 ₵ par jour, 20 % au-delà ;
+ * public.recyclage_restant). Relu à chaque changement de solde ; null tant qu'on ne sait pas.
+ */
+export function useRecyclageRestant(): number | null {
+  const credits = useSauvegarde().credits
+  const [restant, setRestant] = useState<number | null>(null)
+  useEffect(() => {
+    let actif = true
+    void appeler<number>('recyclage_restant').then((r) => actif && r !== null && setRestant(r))
+    return () => {
+      actif = false
+    }
+  }, [credits])
+  return restant
 }

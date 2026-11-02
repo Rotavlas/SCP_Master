@@ -9406,3 +9406,68 @@ body.en-partie .reco:has(.duel-fin) {
 .achats-jour.epuise {
   color: var(--discret);
 }
+
+/* ---------- Le Dossier Apollyon : noir veiné de rouge, scellé d'or, il palpite ---------- */
+.offre-apollyon {
+  border-color: #8a1a10;
+  background: radial-gradient(circle at 50% 0%, rgba(160, 20, 12, 0.22), transparent 65%), var(--panneau);
+  animation: apollyon-lueur 2.6s ease-in-out infinite alternate;
+}
+
+.offre-apollyon svg {
+  color: #ff4a35;
+}
+
+.offre-apollyon h3 {
+  color: #f6dc8c;
+}
+
+@keyframes apollyon-lueur {
+  from {
+    box-shadow: 0 0 0 1px rgba(201, 161, 63, 0.35);
+  }
+  to {
+    box-shadow:
+      0 0 0 1px rgba(246, 220, 140, 0.7),
+      0 0 26px rgba(196, 30, 20, 0.45);
+  }
+}
+
+.dossier-apollyon {
+  color: #f1e6cf;
+  background:
+    radial-gradient(ellipse at 50% 35%, rgba(196, 30, 20, 0.35), transparent 60%),
+    repeating-linear-gradient(115deg, transparent 0 22px, rgba(120, 10, 6, 0.25) 22px 24px), #120404;
+  border-color: #c9a13f;
+  animation: apollyon-lueur 2.2s ease-in-out infinite alternate;
+}
+
+.dossier-apollyon .dossier-tampon {
+  border-color: #f6dc8c;
+  color: #f6dc8c;
+  mix-blend-mode: normal;
+}
+
+.dossier-apollyon .dossier-champs dt,
+.dossier-apollyon .dossier-pied,
+.dossier-apollyon .dossier-devise,
+.dossier-apollyon .dossier-ciseaux,
+.dossier-apollyon .dossier-onglet {
+  color: rgba(246, 220, 140, 0.85);
+}
+
+.dossier-apollyon .dossier-code-barres {
+  background: repeating-linear-gradient(
+    90deg,
+    #f6dc8c 0 2px,
+    transparent 2px 3px,
+    #f6dc8c 3px 4px,
+    transparent 4px 7px,
+    #f6dc8c 7px 10px,
+    transparent 10px 11px
+  );
+}
+
+.dossier-apollyon .dossier-sceau {
+  filter: drop-shadow(0 0 10px rgba(246, 220, 140, 0.8));
+}

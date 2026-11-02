@@ -12,9 +12,12 @@ export interface Entree {
 export const JOURNAL: Entree[] = [
   {
     date: '2026-11-02',
-    titre: 'Dossiers Keter et O5 limités',
+    titre: 'Une économie plus serrée, et le Dossier Apollyon',
     points: [
       'Les dossiers Keter s’achètent trois fois par jour, les Archives du Conseil O5 une fois par jour ; le compteur repart à minuit (heure de Paris). L’Intendance indique combien il en reste.',
+      'Nouveau : le Dossier Apollyon, au-dessus d’O5. 4 000 ₵, un seul par semaine (renouvelé le lundi) : cinq fiches épiques ou mieux, une Légendaire garantie, variantes ×6 et des Mythiques bien plus probables.',
+      'Recycler et brûler rapporte au plus 3 000 ₵ par jour à plein tarif ; au-delà, 20 % de la valeur. Les gains annoncés en tiennent compte.',
+      'La taxe du marché passe à 10 % de chaque vente.',
       'Les dossiers gratuits et les autres dossiers ne sont pas limités.',
     ],
   },

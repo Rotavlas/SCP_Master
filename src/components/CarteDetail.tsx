@@ -1,9 +1,10 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { RARETES, TYPES, lienWiki, lienWikiFr, nomClasse, type Base } from '../data/catalogue'
-import { VALEUR_RECYCLAGE, boostersPour } from '../engine/boosters'
+import { VALEUR_RECYCLAGE, boostersPour, gainPlafonne } from '../engine/boosters'
 import { VARIANTES } from '../engine/variantes'
 import { TAILLE_DECK, doublonsRecyclables, exemplairesStandard, modifier, useSauvegarde, varianteAffichee } from '../state/sauvegarde'
 import { recycler } from '../state/actions'
+import { useRecyclageRestant } from '../state/enLigne'
 import { useCarteAffichee } from '../state/traduction'
 import { CREDITS_ILLUSTRATIONS } from '../data/mythiques'
 import type { Carte as TCarte } from '../types'
@@ -23,6 +24,7 @@ export function CarteDetail({
   voirMarche: (carte: TCarte) => void
 }) {
   const s = useSauvegarde()
+  const restantRecyclage = useRecyclageRestant()
   const carte = useCarteAffichee(source)
   const quantite = s.collection[carte.id] ?? 0
   const favori = s.favoris.includes(carte.id)
@@ -163,7 +165,8 @@ export function CarteDetail({
                     onClick={() => void recycler(carte.id)}
                     title="Les doublons standard reçoivent des amnésiques et sont convertis en crédits. Les variantes rares sont conservées."
                   >
-                    Recycler {doublons} doublon{doublons > 1 ? 's' : ''} (+{doublons * VALEUR_RECYCLAGE[carte.ra]} ₵)
+                    Recycler {doublons} doublon{doublons > 1 ? 's' : ''} (+{gainPlafonne(doublons * VALEUR_RECYCLAGE[carte.ra], restantRecyclage ?? Infinity)}{' '}
+                    ₵)
                   </button>
                 )}
                 {carte.ra >= 4 && (

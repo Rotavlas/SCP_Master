@@ -1,8 +1,9 @@
 import { useEffect, useMemo, useState } from 'react'
 import { CLASSES, ORDRE_TYPES, RARETES, TYPES, type Base } from '../data/catalogue'
-import { VALEUR_RECYCLAGE } from '../engine/boosters'
+import { VALEUR_RECYCLAGE, gainPlafonne } from '../engine/boosters'
 import { VARIANTES, type IdVariante } from '../engine/variantes'
 import { recyclerTout } from '../state/actions'
+import { useRecyclageRestant } from '../state/enLigne'
 import { brulerLot, type ModeBrulage } from '../state/marche'
 import { TAILLE_DECK, doublonsRecyclables, modifier, useSauvegarde, varianteAffichee } from '../state/sauvegarde'
 import type { Carte as TCarte, Classe, TypeFiche } from '../types'
@@ -79,6 +80,7 @@ export function meilleureEquipe(base: Base, collection: Record<string, number>):
 
 export function Collection({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id: string) => void }) {
   const s = useSauvegarde()
+  const restantRecyclage = useRecyclageRestant() ?? Infinity
   // Les filtres sont retenus sur l'appareil d'une visite à l'autre (sauf la recherche)
   const [f, setF] = useState<Filtres>(lireFiltres)
   const { possession, types, raretes, classe, serie, variante, tri, inverse } = f
@@ -168,10 +170,14 @@ export function Collection({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id
   const pageCourante = Math.min(page, pages - 1)
   const visibles = filtrees.slice(pageCourante * PAR_PAGE, (pageCourante + 1) * PAR_PAGE)
 
-  const valeurDoublons = Object.keys(s.collection).reduce((total, id) => {
-    const c = base.parId.get(id)
-    return total + (c ? doublonsRecyclables(s, id) * VALEUR_RECYCLAGE[c.ra] : 0)
-  }, 0)
+  // Le gain annoncé tient compte du plafond du jour (3 000 ₵ à plein tarif, 20 % au-delà)
+  const valeurDoublons = gainPlafonne(
+    Object.keys(s.collection).reduce((total, id) => {
+      const c = base.parId.get(id)
+      return total + (c ? doublonsRecyclables(s, id) * VALEUR_RECYCLAGE[c.ra] : 0)
+    }, 0),
+    restantRecyclage,
+  )
 
   const equipe = s.deck.map((id) => base.parId.get(id)).filter((c): c is TCarte => !!c)
 
@@ -184,8 +190,14 @@ export function Collection({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id
   }
 
   const choisies = selection ? [...selection].filter((id) => s.collection[id]) : []
-  const gainDoublons = choisies.reduce((t, id) => t + doublonsRecyclables(s, id) * VALEUR_RECYCLAGE[base.parId.get(id)?.ra ?? 0], 0)
-  const gainUn = choisies.reduce((t, id) => t + VALEUR_RECYCLAGE[base.parId.get(id)?.ra ?? 0], 0)
+  const gainDoublons = gainPlafonne(
+    choisies.reduce((t, id) => t + doublonsRecyclables(s, id) * VALEUR_RECYCLAGE[base.parId.get(id)?.ra ?? 0], 0),
+    restantRecyclage,
+  )
+  const gainUn = gainPlafonne(
+    choisies.reduce((t, id) => t + VALEUR_RECYCLAGE[base.parId.get(id)?.ra ?? 0], 0),
+    restantRecyclage,
+  )
 
   async function brulerSelection(mode: ModeBrulage) {
     setOccupe(true)
