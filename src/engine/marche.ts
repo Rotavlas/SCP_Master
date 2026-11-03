@@ -28,7 +28,8 @@ export function netVendeur(prix: number): number {
   return prix - Math.ceil(prix * FRAIS_VENTE)
 }
 
-const MULTIPLICATEUR_BRULAGE: Record<IdVariante, number> = { std: 1, holo: 3, exp: 4, arch: 6, breche: 12, o5: 30 }
+// Les variantes de Mythique (Négatif, Épreuve d'artiste) valent une version standard : prive.valeur_brulage
+const MULTIPLICATEUR_BRULAGE: Record<IdVariante, number> = { std: 1, holo: 3, exp: 4, arch: 6, breche: 12, o5: 30, negatif: 1, esquisse: 1 }
 
 /** Crédits rendus en brûlant un exemplaire : la valeur de recyclage, multipliée par la rareté de la variante */
 export function valeurBrulage(rarete: number, variante: IdVariante): number {

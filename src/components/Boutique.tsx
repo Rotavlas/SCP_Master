@@ -84,14 +84,17 @@ export function Boutique({ base, ouvrir }: { base: Base; ouvrir: (t: Tirage) => 
         <h3>Variantes rares</h3>
         <p className="discret">
           Chaque fiche tirée peut sortir dans une version rare, à collectionner en plus de la version standard. Les dossiers Keter et O5 multiplient ces
-          chances.
+          chances. Une Mythique peut aussi sortir en Négatif ou en Épreuve d’artiste, deux variantes qui n’existent que pour elles ; son numéro reste le même,
+          quelle que soit sa variante.
         </p>
         <ul className="probas probas-variantes">
           {VARIANTES.filter((v) => v.id !== 'std').map((v) => (
             <li key={v.id}>
               <span className="puce" style={{ background: v.couleur }} />
               {v.nom} — <span className="discret">{v.description}</span>
-              <strong>{(v.chance * 100).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} %</strong>
+              <strong>
+                {(v.chance * 100).toLocaleString('fr-FR', { maximumFractionDigits: 1 })} %{v.mythique ? ' des Mythiques' : ''}
+              </strong>
             </li>
           ))}
         </ul>

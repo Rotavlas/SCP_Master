@@ -190,7 +190,7 @@ await test('les cartes souhaitées sont retirées de la liste et les nouvelles s
   const tirees = r.cartes.map((c) => c.id)
   assert.equal(r.profil.souhaits.includes('scp-173'), !tirees.includes('scp-173'))
 })
-await test('une Mythique tombe en version standard, numérotée, sans doublon dans le dossier', async () => {
+await test('une Mythique tombe numérotée (toutes variantes confondues), sans doublon dans le dossier', async () => {
   await admin(`update prive.types_boosters set mythique = 1 where id = 'standard'`)
   await admin(`update public.profils set boosters = 2 where id = '${A}'`)
   try {
@@ -200,7 +200,7 @@ await test('une Mythique tombe en version standard, numérotée, sans doublon da
     assert.deepEqual(raretes, [5, 5, 5, 5, 5])
     assert.equal(new Set(ids).size, 5)
     assert.ok(
-      r.cartes.every((c) => c.v === 'std' && c.n === 1),
+      r.cartes.every((c) => c.n === 1),
       JSON.stringify(r.cartes),
     )
     // Le numéro suit l'ordre d'obtention de chaque carte
@@ -1290,6 +1290,43 @@ await test('numéros des Mythiques possédées, du plus petit au plus grand', as
   )
   const n = await valeur(R2, 'select public.mes_numeros_mythiques()')
   assert.deepEqual(n['entite:scarlet-king'], [7, 31])
+})
+
+await test('variantes des Mythiques : Négatif et Épreuve d’artiste, numéro commun à toutes les variantes', async () => {
+  // Les chances : environ 5 % de Négatif, 4 % d'Épreuve d'artiste, le reste comme les autres cartes
+  const n = (await admin('select v, count(*)::int as n from (select prive.tirer_variante_mythique(1) as v from generate_series(1, 20000)) x group by v')).rows
+  const part = (v) => (n.find((r) => r.v === v)?.n ?? 0) / 20000
+  assert.ok(part('negatif') > 0.04 && part('negatif') < 0.06, `négatif ${part('negatif')}`)
+  assert.ok(part('esquisse') > 0.03 && part('esquisse') < 0.05, `esquisse ${part('esquisse')}`)
+  assert.ok(part('holo') > 0.02, 'les variantes ordinaires restent possibles')
+  // Une Mythique tirée prend son numéro dans l'édition commune, quelle que soit sa variante
+  await admin("update prive.types_boosters set mythique = 1 where id = 'standard'")
+  await admin(`update public.profils set boosters = 3 where id = '${R2}'`)
+  try {
+    const avant = (
+      await admin(
+        "select coalesce(max(dernier), 0) as d from prive.compteurs_serie where variante = 'std' and carte_id in (select id from public.cartes where ra = 5)",
+      )
+    ).rows[0].d
+    const t = await valeur(R2, "select public.ouvrir_booster('standard', true)")
+    const numeros = t.cartes.map((c) => c.n)
+    assert.ok(
+      numeros.every((x) => x >= 1 && x <= 50),
+      'numéros dans l’édition',
+    )
+    const total = (
+      await admin(
+        "select coalesce(sum(dernier), 0)::int as s from prive.compteurs_serie where variante <> 'std' and carte_id in (select id from public.cartes where ra = 5)",
+      )
+    ).rows[0].s
+    assert.equal(total, 0, 'aucun compteur à part pour les variantes')
+    assert.ok(avant >= 0)
+  } finally {
+    await admin("update prive.types_boosters set mythique = 0.0004 where id = 'standard'")
+  }
+  // Les nouvelles variantes passent les contraintes ; une inconnue non
+  await admin("insert into public.exemplaires (proprietaire, carte_id, variante, numero_serie, origine) values ($1, 'scp-173', 'negatif', 49, 'booster')", [R2])
+  await echoue(admin("insert into public.exemplaires (proprietaire, carte_id, variante, origine) values ($1, 'scp-173', 'inconnue', 'booster')", [R2]), /check/)
 })
 
 console.log(`\n${reussis} tests réussis${process.exitCode ? ', des échecs' : ''}.`)

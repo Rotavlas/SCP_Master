@@ -11002,41 +11002,36 @@ body.en-partie .reco:has(.duel-fin) {
 }
 
 /* ---------- Numéro d'exemplaire d'une Mythique ---------- */
-/* La plaque gravée de la carte : laiton, chiffres en relief */
+/* La plaque de la carte : une gravure discrète, sous le rang */
 .cm-plaque {
   align-self: flex-start;
-  display: inline-flex;
-  align-items: baseline;
-  gap: 0.25em;
-  margin: 0.15rem 0 0.25rem;
-  padding: 0.05rem 0.45rem 0.1rem;
+  margin: 0.1rem 0 0.2rem;
+  padding: 0 0.3em;
   font-family: var(--mono);
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  color: #2b1d05;
-  background: linear-gradient(180deg, #f6dc8c, #c99b3a 55%, #a87b25);
-  border: 1px solid #fff1bf;
-  border-radius: 3px;
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.6),
-    0 1px 4px rgba(0, 0, 0, 0.6);
-  text-shadow: 0 1px 0 rgba(255, 240, 200, 0.6);
-}
-
-.cm-plaque small {
-  font-size: 0.85em;
-  font-weight: 600;
-  opacity: 0.75;
+  font-size: 0.6rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  color: rgba(243, 214, 140, 0.92);
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(243, 214, 140, 0.4);
+  border-radius: 2px;
 }
 
 .carte-p .cm-plaque {
-  font-size: 0.62rem;
-  padding: 0 0.35rem;
+  font-size: 0.48rem;
 }
 
 .carte-g .cm-plaque {
-  font-size: 0.95rem;
+  font-size: 0.72rem;
+}
+
+.cm-premiere {
+  color: #f6dc8c;
+}
+
+/* Première édition : un filet d'or fin à l'intérieur du cadre */
+.carte-mythique.premiere-edition .cm-cadre {
+  box-shadow: inset 0 0 0 2px rgba(246, 220, 140, 0.55);
 }
 
 /* Sur la fiche détaillée : la liste des exemplaires possédés */
@@ -11048,11 +11043,56 @@ body.en-partie .reco:has(.duel-fin) {
 }
 
 .numero-plaque {
-  padding: 0 0.4rem;
+  padding: 0 0.35rem;
   font-family: var(--mono);
-  font-size: 0.8rem;
-  font-weight: 700;
-  color: #2b1d05;
-  background: linear-gradient(180deg, #f6dc8c, #c99b3a);
-  border-radius: 3px;
+  font-size: 0.78rem;
+  color: rgba(243, 214, 140, 0.95);
+  border: 1px solid rgba(243, 214, 140, 0.4);
+  border-radius: 2px;
+}
+
+.numero-plaque.premiere {
+  border-color: #f6dc8c;
+  box-shadow: inset 0 0 0 1px rgba(246, 220, 140, 0.35);
+}
+
+/* ---------- Variantes réservées aux Mythiques ---------- */
+.variante-negatif .ruban-variante {
+  color: #bfe3ff;
+}
+
+.variante-esquisse .ruban-variante {
+  color: #e2d6b8;
+}
+
+/* Négatif : la scène inversée, comme sur la pellicule d'une caméra de confinement ; un cadre d'argent froid */
+.carte-mythique.variante-negatif {
+  background: linear-gradient(145deg, #e8f4ff, #7f9bb3 50%, #dfeefa);
+}
+
+.carte-mythique.variante-negatif .scene-mythique {
+  filter: invert(1) hue-rotate(180deg) contrast(1.15) saturate(0.8);
+}
+
+.carte-mythique.variante-negatif .carte-calque {
+  background:
+    repeating-linear-gradient(0deg, rgba(180, 220, 255, 0.07) 0 1px, transparent 1px 3px),
+    radial-gradient(ellipse at 50% 40%, transparent 55%, rgba(10, 25, 40, 0.45));
+}
+
+/* Épreuve d'artiste : la scène au crayon, sur papier, avant l'encrage */
+.carte-mythique.variante-esquisse {
+  background: linear-gradient(145deg, #efe6cf, #b8a882 55%, #e6dcc2);
+  animation: none;
+}
+
+.carte-mythique.variante-esquisse .scene-mythique {
+  filter: grayscale(1) contrast(1.7) brightness(1.25) sepia(0.3);
+}
+
+.carte-mythique.variante-esquisse .carte-calque {
+  mix-blend-mode: multiply;
+  background:
+    repeating-linear-gradient(128deg, rgba(70, 58, 40, 0.1) 0 1px, transparent 1px 4px),
+    radial-gradient(ellipse at 50% 45%, rgba(239, 230, 207, 0.15) 40%, rgba(150, 130, 95, 0.45));
 }

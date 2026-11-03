@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { DUREES, netVendeur } from '../engine/marche'
-import { PAR_ID, VARIANTES, type IdVariante } from '../engine/variantes'
+import { PAR_ID, variantesPour, type IdVariante } from '../engine/variantes'
 import { bruler, chargerCours, mettreAuxEncheres, type Cours } from '../state/marche'
 import type { Carte } from '../types'
 import { BoutonConfirme } from './Confirmer'
@@ -20,12 +20,19 @@ export function MarcheCarte({ carte, variante: varianteAffichee, voirMarche }: {
   }, [carte.id])
   useEffect(recharger, [recharger])
 
-  if (!cours) return <section className="marche-carte"><h4>Marché</h4><p className="discret">Consultation des cours…</p></section>
+  if (!cours)
+    return (
+      <section className="marche-carte">
+        <h4>Marché</h4>
+        <p className="discret">Consultation des cours…</p>
+      </section>
+    )
 
   const c = cours.variantes[variante]
   // Variantes qui ont un intérêt ici : possédées, en vente ou déjà échangées
-  const utiles = VARIANTES.filter((v) => {
+  const utiles = variantesPour(carte).filter((v) => {
     const x = cours.variantes[v.id]
+    if (!x) return false
     return v.id === 'std' || x.libres + x.reserves + x.enVente + x.volume30 > 0 || x.dernier !== null
   })
 
@@ -124,7 +131,19 @@ export function MarcheCarte({ carte, variante: varianteAffichee, voirMarche }: {
   )
 }
 
-function FormulaireVente({ carte, variante, suggestion, annuler, fait }: { carte: Carte; variante: IdVariante; suggestion: number; annuler: () => void; fait: () => void }) {
+function FormulaireVente({
+  carte,
+  variante,
+  suggestion,
+  annuler,
+  fait,
+}: {
+  carte: Carte
+  variante: IdVariante
+  suggestion: number
+  annuler: () => void
+  fait: () => void
+}) {
   const [prix, setPrix] = useState(String(Math.max(1, Math.round(suggestion))))
   const [immediat, setImmediat] = useState('')
   const [duree, setDuree] = useState(1440)
@@ -164,8 +183,8 @@ function FormulaireVente({ carte, variante, suggestion, annuler, fait }: { carte
         </select>
       </label>
       <p className="discret">
-        L'exemplaire est réservé pendant la vente. Frais de 5 % prélevés à la vente : vous toucherez au moins {valide ? `${netVendeur(p).toLocaleString('fr-FR')} ₵` : '—'}. Une vente sans mise
-        peut être retirée.
+        L'exemplaire est réservé pendant la vente. Frais de 5 % prélevés à la vente : vous toucherez au moins{' '}
+        {valide ? `${netVendeur(p).toLocaleString('fr-FR')} ₵` : '—'}. Une vente sans mise peut être retirée.
       </p>
       <div className="actions">
         <button className="btn btn-principal" disabled={!valide || occupe}>

@@ -134,6 +134,8 @@ export const BOOSTER_PAR_ID = Object.fromEntries(BOOSTERS.map((b) => [b.id, b]))
  */
 /** Chaque Mythique n'existe qu'en ce nombre d'exemplaires numérotés (prive.edition_mythique) */
 export const EDITION_MYTHIQUE = 50
+/** Les exemplaires n° 1 à 5 d'une Mythique forment sa Première édition (marque visuelle seulement) */
+export const PREMIERE_EDITION = 5
 
 export const PLAFOND_RECYCLAGE = 3000
 export const PART_AU_DELA = 0.2

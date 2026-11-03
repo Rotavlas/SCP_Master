@@ -12,10 +12,12 @@ export interface Entree {
 export const JOURNAL: Entree[] = [
   {
     date: '2026-11-03',
-    titre: 'Le numéro de vos Mythiques',
+    titre: 'Les Mythiques : numéros, Première édition et variantes',
     points: [
-      'Chaque Mythique porte désormais sa plaque gravée « N° 07 / 50 » : à l’ouverture du dossier, dans les archives, dans l’équipe et sur l’accueil. Avec plusieurs exemplaires, c’est le plus petit numéro qui s’affiche.',
-      'La fiche d’une Mythique liste tous vos exemplaires par numéro, à côté du nombre déjà sortis sur les 50.',
+      'Chaque Mythique porte une plaque discrète « N° 07/50 » : à l’ouverture du dossier, dans les archives, dans l’équipe et sur l’accueil. Avec plusieurs exemplaires, c’est le plus petit numéro qui s’affiche. Sa fiche liste tous vos exemplaires.',
+      'Les exemplaires n° 1 à 5 de chaque Mythique forment sa Première édition : la mention sur la plaque et un filet d’or dans le cadre.',
+      'Les Mythiques ont désormais leurs variantes. Deux n’existent que pour elles : Négatif (la scène inversée, comme sur la pellicule d’une caméra de confinement) et Épreuve d’artiste (la scène au crayon, sur papier). Les variantes ordinaires (holographique, expurgée, archive, brèche, sceau O5) leur sont aussi ouvertes.',
+      'Une variante ne crée aucun exemplaire de plus : le numéro (1 à 50) est commun à toutes les variantes d’une Mythique.',
     ],
   },
   {

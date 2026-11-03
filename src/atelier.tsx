@@ -18,7 +18,7 @@ import { Carte } from './components/Carte'
 import { AnimationMythique } from './components/AnimationsMythiques'
 import { SceneMythique } from './components/ScenesMythiques'
 import { chargerBase, type Base } from './data/catalogue'
-import { VARIANTES } from './engine/variantes'
+import { variantesPour } from './engine/variantes'
 import { CREDITS_ILLUSTRATIONS, SIGNATURES } from './data/mythiques'
 import type { Carte as TCarte } from './types'
 import { brancherServeurLocal } from './atelierServeur'
@@ -275,7 +275,7 @@ function Atelier({ base }: { base: Base }) {
         const credit = CREDITS_ILLUSTRATIONS[c.id]
         return (
           <section key={c.id} className="atelier-ligne" style={{ ['--sig' as string]: SIGNATURES[c.id].couleur }}>
-            <Carte carte={c} base={base} taille="g" numero={7} />
+            <Carte carte={c} base={base} taille="g" numero={3} />
             <div className="atelier-scene">{rejeu[c.id] ? <AnimationMythique key={rejeu[c.id]} id={c.id} /> : <SceneMythique id={c.id} />}</div>
             {ORIGINAUX[c.id] && (
               <figure className="atelier-original">
@@ -310,9 +310,9 @@ function Atelier({ base }: { base: Base }) {
         return (
           c && (
             <div key={id} className="atelier-variantes">
-              {VARIANTES.map((v) => (
+              {variantesPour(c).map((v) => (
                 <figure key={v.id}>
-                  <Carte carte={c} base={base} taille="m" variante={v.id} />
+                  <Carte carte={c} base={base} taille="m" variante={v.id} numero={c.ra === 5 ? 12 : undefined} />
                   <figcaption>{v.nom}</figcaption>
                 </figure>
               ))}

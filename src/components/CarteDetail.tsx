@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react'
 import { RARETES, TYPES, lienWiki, lienWikiFr, nomClasse, type Base } from '../data/catalogue'
-import { VALEUR_RECYCLAGE, boostersPour, gainPlafonne } from '../engine/boosters'
-import { VARIANTES } from '../engine/variantes'
+import { VALEUR_RECYCLAGE, boostersPour, gainPlafonne, PREMIERE_EDITION } from '../engine/boosters'
+import { variantesPour } from '../engine/variantes'
 import { TAILLE_DECK, doublonsRecyclables, exemplairesStandard, modifier, useSauvegarde, varianteAffichee } from '../state/sauvegarde'
 import { recycler } from '../state/actions'
 import { useEditionsMythiques, useNumerosMythiques, useRecyclageRestant } from '../state/enLigne'
@@ -85,8 +85,9 @@ export function CarteDetail({
       mesNumeros.length > 1 ? 'Vos exemplaires' : 'Votre exemplaire',
       <span className="numeros-mythique">
         {mesNumeros.map((n) => (
-          <span key={n} className="numero-plaque">
+          <span key={n} className={`numero-plaque ${n <= PREMIERE_EDITION ? 'premiere' : ''}`} title={n <= PREMIERE_EDITION ? 'Première édition' : undefined}>
             N° {String(n).padStart(2, '0')}
+            {n <= PREMIERE_EDITION && ' · 1re éd.'}
           </span>
         ))}
         <span className="discret">sur {edition?.total ?? 50}</span>
@@ -105,7 +106,7 @@ export function CarteDetail({
           <Carte carte={carte} base={base} taille="g" variante={variante} scellee={quantite === 0} souhait={souhait} numero={mesNumeros[0]} />
           {quantite > 0 && (
             <div className="selecteur-variantes" role="radiogroup" aria-label="Variante affichée">
-              {VARIANTES.map((v) => {
+              {variantesPour(carte).map((v) => {
                 const n = v.id === 'std' ? exemplairesStandard(s, carte.id) : (possedees[v.id] ?? 0)
                 return (
                   <button

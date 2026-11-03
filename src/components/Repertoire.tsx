@@ -1,7 +1,7 @@
 import { useMemo, useRef, useState, type UIEvent } from 'react'
 import { ORDRE_TYPES, RARETES, TYPES, pastille, type Base } from '../data/catalogue'
 import { boostersPour } from '../engine/boosters'
-import { VARIANTES } from '../engine/variantes'
+import { variantesPour } from '../engine/variantes'
 import { exemplairesStandard, modifier, useSauvegarde } from '../state/sauvegarde'
 import type { Carte, TypeFiche } from '../types'
 
@@ -80,7 +80,12 @@ export function Repertoire({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id
         </div>
         <div className="progression-types">
           {progression.map((p) => (
-            <button key={p.k} className={`progression-type ${type === p.k ? 'actif' : ''}`} onClick={() => filtre(setType)(type === p.k ? 'tous' : p.k)} style={{ ['--t' as string]: TYPES[p.k].couleur }}>
+            <button
+              key={p.k}
+              className={`progression-type ${type === p.k ? 'actif' : ''}`}
+              onClick={() => filtre(setType)(type === p.k ? 'tous' : p.k)}
+              style={{ ['--t' as string]: TYPES[p.k].couleur }}
+            >
               <span>{TYPES[p.k].pluriel}</span>
               <strong>
                 {p.possedees}/{p.total}
@@ -124,17 +129,25 @@ export function Repertoire({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id
           <option value="popularite">Tri : popularité</option>
         </select>
       </div>
-      <p className="discret resultat">{lignes.length.toLocaleString('fr-FR')} fiches · cliquez sur ♡ pour suivre une fiche, elle disparaît de la liste dès qu'elle tombe dans un booster.</p>
+      <p className="discret resultat">
+        {lignes.length.toLocaleString('fr-FR')} fiches · cliquez sur ♡ pour suivre une fiche, elle disparaît de la liste dès qu'elle tombe dans un booster.
+      </p>
 
       <div className="tableau" role="table" aria-rowcount={lignes.length}>
         <div className="tableau-entete" role="row">
           <span role="columnheader" aria-label="Souhait" />
           <span role="columnheader">Désignation</span>
           <span role="columnheader">Nom</span>
-          <span role="columnheader" className="col-cat">Catégorie</span>
+          <span role="columnheader" className="col-cat">
+            Catégorie
+          </span>
           <span role="columnheader">Rareté</span>
-          <span role="columnheader" className="col-variantes">Variantes</span>
-          <span role="columnheader" className="col-boosters">Obtenable dans</span>
+          <span role="columnheader" className="col-variantes">
+            Variantes
+          </span>
+          <span role="columnheader" className="col-boosters">
+            Obtenable dans
+          </span>
         </div>
         <div className="tableau-corps" ref={conteneur} onScroll={defiler}>
           <div style={{ height: lignes.length * HAUTEUR_LIGNE, position: 'relative' }}>
@@ -192,9 +205,16 @@ function Ligne({ carte, haut, ouvrir }: { carte: Carte; haut: number; ouvrir: ()
         {RARETES[carte.ra].nom}
       </span>
       <span role="cell" className="col-variantes">
-        {VARIANTES.map((v) => {
-          const n = v.id === 'std' ? (q ? exemplairesStandard(s, carte.id) : 0) : possedees[v.id] ?? 0
-          return <i key={v.id} className={`point-variante ${n ? 'obtenue' : ''}`} style={{ ['--v' as string]: v.couleur }} title={`${v.nom} : ${n ? `×${n}` : 'non obtenue'}`} />
+        {variantesPour(carte).map((v) => {
+          const n = v.id === 'std' ? (q ? exemplairesStandard(s, carte.id) : 0) : (possedees[v.id] ?? 0)
+          return (
+            <i
+              key={v.id}
+              className={`point-variante ${n ? 'obtenue' : ''}`}
+              style={{ ['--v' as string]: v.couleur }}
+              title={`${v.nom} : ${n ? `×${n}` : 'non obtenue'}`}
+            />
+          )
         })}
       </span>
       <span role="cell" className="col-boosters">

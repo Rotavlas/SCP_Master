@@ -1,7 +1,7 @@
 import { useRef, useState, type PointerEvent } from 'react'
 import { RARETES, TYPES, entete, pastille, type Base } from '../data/catalogue'
 import { signature } from '../data/mythiques'
-import { EDITION_MYTHIQUE } from '../engine/boosters'
+import { EDITION_MYTHIQUE, PREMIERE_EDITION } from '../engine/boosters'
 import { PAR_ID, type IdVariante } from '../engine/variantes'
 import { useCarteAffichee } from '../state/traduction'
 import type { Carte as TCarte } from '../types'
@@ -181,12 +181,15 @@ export function Carte({
 
   const extrait = carte.x && variante === 'exp' ? expurger(carte.x) : carte.x
 
+  // Les cinq premiers exemplaires d'une Mythique : la Première édition, marquée d'un filet d'or
+  const premiere = numero !== undefined && numero <= PREMIERE_EDITION
+
   // Une Mythique a son propre cadre : sa scène en pleine page, le nom et les statistiques posés dessus
   if (carte.ra === 5 && aUneScene(carte.id)) {
     return (
       <div
         ref={ref}
-        className={`carte carte-${taille} type-${carte.k} rarete-5 carte-mythique variante-${variante}${caviardee ? ' caviardee' : ''}`}
+        className={`carte carte-${taille} type-${carte.k} rarete-5 carte-mythique variante-${variante}${caviardee ? ' caviardee' : ''}${premiere ? ' premiere-edition' : ''}`}
         style={{ ['--rarete' as string]: rarete.couleur, ['--sig' as string]: signature(carte).couleur }}
         onPointerMove={suivre}
         onPointerLeave={relacher}
@@ -212,8 +215,9 @@ export function Carte({
           <div className="cm-bas">
             <span className="cm-rang">Mythique · niveau 5</span>
             {numero !== undefined && (
-              <span className="cm-plaque" title={`Exemplaire n° ${numero} sur ${EDITION_MYTHIQUE}`}>
-                N° {String(numero).padStart(2, '0')} <small>/ {EDITION_MYTHIQUE}</small>
+              <span className="cm-plaque" title={`Exemplaire n° ${numero} sur ${EDITION_MYTHIQUE}${premiere ? ' · Première édition' : ''}`}>
+                {premiere && <span className="cm-premiere">Première édition · </span>}
+                N° {String(numero).padStart(2, '0')}/{EDITION_MYTHIQUE}
               </span>
             )}
             <h3 className="carte-nom cm-nom" title={caviardee ? undefined : carte.nm}>
