@@ -4,6 +4,7 @@ import { appeler, appliquerProfil, type ProfilServeur } from '../state/enLigne'
 import { modifier, notifier } from '../state/sauvegarde'
 import { jouer } from '../state/sons'
 import { Carte } from './Carte'
+import { Caviarde } from './Anime'
 
 /**
  * Le raid de clan : chaque semaine, une anomalie Keter à reconfiner ensemble. Les duels et l'Épreuve des membres
@@ -29,7 +30,7 @@ interface VueRaid {
 }
 
 export function Raid({ base }: { base: Base }) {
-  const [raid, setRaid] = useState<VueRaid | null>(null)
+  const [raid, setRaid] = useState<VueRaid | null | undefined>(undefined)
   const [envoi, setEnvoi] = useState(false)
   useEffect(() => {
     void appeler<VueRaid | null>('raid').then(setRaid)
@@ -46,6 +47,7 @@ export function Raid({ base }: { base: Base }) {
     notifier(`Raid réussi : +${r.raid.credits} ₵ et un dossier`, 'succes')
   }
 
+  if (raid === undefined) return <Caviarde lignes={4} />
   if (!raid) return null
   const c = raid.courant
   const cible = base.parId.get(c.cible)

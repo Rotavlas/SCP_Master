@@ -12,6 +12,7 @@ import { Objectifs, PRET, useObjectifs } from './Objectifs'
 import { Piste } from './Piste'
 import { Rapport } from './Rapport'
 import { Section } from './Section'
+import { Caviarde, NombreAnime, peuDAnimations } from './Anime'
 
 interface Props {
   base: Base
@@ -31,6 +32,16 @@ export function Accueil({ base, aller, ouvrirCarte, allerClan }: Props) {
     if (s.agent) void tableauDuels().then(setDuels)
   }, [s.agent])
   const acc = accreditation(s.xp)
+  // Le Terminal se déverrouille une fois par visite : le salut se tape, la jauge se remplit, les tiroirs sortent
+  const [ouverture] = useState(() => {
+    try {
+      if (peuDAnimations() || sessionStorage.getItem('scp-masters:terminal-ouvert')) return false
+      sessionStorage.setItem('scp-masters:terminal-ouvert', '1')
+      return true
+    } catch {
+      return false
+    }
+  })
   const objectifs = useObjectifs()
   const possedees = Object.keys(s.collection)
   const parRarete = RARETES.map(() => 0)
@@ -105,10 +116,10 @@ export function Accueil({ base, aller, ouvrirCarte, allerClan }: Props) {
         : undefined
 
   return (
-    <section className="accueil">
+    <section className={`accueil ${ouverture ? 'ouverture' : ''}`}>
       <div className="bienvenue">
         <p className="dossier-entete">Session ouverte · {new Date().toLocaleDateString('fr-FR')}</p>
-        <h1>Bonjour, {s.agent}.</h1>
+        <h1 style={{ ['--lettres' as string]: `Bonjour, ${s.agent}.`.length }}>Bonjour, {s.agent}.</h1>
         <p className="accreditation">
           {acc.nom}
           {acc.suivant && (
@@ -126,7 +137,9 @@ export function Accueil({ base, aller, ouvrirCarte, allerClan }: Props) {
       <div className="tuiles">
         <button className="tuile tuile-booster" onClick={() => aller('booster')}>
           <span className="tuile-titre">Ouvrir un dossier</span>
-          <span className="tuile-valeur">{s.boosters}</span>
+          <span className="tuile-valeur">
+            <NombreAnime valeur={s.boosters} />
+          </span>
           <span className="tuile-sous">
             en stock · <CompteARebours />
           </span>
@@ -147,7 +160,9 @@ export function Accueil({ base, aller, ouvrirCarte, allerClan }: Props) {
         </button>
         <button className="tuile" onClick={() => aller('boutique')}>
           <span className="tuile-titre">Intendance</span>
-          <span className="tuile-valeur">{s.credits.toLocaleString('fr-FR')} ₵</span>
+          <span className="tuile-valeur">
+            <NombreAnime valeur={s.credits} /> ₵
+          </span>
           <span className="tuile-sous">crédits disponibles</span>
         </button>
       </div>
@@ -158,7 +173,7 @@ export function Accueil({ base, aller, ouvrirCarte, allerClan }: Props) {
         badge={prets ? `${prets} à réclamer` : objectifs?.length ? `${objectifs.length}` : undefined}
         urgent={prets > 0}
       >
-        {objectifs && <Objectifs liste={objectifs} base={base} aller={aller} allerClan={allerClan} />}
+        {objectifs ? <Objectifs liste={objectifs} base={base} aller={aller} allerClan={allerClan} /> : <Caviarde lignes={2} />}
       </Section>
 
       <Section id="quotidien" titre="Rapport et missions" badge={badgeQuotidien} urgent={!!badgeQuotidien}>

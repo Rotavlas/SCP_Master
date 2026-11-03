@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { appeler } from '../state/enLigne'
+import { Caviarde } from './Anime'
 
 /**
  * La saison classée en cours (public.saison) : un mois, fin dans X jours, duels classés joués sur les 5 requis,
@@ -26,10 +27,11 @@ const PALIERS: Record<Palier, { nom: string; recompense: string }> = {
 const nomMois = (saison: string) => new Date(`${saison}-15`).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' })
 
 export function Saison() {
-  const [s, setS] = useState<SaisonVue | null>(null)
+  const [s, setS] = useState<SaisonVue | null | undefined>(undefined)
   useEffect(() => {
     void appeler<SaisonVue>('saison').then(setS)
   }, [])
+  if (s === undefined) return <Caviarde lignes={2} />
   if (!s) return null
   const jours = Math.max(0, Math.ceil((new Date(s.fin).getTime() - Date.now()) / 86_400_000))
   const qualifie = s.duels >= s.requis

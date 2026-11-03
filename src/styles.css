@@ -2643,7 +2643,7 @@ select:focus {
 }
 
 .contenu {
-  animation: entree-ecran 0.35s ease-out;
+  animation: rafraichir 0.3s steps(3, end);
 }
 
 @keyframes entree-ecran {
@@ -2651,22 +2651,6 @@ select:focus {
     opacity: 0;
     transform: translateY(12px);
   }
-}
-
-.tuiles .tuile {
-  animation: entree-ecran 0.4s ease-out backwards;
-}
-
-.tuiles .tuile:nth-child(2) {
-  animation-delay: 0.05s;
-}
-
-.tuiles .tuile:nth-child(3) {
-  animation-delay: 0.1s;
-}
-
-.tuiles .tuile:nth-child(4) {
-  animation-delay: 0.15s;
 }
 
 /* backwards et non both : une fois entrée, la carte retrouve son inclinaison au survol */
@@ -10727,4 +10711,292 @@ body.en-partie .reco:has(.duel-fin) {
     animation-duration: 0.01s !important;
     animation-delay: 0s !important;
   }
+}
+
+/* ---------- Animations de l'interface ---------- */
+
+/* Changement d'écran : le terminal se rafraîchit. Un léger scintillement, et une ligne lumineuse balaie la page */
+.contenu::after {
+  content: '';
+  position: fixed;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 2px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, rgba(240, 180, 60, 0.55) 20%, rgba(255, 230, 170, 0.8) 50%, rgba(240, 180, 60, 0.55) 80%, transparent);
+  box-shadow: 0 0 14px 2px rgba(240, 180, 60, 0.35);
+  opacity: 0;
+  animation: balayage 0.55s ease-in both;
+}
+
+@keyframes balayage {
+  0% {
+    top: 0;
+    opacity: 0.9;
+  }
+  100% {
+    top: 100vh;
+    opacity: 0;
+  }
+}
+
+@keyframes rafraichir {
+  0% {
+    opacity: 0.25;
+  }
+  30% {
+    opacity: 0.85;
+  }
+  45% {
+    opacity: 0.55;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+/* Le compteur de crédits (bandeau, tuiles) : il défile, et l'écart s'envole */
+.nombre-anime {
+  position: relative;
+  display: inline-block;
+  font-variant-numeric: tabular-nums;
+}
+
+.nombre-ecart {
+  position: absolute;
+  right: 0;
+  top: -0.2em;
+  font-size: 0.72em;
+  font-weight: 700;
+  white-space: nowrap;
+  pointer-events: none;
+  animation: ecart-envol 1.5s ease-out forwards;
+}
+
+.nombre-ecart.gain {
+  color: var(--vert);
+}
+
+.nombre-ecart.perte {
+  color: var(--rouge);
+}
+
+@keyframes ecart-envol {
+  0% {
+    opacity: 0;
+    transform: translateY(0.4em);
+  }
+  15% {
+    opacity: 1;
+    transform: translateY(-0.6em);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-1.8em);
+  }
+}
+
+/* Un bouton qu'on presse s'enfonce */
+.btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.btn:focus-visible,
+.section-entete:focus-visible,
+.objectif:focus-visible,
+.tuile:focus-visible {
+  outline: 2px solid var(--ambre);
+  outline-offset: 2px;
+}
+
+/* Une section qu'on ouvre se déplie depuis son titre */
+.section-corps {
+  animation: deplier 0.32s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+
+@keyframes deplier {
+  from {
+    clip-path: inset(0 0 100% 0);
+    opacity: 0.4;
+  }
+  to {
+    clip-path: inset(0 0 0 0);
+    opacity: 1;
+  }
+}
+
+/* Ce qui charge apparaît caviardé : des barres noires qu'un reflet parcourt */
+.caviarde {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.2rem 0;
+}
+
+.caviarde span {
+  display: block;
+  height: 0.85rem;
+  border-radius: 2px;
+  background: linear-gradient(100deg, #050606 30%, #1f2527 48%, #050606 66%) 0 0 / 300% 100%;
+  animation: caviarde 1.6s linear infinite;
+}
+
+@keyframes caviarde {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -50% 0;
+  }
+}
+
+/* Une récompense réclamée reçoit son tampon */
+.tamponne {
+  position: relative;
+}
+
+.tamponne::after {
+  content: 'Reçu';
+  position: absolute;
+  right: 12%;
+  top: 50%;
+  margin-top: -0.85em;
+  padding: 0.05rem 0.6rem;
+  font-family: var(--machine);
+  font-size: 1.15rem;
+  letter-spacing: 0.12em;
+  color: var(--rouge);
+  border: 3px solid var(--rouge);
+  border-radius: 4px;
+  pointer-events: none;
+  animation: tampon-recu 1.8s cubic-bezier(0.2, 1.5, 0.4, 1) forwards;
+}
+
+@keyframes tampon-recu {
+  0% {
+    opacity: 0;
+    transform: rotate(-12deg) scale(2.4);
+  }
+  12%,
+  75% {
+    opacity: 0.95;
+    transform: rotate(-12deg) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(-12deg) scale(1);
+  }
+}
+
+/* Dans une case du Rapport quotidien, un tampon plus petit, au centre */
+.rapport-jours li.tamponne::after {
+  right: auto;
+  left: 50%;
+  margin-left: -1.55em;
+  padding: 0 0.3rem;
+  font-size: 0.8rem;
+  border-width: 2px;
+}
+
+/* Un palier réclamé passe de l'ambre au vert */
+.piste-paliers li {
+  transition:
+    background 0.5s ease,
+    border-color 0.5s ease;
+}
+
+/* ---------- Le déverrouillage du Terminal, au premier passage de la visite ---------- */
+.ouverture .bienvenue .dossier-entete {
+  animation: rafraichir 0.5s steps(4, end) both;
+}
+
+/* Le salut se tape lettre à lettre, un curseur au bout */
+.ouverture .bienvenue h1 {
+  display: inline-block;
+  clip-path: inset(0 100% 0 0);
+  animation: taper 0.9s steps(var(--lettres, 20), end) 0.35s forwards;
+}
+
+.ouverture .bienvenue h1::after {
+  content: '▌';
+  margin-left: 0.1em;
+  color: var(--ambre);
+  animation: curseur 0.5s steps(1, end) 0.35s 6;
+}
+
+@keyframes taper {
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes curseur {
+  50% {
+    opacity: 0;
+  }
+}
+
+.bienvenue h1::after {
+  opacity: 0;
+}
+
+.ouverture .accreditation {
+  animation: rafraichir 0.4s steps(3, end) 1.25s both;
+}
+
+.ouverture .bienvenue .jauge > div {
+  transform-origin: left;
+  animation: remplir 0.9s cubic-bezier(0.3, 0.7, 0.2, 1) 1.35s both;
+}
+
+@keyframes remplir {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+/* Les tuiles sortent comme des tiroirs de classeur, l'une après l'autre */
+.ouverture .tuiles .tuile {
+  animation: tiroir 0.45s cubic-bezier(0.2, 0.9, 0.3, 1) 1.5s both;
+}
+
+.ouverture .tuiles .tuile:nth-child(2) {
+  animation-delay: 1.59s;
+}
+
+.ouverture .tuiles .tuile:nth-child(3) {
+  animation-delay: 1.68s;
+}
+
+.ouverture .tuiles .tuile:nth-child(4) {
+  animation-delay: 1.77s;
+}
+
+@keyframes tiroir {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+    clip-path: inset(0 0 100% 0);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+.ouverture .section-repliable {
+  animation: rafraichir 0.4s steps(3, end) 1.95s both;
+}
+
+.ouverture .section-repliable:nth-of-type(2) {
+  animation-delay: 2.03s;
+}
+
+.ouverture .section-repliable:nth-of-type(3) {
+  animation-delay: 2.11s;
+}
+
+.ouverture .section-repliable:nth-of-type(n + 4) {
+  animation-delay: 2.19s;
 }

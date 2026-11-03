@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { appeler, appliquerProfil, type ProfilServeur } from '../state/enLigne'
 import { modifier, notifier } from '../state/sauvegarde'
 import { jouer } from '../state/sons'
+import { Caviarde, useTampon } from './Anime'
 
 /**
  * Le Rapport quotidien : une récompense par jour sur un cycle de sept, le septième un dossier Keter. Un jour manqué
@@ -25,8 +26,9 @@ const texte = (r: Recompense) =>
   r.keter ? 'Dossier Keter' : r.dossiers ? `${r.dossiers} dossier${r.dossiers > 1 ? 's' : ''}` : `${r.credits.toLocaleString('fr-FR')} ₵`
 
 export function Rapport() {
-  const [r, setR] = useState<VueRapport | null>(null)
+  const [r, setR] = useState<VueRapport | null | undefined>(undefined)
   const [envoi, setEnvoi] = useState(false)
+  const [recent, tamponner] = useTampon()
   useEffect(() => {
     void appeler<VueRapport>('rapport').then(setR)
   }, [])
@@ -38,6 +40,7 @@ export function Rapport() {
     if (!res) return
     modifier((x) => appliquerProfil(x, res.profil))
     setR(res.rapport)
+    tamponner(String(res.jour))
     const gain = res.rapport.recompenses.find((x) => x.jour === res.jour)
     jouer.retourner(gain?.keter ? 4 : 2)
     notifier(
@@ -46,6 +49,7 @@ export function Rapport() {
     )
   }
 
+  if (r === undefined) return <Caviarde lignes={3} />
   if (!r) return null
   return (
     <div className="rapport" id="rapport">
@@ -66,7 +70,7 @@ export function Rapport() {
         {r.recompenses.map((x) => {
           const etat = x.jour < r.jour || (r.fait && x.jour === r.jour) ? 'fait' : x.jour === r.jour ? 'courant' : ''
           return (
-            <li key={x.jour} className={`${etat} ${x.keter ? 'keter' : ''}`}>
+            <li key={x.jour} className={`${etat} ${x.keter ? 'keter' : ''} ${recent === String(x.jour) ? 'tamponne' : ''}`}>
               <span className="rapport-jour">J{x.jour}</span>
               <span className="rapport-gain">{texte(x)}</span>
             </li>

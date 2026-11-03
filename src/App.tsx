@@ -1,6 +1,7 @@
 import { Analytics } from '@vercel/analytics/react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Accueil } from './components/Accueil'
+import { NombreAnime } from './components/Anime'
 import { Booster, retenirTirage, tirageRetenu, type Tirage } from './components/Booster'
 import { Boutique } from './components/Boutique'
 import { CarteDetail } from './components/CarteDetail'
@@ -256,7 +257,7 @@ export default function App() {
           </div>
           <BoutonSon />
           <span className="solde" title="Crédits">
-            {s.credits.toLocaleString('fr-FR')} ₵
+            <NombreAnime valeur={s.credits} /> ₵
           </span>
           <BoutonJournal ouvert={ecran === 'journal'} ouvrir={() => aller('journal')} />
           {base && (

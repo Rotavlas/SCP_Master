@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { appeler, appliquerProfil, type ProfilServeur } from '../state/enLigne'
 import { modifier, notifier, useSauvegarde } from '../state/sauvegarde'
 import { jouer } from '../state/sons'
+import { Caviarde, useTampon } from './Anime'
 
 /**
  * L'album de la Fondation : des pages thématiques à compléter (public.albums) ; une page complète se réclame une
@@ -18,11 +19,12 @@ interface Page {
 
 export function Album() {
   const s = useSauvegarde()
-  const [pages, setPages] = useState<Page[] | null>(null)
+  const [pages, setPages] = useState<Page[] | null | undefined>(undefined)
   const [envoi, setEnvoi] = useState<string | null>(null)
+  const [recente, tamponner] = useTampon()
   // Relu quand la collection change (un dossier ouvert peut compléter une page)
   const taille = Object.keys(s.collection).length
-  const relire = useCallback(() => void appeler<Page[]>('albums').then((p) => p && setPages(p)), [])
+  const relire = useCallback(() => void appeler<Page[]>('albums').then(setPages), [])
   useEffect(relire, [relire, taille])
 
   async function reclamer(p: Page) {
@@ -32,10 +34,12 @@ export function Album() {
     if (!r) return
     modifier((x) => appliquerProfil(x, r.profil))
     setPages(r.albums)
+    tamponner(p.id)
     jouer.retourner(4)
     notifier(`Page complète : ${p.titre}, +${p.credits.toLocaleString('fr-FR')} ₵`, 'succes')
   }
 
+  if (pages === undefined) return <Caviarde lignes={2} />
   if (!pages) return null
   const pretes = pages.filter((p) => !p.reclame && p.possedees >= p.total).length
   return (
@@ -48,7 +52,7 @@ export function Album() {
         {pages.map((p) => {
           const complete = p.possedees >= p.total
           return (
-            <li key={p.id} className={`album-page ${p.reclame ? 'reclame' : complete ? 'complete' : ''}`}>
+            <li key={p.id} className={`album-page ${p.reclame ? 'reclame' : complete ? 'complete' : ''} ${recente === p.id ? 'tamponne' : ''}`}>
               <div className="album-texte">
                 <strong>{p.titre}</strong>
                 <small>{p.credits.toLocaleString('fr-FR')} ₵</small>

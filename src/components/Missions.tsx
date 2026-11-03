@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { appeler, appliquerProfil, type ProfilServeur } from '../state/enLigne'
 import { modifier, notifier } from '../state/sauvegarde'
 import { jouer } from '../state/sons'
+import { Caviarde, useTampon } from './Anime'
 
 /**
  * Les missions du jour (trois, tirées pour chaque agent) et de la semaine. Le serveur suit la progression
@@ -24,9 +25,10 @@ const recompense = (m: Mission) =>
 
 /** `sansTitre` : dans une section du Terminal, qui porte déjà le titre */
 export function Missions({ sansTitre }: { sansTitre?: boolean } = {}) {
-  const [missions, setMissions] = useState<Mission[] | null>(null)
+  const [missions, setMissions] = useState<Mission[] | null | undefined>(undefined)
   const [envoi, setEnvoi] = useState<string | null>(null)
-  const relire = useCallback(() => void appeler<Mission[]>('missions').then((m) => m && setMissions(m)), [])
+  const [recente, tamponner] = useTampon()
+  const relire = useCallback(() => void appeler<Mission[]>('missions').then(setMissions), [])
   useEffect(relire, [relire])
 
   async function reclamer(m: Mission) {
@@ -36,10 +38,12 @@ export function Missions({ sansTitre }: { sansTitre?: boolean } = {}) {
     if (!r) return
     modifier((x) => appliquerProfil(x, r.profil))
     setMissions(r.missions)
+    tamponner(m.id)
     jouer.retourner(2)
     notifier(`Mission accomplie : ${recompense(m)}`, 'succes')
   }
 
+  if (missions === undefined) return <Caviarde lignes={4} />
   if (!missions) return null
   const groupes: [string, Mission[]][] = [
     ['Aujourd’hui', missions.filter((m) => m.periode === 'jour')],
@@ -56,7 +60,7 @@ export function Missions({ sansTitre }: { sansTitre?: boolean } = {}) {
               {liste.map((m) => {
                 const fait = m.progres >= m.objectif
                 return (
-                  <li key={m.id} className={`mission ${m.reclamee ? 'reclamee' : fait ? 'accomplie' : ''}`}>
+                  <li key={m.id} className={`mission ${m.reclamee ? 'reclamee' : fait ? 'accomplie' : ''} ${recente === m.id ? 'tamponne' : ''}`}>
                     <div className="mission-texte">
                       <span>{m.titre}</span>
                       <small>{recompense(m)}</small>

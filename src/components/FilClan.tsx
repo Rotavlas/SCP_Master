@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { designation, type Base } from '../data/catalogue'
 import { EDITION_MYTHIQUE } from '../engine/boosters'
 import { appeler } from '../state/enLigne'
+import { Caviarde } from './Anime'
 
 /**
  * Le fil du clan (public.fil_clan) : ce que les membres ont fait ces sept derniers jours. Légendaires et Mythiques
@@ -24,10 +25,11 @@ function depuis(le: string) {
 }
 
 export function FilClan({ base }: { base: Base }) {
-  const [fil, setFil] = useState<Evenement[] | null>(null)
+  const [fil, setFil] = useState<Evenement[] | null | undefined>(undefined)
   useEffect(() => {
     void appeler<Evenement[] | null>('fil_clan').then(setFil)
   }, [])
+  if (fil === undefined) return <Caviarde lignes={4} />
   if (!fil) return null
 
   const nom = (id: string) => {

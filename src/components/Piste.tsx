@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { appeler, appliquerProfil, type ProfilServeur } from '../state/enLigne'
 import { modifier, notifier, useSauvegarde } from '../state/sauvegarde'
 import { jouer } from '../state/sons'
+import { Caviarde } from './Anime'
 
 /**
  * La piste d'accréditation : trente paliers d'XP, chacun avec sa récompense (crédits, un dossier tous les trois
@@ -26,7 +27,7 @@ const recompense = (p: Palier) => [`${p.credits} ₵`, p.dossiers && `${p.dossie
 
 export function Piste() {
   const s = useSauvegarde()
-  const [p, setP] = useState<VuePiste | null>(null)
+  const [p, setP] = useState<VuePiste | null | undefined>(undefined)
   const [envoi, setEnvoi] = useState(false)
   // Relue quand l'XP change (un duel gagné peut franchir un palier)
   useEffect(() => {
@@ -50,6 +51,7 @@ export function Piste() {
     )
   }
 
+  if (p === undefined) return <Caviarde lignes={3} />
   if (!p) return null
   const suivant = p.paliers.find((x) => x.palier === p.atteint + 1)
   const precedent = p.paliers.find((x) => x.palier === p.atteint)?.xp ?? 0

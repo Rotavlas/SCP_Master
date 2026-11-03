@@ -12,6 +12,18 @@ export interface Entree {
 export const JOURNAL: Entree[] = [
   {
     date: '2026-11-03',
+    titre: 'Un terminal plus vivant',
+    points: [
+      'Au premier passage de la visite, le Terminal se déverrouille : le salut se tape lettre à lettre, la jauge d’accréditation se remplit, les tiroirs sortent l’un après l’autre.',
+      'Les crédits défilent jusqu’à leur nouvelle valeur, dans le bandeau comme sur l’accueil, et l’écart s’envole à côté (+120, −350). Le stock de dossiers aussi.',
+      'Une mission, une page d’album ou un rapport du jour réclamés reçoivent leur tampon « Reçu ».',
+      'Ce qui charge s’affiche caviardé plutôt que de laisser un trou : la page ne saute plus à l’arrivée des données.',
+      'Changer d’écran rafraîchit le terminal (un balayage lumineux), et les sections du Terminal se déplient quand on les ouvre.',
+      'Les appareils réglés pour réduire les animations n’en ont aucune.',
+    ],
+  },
+  {
+    date: '2026-11-03',
     titre: 'Correctifs : raids, ouverture des dossiers',
     points: [
       'Raid de clan : une anomalie reconfinée le reste, même si un membre quitte ensuite le clan (la récompense pouvait redevenir inaccessible aux autres).',

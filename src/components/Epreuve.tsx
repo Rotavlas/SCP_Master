@@ -5,6 +5,7 @@ import { jouer as jouerSon } from '../state/sons'
 import { Pseudo } from './Badges'
 import { usePleinEcran } from './pleinEcran'
 import { QuestionAlteree } from './QuestionAlteree'
+import { Caviarde } from './Anime'
 
 /**
  * L'Épreuve de la semaine : dix questions, les mêmes pour tous les agents, une seule tentative. Le serveur tire les
@@ -48,10 +49,11 @@ const duree = (s: number) => `${Math.floor(s / 60)} min ${String(s % 60).padStar
 
 /** Le panneau du hall : sa tentative, le classement de la semaine, le dernier résultat. */
 export function EpreuveHall({ lancer, ouvrirProfil }: { lancer: () => void; ouvrirProfil: (p: string) => void }) {
-  const [c, setC] = useState<Classement | null>(null)
+  const [c, setC] = useState<Classement | null | undefined>(undefined)
   useEffect(() => {
     void appeler<Classement>('epreuve').then(setC)
   }, [])
+  if (c === undefined) return <Caviarde lignes={5} />
   if (!c) return null
   const jours = Math.max(0, Math.ceil((new Date(c.fin).getTime() - Date.now()) / 86_400_000))
   return (
