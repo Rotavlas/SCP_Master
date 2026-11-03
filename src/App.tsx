@@ -1,7 +1,7 @@
 import { Analytics } from '@vercel/analytics/react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { Accueil } from './components/Accueil'
-import { Booster, type Tirage } from './components/Booster'
+import { Booster, retenirTirage, tirageRetenu, type Tirage } from './components/Booster'
 import { Boutique } from './components/Boutique'
 import { CarteDetail } from './components/CarteDetail'
 import { Classement } from './components/Classement'
@@ -44,7 +44,7 @@ export default function App() {
   const [traductions, setTraductions] = useState<Traductions | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
   const [ecran, setEcran] = useState<Ecran>('accueil')
-  const [tirage, setTirage] = useState<Tirage | null>(null)
+  const [tirage, setTirageBrut] = useState<Tirage | null>(null)
   const [carteOuverte, setCarteOuverte] = useState<string | null>(null)
   // Carte à retrouver en ouvrant le marché depuis sa fiche
   const [rechercheMarche, setRechercheMarche] = useState('')
@@ -57,6 +57,14 @@ export default function App() {
   // Sur téléphone : le menu des onglets secondaires
   const [menuPlus, setMenuPlus] = useState(false)
   const connecte = compte.statut === 'connecte' && !!s.agent
+  // Le dossier en cours est aussi gardé dans l'onglet : un rechargement en pleine ouverture le rouvre là où il en était
+  const setTirage = useCallback(
+    (t: Tirage | null) => {
+      retenirTirage(t, s.agent)
+      setTirageBrut(t)
+    },
+    [s.agent],
+  )
   usePresence(connecte)
   useMessagesEntrants(connecte)
   // Une notification qui arrive pendant la partie s'affiche aussi en bas de l'écran
@@ -85,6 +93,17 @@ export default function App() {
     setEcran(e)
     window.scrollTo({ top: 0 })
   }, [])
+  // Au chargement : un dossier dont la révélation a été interrompue (page rechargée) reprend sur l'écran des dossiers
+  const [repris, setRepris] = useState(false)
+  useEffect(() => {
+    if (repris || !base || !connecte) return
+    setRepris(true)
+    const t = tirageRetenu(base, s.agent)
+    if (t) {
+      setTirageBrut(t)
+      aller('booster')
+    }
+  }, [repris, base, connecte, s.agent, aller])
   const fermer = useCallback(() => setCarteOuverte(null), [])
   const fermerProfil = useCallback(() => setProfilOuvert(null), [])
   const ecrire = useCallback(

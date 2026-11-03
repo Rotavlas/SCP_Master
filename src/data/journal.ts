@@ -11,6 +11,18 @@ export interface Entree {
 
 export const JOURNAL: Entree[] = [
   {
+    date: '2026-11-03',
+    titre: 'Correctifs : raids, ouverture des dossiers',
+    points: [
+      'Raid de clan : une anomalie reconfinée le reste, même si un membre quitte ensuite le clan (la récompense pouvait redevenir inaccessible aux autres).',
+      'Raid de clan : seuls comptent les coups portés jusqu’à la chute de l’anomalie ; rejoindre un clan déjà victorieux ne permet plus de réclamer sa part sans avoir contribué.',
+      'Ouverture des dossiers : recharger la page en pleine ouverture ne fait plus perdre la révélation. Le dossier reprend là où il en était, Mythique comprise.',
+      'Ouverture des dossiers : avec « Tout voir », une cinématique ne recommence plus d’elle-même en cours de route, et un double clic ne saute plus la suivante.',
+      'Reconfinement : quand l’IA déclenche son Protocole d’urgence, il s’affiche aussi sur le plateau.',
+      'L’album se calcule plus vite (les pages sont composées d’avance).',
+    ],
+  },
+  {
     date: '2026-11-02',
     titre: 'Les Manifestations frappent sur le plateau',
     points: [

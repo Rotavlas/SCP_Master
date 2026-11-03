@@ -13,6 +13,7 @@ import {
   type CampReco,
   type Evenement,
   type Manifestation,
+  URGENCE,
 } from '../engine/reconfinement'
 import { debuterReco, jouerReco, manifesterReco, repondreReco, type ResultatReco, type TourReco, type VueReco } from '../state/actions'
 import { useSauvegarde, varianteAffichee } from '../state/sauvegarde'
@@ -43,7 +44,7 @@ export function Reconfinement({ base, adversaire, onQuitter }: { base: Base; adv
   const [partie, setPartie] = useState<Partie | null>(null)
   const [regarde, setRegarde] = useState(false)
   // La Manifestation qui vient de se déclencher : elle frappe sur le plateau
-  const [spectacle, setSpectacle] = useState<Manifestation | null>(null)
+  const [spectacle, setSpectacle] = useState<{ m: Manifestation; parMoi: boolean } | null>(null)
   const finFrappe = useCallback(() => setSpectacle(null), [])
   const [ecoule, setEcoule] = useState(0)
   const [attente, setAttente] = useState(false)
@@ -127,6 +128,8 @@ export function Reconfinement({ base, adversaire, onQuitter }: { base: Base; adv
     const suivant: Partie = { ...q, phase: 'resultat', resultat: res }
     partieRef.current = suivant
     setPartie(suivant)
+    // L'IA se manifeste d'elle-même quand sa jauge est pleine (Protocole d'urgence) : elle frappe aussi le plateau
+    if (res.evenements.some((e) => e.type === 'manifestation' && e.camp === 'ia')) setSpectacle({ m: URGENCE, parMoi: false })
   }
 
   function continuer() {
@@ -141,7 +144,7 @@ export function Reconfinement({ base, adversaire, onQuitter }: { base: Base; adv
     const m = await exclusif(() => manifesterReco(q.id))
     if (!m) return
     setPartie({ ...q, ...m })
-    setSpectacle(m.declenchee)
+    setSpectacle({ m: m.declenchee, parMoi: true })
   }
 
   if (p.phase === 'fin' && r?.fin) {
@@ -340,7 +343,15 @@ export function Reconfinement({ base, adversaire, onQuitter }: { base: Base; adv
         </div>
       )}
 
-      {spectacle && <FrappeMythique m={spectacle} parMoi surtitre="Manifestation" base={base} onFini={finFrappe} />}
+      {spectacle && (
+        <FrappeMythique
+          m={spectacle.m}
+          parMoi={spectacle.parMoi}
+          surtitre={spectacle.parMoi ? 'Manifestation' : `Manifestation de ${adversaire.nom}`}
+          base={base}
+          onFini={finFrappe}
+        />
+      )}
     </section>
   )
 }

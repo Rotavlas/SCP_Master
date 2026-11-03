@@ -1242,4 +1242,45 @@ await test('fil du clan et objectifs presque atteints', async () => {
   assert.ok(types.includes('piste'))
 })
 
+console.log('Correctifs du raid')
+const R3 = '00000000-0000-0000-0000-0000000000b3'
+await db.exec(`insert into auth.users (id) values ('${R3}')`)
+await admin(`update public.profils set pseudo = 'Raideur Trois' where id = '${R3}'`)
+await test('raid : après la chute, plus aucun coup ne compte ; un nouvel arrivant ne peut pas réclamer', async () => {
+  const avant = (await valeur(R2, 'select public.raid()')).courant
+  assert.equal(avant.vaincue, true)
+  // Des coups portés une minute après la chute (l'annonce au clan)
+  const fige = (await valeur(R2, 'select public.raid()')).courant.moi
+  await admin(
+    `insert into prive.duels_ia (joueur, niveau, fin, issue, bonnes) select $1, 1, now() + interval '1 minute', 'victoire', 5 from generate_series(1, 3)`,
+    [R2],
+  )
+  assert.equal((await valeur(R2, 'select public.raid()')).courant.moi, fige, 'les coups portés après la chute ne comptent pas')
+  await admin("insert into prive.membres_clan (joueur, clan, role) values ($1, '00000000-0000-0000-0000-0000000c1a00', 'membre')", [R3])
+  await admin(
+    `insert into prive.duels_ia (joueur, niveau, fin, issue, bonnes) select $1, 1, now() + interval '1 minute', 'victoire', 5 from generate_series(1, 5)`,
+    [R3],
+  )
+  const r3 = (await valeur(R3, 'select public.raid()')).courant
+  assert.equal(r3.moi, 0)
+  await echoue(en(R3, `select public.reclamer_raid('${r3.semaine}')`), /Contribution insuffisante/)
+})
+await test('raid : une anomalie reconfinée le reste quand un membre quitte le clan', async () => {
+  await admin(`delete from prive.membres_clan where joueur = '${R1}'`)
+  const r2 = (await valeur(R2, 'select public.raid()')).courant
+  assert.equal(r2.vaincue, true)
+  assert.ok(r2.moi >= 40)
+  const avant = await credits(R2)
+  const r = await valeur(R2, `select public.reclamer_raid('${r2.semaine}')`)
+  assert.equal(Number(r.profil.credits), avant + 500)
+})
+await test('album : les pages rangées d’avance suivent le catalogue', async () => {
+  const total = async () => (await valeur(B, 'select public.albums()')).find((p) => p.id === 'codes').total
+  const avant = await total()
+  await admin("insert into public.cartes (id, k, ra) values ('proto:code-essai', 'o', 2)")
+  assert.equal(await total(), avant + 1)
+  await admin("delete from public.cartes where id = 'proto:code-essai'")
+  assert.equal(await total(), avant)
+})
+
 console.log(`\n${reussis} tests réussis${process.exitCode ? ', des échecs' : ''}.`)

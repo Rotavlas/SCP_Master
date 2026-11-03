@@ -36,6 +36,54 @@ const DUREE_PROTOCOLE_LEGENDAIRE = 7900
 let tirageEnCours = false
 
 /**
+ * Le dossier en cours de révélation, gardé dans l'onglet : les cartes sont acquises dès le tirage (côté serveur),
+ * mais recharger la page en pleine ouverture faisait perdre la révélation (une Mythique jamais vue). Oublié une fois
+ * le bilan atteint. Lié à l'agent, pour ne pas le montrer à un autre compte ouvert dans le même onglet.
+ */
+const CLE_TIRAGE = 'scp-masters:dossier-en-cours'
+
+export function retenirTirage(t: Tirage | null, agent: string) {
+  try {
+    if (!t) sessionStorage.removeItem(CLE_TIRAGE)
+    else
+      sessionStorage.setItem(
+        CLE_TIRAGE,
+        JSON.stringify({
+          agent,
+          id: t.id,
+          type: t.type.id,
+          cartes: t.cartes.map((c) => ({ id: c.carte.id, v: c.variante, n: c.numero })),
+          nouvelles: [...t.nouvelles],
+          souhaits: [...t.souhaits],
+        }),
+      )
+  } catch {
+    // Stockage indisponible : la révélation ne survivra pas à un rechargement, les cartes restent acquises
+  }
+}
+
+export function tirageRetenu(base: Base, agent: string): Tirage | null {
+  try {
+    const brut = sessionStorage.getItem(CLE_TIRAGE)
+    if (!brut) return null
+    const d = JSON.parse(brut) as {
+      agent: string
+      id: number
+      type: string
+      cartes: { id: string; v: CarteTiree['variante']; n?: number }[]
+      nouvelles: string[]
+      souhaits: string[]
+    }
+    const type = BOOSTERS.find((b) => b.id === d.type)
+    const cartes = d.cartes.map((c) => ({ carte: base.parId.get(c.id)!, variante: c.v, numero: c.n })).filter((c) => c.carte)
+    if (d.agent !== agent || !type || cartes.length !== d.cartes.length) return null
+    return { id: d.id, type, cartes, nouvelles: new Set(d.nouvelles), souhaits: new Set(d.souhaits) }
+  } catch {
+    return null
+  }
+}
+
+/**
  * Tire un booster (localement ou sur le serveur) : il est ajouté aussitôt à la collection,
  * rien n'est perdu si l'onglet se ferme pendant l'animation.
  */
@@ -129,6 +177,11 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
   const verrou = useRef(0)
   const glisse = useRef<{ x: number; largeur: number } | null>(null)
   const courante = tirage.cartes[index]
+
+  // Tout est révélé : plus rien à retrouver après un rechargement
+  useEffect(() => {
+    if (etape === 'bilan') retenirTirage(null, '')
+  }, [etape])
 
   // Les images se chargent pendant qu'on brise le scellé : elles sont prêtes au moment de retourner
   useEffect(() => {
@@ -450,7 +503,17 @@ function indiceLegendaire(c: TCarte): string {
  * Un clic ne l'abrège qu'une fois l'essentiel vu.
  */
 export function Protocole({ carte, onFini }: { carte: TCarte; onFini: () => void }) {
-  return carte.ra === 5 ? <ProtocoleMythique carte={carte} onFini={onFini} /> : <ProtocoleLegendaire carte={carte} onFini={onFini} />
+  // La fin ne se déclenche qu'une fois (un double clic ne saute pas la cinématique suivante), et un nouveau rendu du
+  // parent ne relance pas la cinématique en cours : on garde la dernière version de onFini sans en dépendre
+  const rappel = useRef(onFini)
+  rappel.current = onFini
+  const finie = useRef(false)
+  const finir = useCallback(() => {
+    if (finie.current) return
+    finie.current = true
+    rappel.current()
+  }, [])
+  return carte.ra === 5 ? <ProtocoleMythique carte={carte} onFini={finir} /> : <ProtocoleLegendaire carte={carte} onFini={finir} />
 }
 
 /** Instants (s) du protocole d'une Légendaire : les lignes du terminal, l'extrait, son décryptage
