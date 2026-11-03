@@ -4,7 +4,7 @@ import { VALEUR_RECYCLAGE, boostersPour, gainPlafonne } from '../engine/boosters
 import { VARIANTES } from '../engine/variantes'
 import { TAILLE_DECK, doublonsRecyclables, exemplairesStandard, modifier, useSauvegarde, varianteAffichee } from '../state/sauvegarde'
 import { recycler } from '../state/actions'
-import { useEditionsMythiques, useRecyclageRestant } from '../state/enLigne'
+import { useEditionsMythiques, useNumerosMythiques, useRecyclageRestant } from '../state/enLigne'
 import { useCarteAffichee } from '../state/traduction'
 import { useTextes } from '../data/textes'
 import { CREDITS_ILLUSTRATIONS } from '../data/mythiques'
@@ -27,6 +27,7 @@ export function CarteDetail({
   const s = useSauvegarde()
   const restantRecyclage = useRecyclageRestant()
   const editions = useEditionsMythiques()
+  const numeros = useNumerosMythiques()
   // Les extraits du dossier arrivent à l'ouverture de la fiche (src/data/textes.ts)
   const carte = useCarteAffichee(useTextes(source).carte)
   const quantite = s.collection[carte.id] ?? 0
@@ -77,6 +78,20 @@ export function CarteDetail({
         ? `épuisée : ${edition.total} exemplaires, ne s'obtient plus qu'au marché`
         : `${edition.emis}/${edition.total} exemplaires sortis, encore ${edition.total - edition.emis}`,
     ])
+  // Les exemplaires qu'on en possède, par numéro
+  const mesNumeros = carte.ra === 5 ? (numeros?.[carte.id] ?? []) : []
+  if (mesNumeros.length)
+    fiche.push([
+      mesNumeros.length > 1 ? 'Vos exemplaires' : 'Votre exemplaire',
+      <span className="numeros-mythique">
+        {mesNumeros.map((n) => (
+          <span key={n} className="numero-plaque">
+            N° {String(n).padStart(2, '0')}
+          </span>
+        ))}
+        <span className="discret">sur {edition?.total ?? 50}</span>
+      </span>,
+    ])
   if (carte.k === 's') fiche.push(['Série', `${carte.s ? `Série ${carte.s}` : 'SCP-001'} · ${carte.y}`])
   else if (carte.y) fiche.push(['Publication', String(carte.y)])
 
@@ -87,7 +102,7 @@ export function CarteDetail({
           ✕
         </button>
         <div className="detail-carte">
-          <Carte carte={carte} base={base} taille="g" variante={variante} scellee={quantite === 0} souhait={souhait} />
+          <Carte carte={carte} base={base} taille="g" variante={variante} scellee={quantite === 0} souhait={souhait} numero={mesNumeros[0]} />
           {quantite > 0 && (
             <div className="selecteur-variantes" role="radiogroup" aria-label="Variante affichée">
               {VARIANTES.map((v) => {

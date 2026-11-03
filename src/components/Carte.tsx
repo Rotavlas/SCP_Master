@@ -1,6 +1,7 @@
 import { useRef, useState, type PointerEvent } from 'react'
 import { RARETES, TYPES, entete, pastille, type Base } from '../data/catalogue'
 import { signature } from '../data/mythiques'
+import { EDITION_MYTHIQUE } from '../engine/boosters'
 import { PAR_ID, type IdVariante } from '../engine/variantes'
 import { useCarteAffichee } from '../state/traduction'
 import type { Carte as TCarte } from '../types'
@@ -20,6 +21,8 @@ interface Props {
   scellee?: boolean
   /** Surnom, classe et extrait caviardés (confrontation) */
   caviardee?: boolean
+  /** Mythique : le numéro de l'exemplaire, gravé sur sa plaque (« N° 07 / 50 ») */
+  numero?: number
   inclinable?: boolean
   onClick?: () => void
 }
@@ -126,6 +129,7 @@ export function Carte({
   souhait,
   scellee,
   caviardee,
+  numero,
   inclinable = true,
   onClick,
 }: Props) {
@@ -207,6 +211,11 @@ export function Carte({
           </header>
           <div className="cm-bas">
             <span className="cm-rang">Mythique · niveau 5</span>
+            {numero !== undefined && (
+              <span className="cm-plaque" title={`Exemplaire n° ${numero} sur ${EDITION_MYTHIQUE}`}>
+                N° {String(numero).padStart(2, '0')} <small>/ {EDITION_MYTHIQUE}</small>
+              </span>
+            )}
             <h3 className="carte-nom cm-nom" title={caviardee ? undefined : carte.nm}>
               {caviardee ? <span className="caviarde">██████ ████</span> : carte.nm}
             </h3>

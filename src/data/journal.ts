@@ -12,6 +12,14 @@ export interface Entree {
 export const JOURNAL: Entree[] = [
   {
     date: '2026-11-03',
+    titre: 'Le numéro de vos Mythiques',
+    points: [
+      'Chaque Mythique porte désormais sa plaque gravée « N° 07 / 50 » : à l’ouverture du dossier, dans les archives, dans l’équipe et sur l’accueil. Avec plusieurs exemplaires, c’est le plus petit numéro qui s’affiche.',
+      'La fiche d’une Mythique liste tous vos exemplaires par numéro, à côté du nombre déjà sortis sur les 50.',
+    ],
+  },
+  {
+    date: '2026-11-03',
     titre: 'Un terminal plus vivant',
     points: [
       'Au premier passage de la visite, le Terminal se déverrouille : le salut se tape lettre à lettre, la jauge d’accréditation se remplit, les tiroirs sortent l’un après l’autre.',

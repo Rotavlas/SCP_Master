@@ -300,3 +300,15 @@ export function useEditionsMythiques(): Record<string, { emis: number; total: nu
   }, [ouverts])
   return e
 }
+
+/** Les numéros de ses exemplaires de Mythiques ({ id: [7, 31] }, du plus petit au plus grand), relus quand la collection bouge */
+export function useNumerosMythiques(): Record<string, number[]> | null {
+  const [n, setN] = useState<Record<string, number[]> | null>(null)
+  const s = useSauvegarde()
+  const ouverts = s.stats.boostersOuverts
+  const taille = Object.keys(s.collection).length
+  useEffect(() => {
+    void appeler<Record<string, number[]>>('mes_numeros_mythiques').then(setN)
+  }, [ouverts, taille])
+  return n
+}

@@ -1283,4 +1283,13 @@ await test('album : les pages rangées d’avance suivent le catalogue', async (
   assert.equal(await total(), avant)
 })
 
+await test('numéros des Mythiques possédées, du plus petit au plus grand', async () => {
+  await admin(
+    "insert into public.exemplaires (proprietaire, carte_id, variante, numero_serie, origine) values ($1, 'entite:scarlet-king', 'std', 31, 'booster'), ($1, 'entite:scarlet-king', 'std', 7, 'booster')",
+    [R2],
+  )
+  const n = await valeur(R2, 'select public.mes_numeros_mythiques()')
+  assert.deepEqual(n['entite:scarlet-king'], [7, 31])
+})
+
 console.log(`\n${reussis} tests réussis${process.exitCode ? ', des échecs' : ''}.`)

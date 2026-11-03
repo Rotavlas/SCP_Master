@@ -13,6 +13,7 @@ import { Piste } from './Piste'
 import { Rapport } from './Rapport'
 import { Section } from './Section'
 import { Caviarde, NombreAnime, peuDAnimations } from './Anime'
+import { useNumerosMythiques } from '../state/enLigne'
 
 interface Props {
   base: Base
@@ -43,6 +44,7 @@ export function Accueil({ base, aller, ouvrirCarte, allerClan }: Props) {
     }
   })
   const objectifs = useObjectifs()
+  const numeros = useNumerosMythiques()
   const possedees = Object.keys(s.collection)
   const parRarete = RARETES.map(() => 0)
   for (const id of possedees) {
@@ -200,7 +202,15 @@ export function Accueil({ base, aller, ouvrirCarte, allerClan }: Props) {
         <Section id="vitrine" titre="Vos dossiers les plus précieux">
           <div className="rangee-cartes">
             {vitrine.map((c) => (
-              <Carte key={c.id} carte={c} base={base} taille="p" variante={varianteAffichee(s, c.id)} onClick={() => ouvrirCarte(c.id)} />
+              <Carte
+                key={c.id}
+                carte={c}
+                base={base}
+                taille="p"
+                variante={varianteAffichee(s, c.id)}
+                numero={numeros?.[c.id]?.[0]}
+                onClick={() => ouvrirCarte(c.id)}
+              />
             ))}
           </div>
         </Section>

@@ -275,7 +275,7 @@ function Atelier({ base }: { base: Base }) {
         const credit = CREDITS_ILLUSTRATIONS[c.id]
         return (
           <section key={c.id} className="atelier-ligne" style={{ ['--sig' as string]: SIGNATURES[c.id].couleur }}>
-            <Carte carte={c} base={base} taille="g" />
+            <Carte carte={c} base={base} taille="g" numero={7} />
             <div className="atelier-scene">{rejeu[c.id] ? <AnimationMythique key={rejeu[c.id]} id={c.id} /> : <SceneMythique id={c.id} />}</div>
             {ORIGINAUX[c.id] && (
               <figure className="atelier-original">

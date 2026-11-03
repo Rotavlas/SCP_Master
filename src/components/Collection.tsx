@@ -4,7 +4,7 @@ import { CLASSES, ORDRE_TYPES, RARETES, TYPES, type Base } from '../data/catalog
 import { VALEUR_RECYCLAGE, gainPlafonne } from '../engine/boosters'
 import { VARIANTES, type IdVariante } from '../engine/variantes'
 import { recyclerTout } from '../state/actions'
-import { useRecyclageRestant } from '../state/enLigne'
+import { useNumerosMythiques, useRecyclageRestant } from '../state/enLigne'
 import { brulerLot, type ModeBrulage } from '../state/marche'
 import { TAILLE_DECK, doublonsRecyclables, modifier, useSauvegarde, varianteAffichee } from '../state/sauvegarde'
 import type { Carte as TCarte, Classe, TypeFiche } from '../types'
@@ -81,6 +81,8 @@ export function meilleureEquipe(base: Base, collection: Record<string, number>):
 
 export function Collection({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id: string) => void }) {
   const s = useSauvegarde()
+  // Le plus petit numéro de chaque Mythique possédée, gravé sur sa carte
+  const numeros = useNumerosMythiques()
   const restantRecyclage = useRecyclageRestant() ?? Infinity
   // Les filtres sont retenus sur l'appareil d'une visite à l'autre (sauf la recherche)
   const [f, setF] = useState<Filtres>(lireFiltres)
@@ -223,6 +225,7 @@ export function Collection({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id
                 base={base}
                 taille="p"
                 variante={varianteAffichee(s, equipe[i].id)}
+                numero={numeros?.[equipe[i].id]?.[0]}
                 inclinable={false}
                 onClick={() => ouvrirCarte(equipe[i].id)}
               />
@@ -461,6 +464,7 @@ export function Collection({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id
               nouvelle={s.nouvelles.includes(c.id)}
               favori={s.favoris.includes(c.id)}
               souhait={s.souhaits.includes(c.id)}
+              numero={numeros?.[c.id]?.[0]}
               onClick={() => (selection ? basculer(c.id) : ouvrirCarte(c.id))}
             />
           </div>

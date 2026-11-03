@@ -406,7 +406,14 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
               <span>SCP-████</span>
             </div>
             <div className="pile-face pile-face-avant">
-              <Carte carte={carte} base={base} variante={variante} nouvelle={tirage.nouvelles.has(carte.id)} taille="m" />
+              <Carte
+                carte={carte}
+                base={base}
+                variante={variante}
+                nouvelle={tirage.nouvelles.has(carte.id)}
+                numero={carte.ra === 5 ? numero : undefined}
+                taille="m"
+              />
             </div>
           </div>
           {revelee && variante !== 'std' && <div className="banniere-variante">Variante · {PAR_ID[variante].nom}</div>}
@@ -438,6 +445,7 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
               base={base}
               variante={t.variante}
               nouvelle={tirage.nouvelles.has(t.carte.id)}
+              numero={t.carte.ra === 5 ? t.numero : undefined}
               onClick={() => ouvrirCarte(t.carte.id)}
             />
           </div>
