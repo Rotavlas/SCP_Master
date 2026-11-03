@@ -12,6 +12,16 @@ export interface Entree {
 export const JOURNAL: Entree[] = [
   {
     date: '2026-11-03',
+    titre: 'La circulaire 05-ECO, et le plafond de recyclage bien en vue',
+    points: [
+      'Nouvelle circulaire de l’Intendance : toutes les règles de l’économie sur une seule page. Prix et limites des dossiers, chances de chaque rareté, Mythiques et variantes, barème du recyclage et du brûlage, taxe du marché, gains des confrontations, primes (Rapport, Épreuve, album, missions, piste, raid) et clans. Elle s’ouvre depuis l’Intendance, les Archives et « Comment jouer ».',
+      'En tête de la circulaire, vos quotas du jour se remplissent en direct : dossiers Keter, O5 et Apollyon encore achetables, dossiers en réserve.',
+      'Le plafond du recyclage et du brûlage a sa jauge : trente crans de 100 ₵ qui s’éteignent à mesure qu’on recycle ou brûle, orange quand il en reste peu, rouge une fois atteint. Elle s’affiche dans les Archives, sur la fiche d’une carte, au marché et dans la circulaire.',
+      'Au marché, le bouton « Brûler un exemplaire » annonce désormais le gain réel, plafond du jour compris (il affichait la valeur pleine même une fois le plafond atteint).',
+    ],
+  },
+  {
+    date: '2026-11-03',
     titre: 'Les Mythiques : numéros, Première édition et variantes',
     points: [
       'Chaque Mythique porte une plaque discrète « N° 07/50 » : à l’ouverture du dossier, dans les archives, dans l’équipe et sur l’accueil. Avec plusieurs exemplaires, c’est le plus petit numéro qui s’affiche. Sa fiche liste tous vos exemplaires.',

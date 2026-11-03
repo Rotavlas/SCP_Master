@@ -10,6 +10,7 @@ import { TAILLE_DECK, doublonsRecyclables, modifier, useSauvegarde, varianteAffi
 import type { Carte as TCarte, Classe, TypeFiche } from '../types'
 import { Carte } from './Carte'
 import { BoutonConfirme } from './Confirmer'
+import { JaugeRecyclage } from './JaugeRecyclage'
 
 const PAR_PAGE = 60
 
@@ -79,7 +80,7 @@ export function meilleureEquipe(base: Base, collection: Record<string, number>):
     .map((c) => c.id)
 }
 
-export function Collection({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id: string) => void }) {
+export function Collection({ base, ouvrirCarte, voirReglement }: { base: Base; ouvrirCarte: (id: string) => void; voirReglement: () => void }) {
   const s = useSauvegarde()
   // Le plus petit numéro de chaque Mythique possédée, gravé sur sa carte
   const numeros = useNumerosMythiques()
@@ -249,6 +250,12 @@ export function Collection({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id
               Recycler tous les doublons (+{valeurDoublons} ₵)
             </BoutonConfirme>
           )}
+        </div>
+        <div className="archives-plafond">
+          <JaugeRecyclage />
+          <button className="btn btn-lien" onClick={voirReglement}>
+            Barème complet dans la circulaire 05-ECO
+          </button>
         </div>
       </div>
 

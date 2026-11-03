@@ -12,6 +12,7 @@ import type { Carte as TCarte } from '../types'
 import { Protocole } from './Booster'
 import { Carte } from './Carte'
 import { MarcheCarte } from './MarcheCarte'
+import { JaugeRecyclage } from './JaugeRecyclage'
 
 export function CarteDetail({
   carte: source,
@@ -197,6 +198,7 @@ export function CarteDetail({
                     ₵)
                   </button>
                 )}
+                {doublons > 0 && <JaugeRecyclage compacte />}
                 {carte.ra >= 4 && (
                   <button className="btn btn-cinematique" style={{ ['--r' as string]: RARETES[carte.ra].couleur }} onClick={() => setCinematique(true)}>
                     ▶ Revoir la cinématique

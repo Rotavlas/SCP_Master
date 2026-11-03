@@ -33,6 +33,7 @@ import { QuestionAlteree } from './components/QuestionAlteree'
 import type { Alteration } from './engine/effets'
 import { ADVERSAIRES } from './engine/duel'
 import './styles.css'
+import { Reglement } from './components/Reglement'
 
 // Les originaux (public/sunny/, public/photos/), pour comparer avec la fin de l'animation
 const ORIGINAUX: Record<string, string> = {
@@ -241,6 +242,15 @@ function Atelier({ base }: { base: Base }) {
   const mode = params.get('mode') ?? (params.has('breche') ? 'breche' : null)
   if (mode === 'alterations') return <PlancheAlterations />
   if (mode === 'frappe') return <EssaiFrappe base={base} />
+  if (mode === 'reglement') {
+    brancherServeurLocal()
+    modifier((x) => (x.agent ? x : { ...x, agent: 'Agent atelier', boosters: 4, credits: 2350 }))
+    return (
+      <main className="contenu">
+        <Reglement />
+      </main>
+    )
+  }
   if (mode === 'hall') {
     brancherServeurLocal()
     // Le Terminal d'un agent de démonstration (données de src/atelierServeur.ts)

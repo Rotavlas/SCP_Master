@@ -26,6 +26,7 @@ import { preparerTraducteur } from './state/traduction'
 import { useCloche, type Notification } from './state/notifications'
 import { Cloche, decrire, type OngletMarche } from './components/Cloche'
 import type { Ecran, Traductions } from './types'
+import { Reglement } from './components/Reglement'
 
 /** Les onglets ; sur téléphone, les quatre principaux restent dans la barre du bas, les autres passent sous « Plus ». */
 const ONGLETS: { id: Ecran; nom: string; icone: string; principal?: boolean }[] = [
@@ -291,7 +292,7 @@ export default function App() {
           />
         )}
         {ecran === 'booster' && <Booster base={base} tirage={tirage} setTirage={setTirage} aller={aller} ouvrirCarte={setCarteOuverte} />}
-        {ecran === 'collection' && <Collection base={base} ouvrirCarte={setCarteOuverte} />}
+        {ecran === 'collection' && <Collection base={base} ouvrirCarte={setCarteOuverte} voirReglement={() => aller('reglement')} />}
         {ecran === 'repertoire' && <Repertoire base={base} ouvrirCarte={setCarteOuverte} />}
         {ecran === 'duel' && <Duel base={base} aller={aller} ouvrirProfil={setProfilOuvert} />}
         {ecran === 'social' && (
@@ -309,6 +310,7 @@ export default function App() {
           <Marche key={`${rechercheMarche}|${ongletMarche}`} base={base} ouvrirCarte={setCarteOuverte} recherche={rechercheMarche} onglet={ongletMarche} />
         )}
         {ecran === 'journal' && <Journal />}
+        {ecran === 'reglement' && <Reglement />}
         {ecran === 'boutique' && (
           <Boutique
             base={base}
@@ -316,6 +318,7 @@ export default function App() {
               setTirage(t)
               aller('booster')
             }}
+            voirReglement={() => aller('reglement')}
           />
         )}
       </main>

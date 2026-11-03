@@ -5,11 +5,15 @@ import { bruler, chargerCours, mettreAuxEncheres, type Cours } from '../state/ma
 import type { Carte } from '../types'
 import { BoutonConfirme } from './Confirmer'
 import { CoursGraphique } from './CoursGraphique'
+import { JaugeRecyclage } from './JaugeRecyclage'
+import { useRecyclageRestant } from '../state/enLigne'
+import { gainPlafonne } from '../engine/boosters'
 
 const credits = (n: number | null) => (n === null ? '—' : `${n.toLocaleString('fr-FR')} ₵`)
 
 /** Dans la fiche d'une carte : son cours, la mise aux enchères et le brûlage d'un exemplaire. */
 export function MarcheCarte({ carte, variante: varianteAffichee, voirMarche }: { carte: Carte; variante: IdVariante; voirMarche: () => void }) {
+  const restantRecyclage = useRecyclageRestant()
   const [cours, setCours] = useState<Cours | null>(null)
   const [variante, setVariante] = useState<IdVariante>(varianteAffichee)
   const [vente, setVente] = useState(false)
@@ -29,6 +33,8 @@ export function MarcheCarte({ carte, variante: varianteAffichee, voirMarche }: {
     )
 
   const c = cours.variantes[variante]
+  // Le brûlage compte dans le plafond du jour : au-delà, 20 % de la valeur seulement
+  const gainBrulage = gainPlafonne(c.brulage, restantRecyclage ?? Infinity)
   // Variantes qui ont un intérêt ici : possédées, en vente ou déjà échangées
   const utiles = variantesPour(carte).filter((v) => {
     const x = cours.variantes[v.id]
@@ -108,11 +114,12 @@ export function MarcheCarte({ carte, variante: varianteAffichee, voirMarche }: {
             disabled={occupe}
             title="L'exemplaire est détruit : il quitte le jeu pour de bon."
             question={`Brûler un exemplaire ${PAR_ID[variante].nom.toLowerCase()} de ${carte.num ?? carte.nm} ? Il sera détruit définitivement.`}
-            confirmer={`Brûler (+${c.brulage.toLocaleString('fr-FR')} ₵)`}
+            confirmer={`Brûler (+${gainBrulage.toLocaleString('fr-FR')} ₵)`}
             onConfirme={() => void incinerer()}
           >
-            Brûler un exemplaire (+{c.brulage.toLocaleString('fr-FR')} ₵)
+            Brûler un exemplaire (+{gainBrulage.toLocaleString('fr-FR')} ₵)
           </BoutonConfirme>
+          <JaugeRecyclage compacte />
         </div>
       )}
       {vente && (

@@ -218,6 +218,9 @@ export function Accueil({ base, aller, ouvrirCarte, allerClan }: Props) {
 
       <Section id="regles" titre="Comment jouer" ouverteParDefaut={false}>
         <div className="regles">
+          <button className="btn btn-circulaire" onClick={() => aller('reglement')}>
+            Circulaire 05-ECO : prix, limites, chances, taxes et primes
+          </button>
           <ul>
             <li>Un dossier (booster de 5 cartes) gratuit toutes les 10 minutes, jusqu'à 10 en stock. L'intendance vend des dossiers thématiques.</li>
             <li>Chaque carte peut sortir dans une variante rare : holographique, expurgée, archive d'origine, brèche ou sceau O5.</li>

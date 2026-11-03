@@ -41,8 +41,10 @@ const ecouteurs = new Set<() => void>()
 /** L'état complet de la partie en cours, bonne réponse comprise : pour tester depuis la console de l'atelier */
 export const etatAtelier = () => (duelJcj ? { etat: duelJcj.etat, secret: duelJcj.secret } : [...parties.values()].at(-1)?.etat)
 
-const enHall = new URLSearchParams(location.search).get('mode') === 'hall'
+const enHall = ['hall', 'reglement'].includes(new URLSearchParams(location.search).get('mode') ?? '')
 const DEMO_HALL: Record<string, () => unknown> = {
+  achats_restants: () => (enHall ? { keter: 2, o5: 0, apollyon: 1 } : null),
+  recyclage_restant: () => (enHall ? 650 : null),
   tableau_duels: () => (enHall ? { elo: 1184, rang: 12, jcj: { victoires: 9, defaites: 6, nuls: 1 }, enLigne: 7, iaRestants: 3, jcjRestants: 5 } : null),
   missions: () =>
     enHall
