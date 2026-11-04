@@ -12,6 +12,16 @@ export interface Entree {
 export const JOURNAL: Entree[] = [
   {
     date: '2026-11-04',
+    titre: 'Déchirer un dossier',
+    points: [
+      'Découper le scellé ouvre maintenant une vraie fente en dents de scie derrière les ciseaux : le rabat se décolle, des fibres de papier s’envolent, et sur Android le téléphone vibre à chaque quart.',
+      'La lumière qui filtre par la fente trahit la meilleure fiche du dossier : blanche d’ordinaire, violette pour une Épique, dorée pour une Légendaire, à la couleur de la Mythique pour une Mythique.',
+      'Quand le scellé cède, le dossier tressaille, le rabat s’arrache et s’envole, un éclair de la même couleur jaillit, et les cinq fiches sortent de l’ouverture en éventail.',
+      'Sur iPhone, l’application installée a une barre d’état noire et opaque : l’en-tête ne passe plus sous l’heure et la Dynamic Island, et rien ne transparaît derrière lui.',
+    ],
+  },
+  {
+    date: '2026-11-04',
     titre: 'Le jeu sur téléphone, et en application',
     points: [
       'Plus aucun défilement de côté sur téléphone, même sur les plus petits écrans (320 px) : l’en-tête, le Rapport quotidien, les missions, la page Social, la circulaire et l’ouverture des dossiers tiennent dans la largeur.',

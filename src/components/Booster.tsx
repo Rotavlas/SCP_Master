@@ -30,6 +30,12 @@ const valeur = (t: CarteTiree) => t.carte.ra * 10 + (5 - PRESTIGE.indexOf(t.vari
 /** Niveau d'accréditation inscrit sur chaque dossier scellé */
 const NIVEAUX_DOSSIER: Record<string, number> = { standard: 1, scp: 2, contes: 2, personnel: 3, keter: 4, o5: 5, apollyon: 6 }
 
+/** Durée de l'ouverture du dossier une fois le scellé brisé (ms), en phase avec .paquet-ouvert */
+const DUREE_OUVERTURE = 1250
+
+/** Où les fibres de papier s'arrachent le long des pointillés (part de la longueur) */
+const FIBRES = [0.08, 0.17, 0.26, 0.34, 0.43, 0.52, 0.6, 0.69, 0.78, 0.86, 0.94]
+
 /** Durée de la cinématique d'une Légendaire (ms), en phase avec .protocole-legendaire */
 const DUREE_PROTOCOLE_LEGENDAIRE = 7900
 
@@ -196,11 +202,20 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
     prechargerTextes(tirage.cartes.map((t) => t.carte).filter((c) => c.ra >= 4))
   }, [base, tirage])
 
+  // La lumière qui filtre par la fente trahit la meilleure fiche du dossier : blanche, violette (Épique),
+  // dorée (Légendaire), ou à la couleur de la Mythique
+  const meilleure = tirage.cartes.reduce((m, t) => (t.carte.ra > m.carte.ra ? t : m), tirage.cartes[0])
+  const lueur = meilleure.carte.ra === 5 ? signature(meilleure.carte).couleur : meilleure.carte.ra >= 3 ? RARETES[meilleure.carte.ra].couleur : '#fff1c9'
+  // Le quart de déchirure déjà atteint : une vibration et un froissement à chaque nouveau quart
+  const quart = useRef(0)
+
   const dechirer = useCallback(() => {
     jouer.dechirure()
+    navigator.vibrate?.([12, 40, 28])
     setDechirure(1)
     setEtape('dechire')
-    setTimeout(() => setEtape('pile'), 900)
+    // Le rabat s'envole, l'éclair jaillit, les fiches sortent du dossier : puis la pile
+    setTimeout(() => setEtape('pile'), DUREE_OUVERTURE)
   }, [])
 
   function debutGlisse(e: PointerEvent<HTMLDivElement>) {
@@ -211,14 +226,24 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
 
   function glisser(e: PointerEvent<HTMLDivElement>) {
     if (!glisse.current) return
-    setDechirure(Math.max(0, Math.min(1, (e.clientX - glisse.current.x) / (glisse.current.largeur * 0.8))))
+    const d = Math.max(0, Math.min(1, (e.clientX - glisse.current.x) / (glisse.current.largeur * 0.8)))
+    const q = Math.floor(d * 4)
+    if (q > quart.current) {
+      quart.current = q
+      navigator.vibrate?.(8)
+      jouer.plume()
+    }
+    setDechirure(d)
   }
 
   function finGlisse() {
     if (!glisse.current) return
     glisse.current = null
     if (dechirure > 0.55) dechirer()
-    else setDechirure(0)
+    else {
+      quart.current = 0
+      setDechirure(0)
+    }
   }
 
   const reveler = useCallback(() => {
@@ -306,7 +331,14 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
         <p className="dossier-entete">{tirage.type.nom}</p>
         <div
           className={`paquet paquet-scelle dossier-scelle dossier-${tirage.type.id} ${etape === 'dechire' ? 'paquet-ouvert' : ''}`}
-          style={{ ['--paquet' as string]: tirage.type.couleur, ['--dechirure' as string]: dechirure } as CSSProperties}
+          style={
+            {
+              ['--paquet' as string]: tirage.type.couleur,
+              ['--dechirure' as string]: dechirure,
+              ['--lueur' as string]: lueur,
+              ['--intensite' as string]: 0.45 + meilleure.carte.ra * 0.11,
+            } as CSSProperties
+          }
           onPointerDown={debutGlisse}
           onPointerMove={glisser}
           onPointerUp={finGlisse}
@@ -317,9 +349,26 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
             <span className="dossier-devise">Sécuriser · Contenir · Protéger</span>
           </div>
           <div className="paquet-ligne" aria-hidden="true">
-            <span />
+            {/* La fente qui s'ouvre derrière les ciseaux, et la lumière qui en filtre */}
+            <span className="paquet-fente" />
+            {/* Des fibres de papier s'envolent à mesure qu'on découpe */}
+            {FIBRES.map((x, i) =>
+              x <= dechirure ? (
+                <i key={i} className="fibre" style={{ left: `${x * 100}%`, ['--dx' as string]: `${((i * 37) % 23) - 11}px` } as CSSProperties} />
+              ) : null,
+            )}
             <i className="dossier-ciseaux">✂</i>
           </div>
+          {/* Les fiches sortent par l'ouverture, en éventail */}
+          {etape === 'dechire' && (
+            <div className="fiches-sortantes" aria-hidden="true">
+              {tirage.cartes.map((_, i) => (
+                <span key={i} className="fiche-sortante" style={{ ['--i' as string]: i, ['--n' as string]: tirage.cartes.length } as CSSProperties}>
+                  <Logo taille={34} />
+                </span>
+              ))}
+            </div>
+          )}
           <div className="dossier-sceau" aria-hidden="true">
             <Logo taille={30} />
           </div>
