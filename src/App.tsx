@@ -1,5 +1,5 @@
 import { Analytics } from '@vercel/analytics/react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Accueil } from './components/Accueil'
 import { NombreAnime } from './components/Anime'
 import { Booster, retenirTirage, tirageRetenu, type Tirage } from './components/Booster'
@@ -23,11 +23,12 @@ import { oublierInvitation, repondreDefi, useDuelDemarre, useDuelsEntrants, useI
 import { totalNonLus, useConversations, useMessagesEntrants, usePresence, type Destinataire } from './state/social'
 import { modifier, notifier, useNotifications, useSauvegarde } from './state/sauvegarde'
 import { preparerTraducteur } from './state/traduction'
-import { useCloche, type Notification } from './state/notifications'
+import { useCloche, useNotificationsJeu, type Notification } from './state/notifications'
 import { Cloche, decrire, type OngletMarche } from './components/Cloche'
 import type { Ecran, Traductions } from './types'
 import { Reglement } from './components/Reglement'
 import { BandeauxPwa } from './components/Pwa'
+import { useEnLigneReseau } from './state/pwa'
 
 /** Les onglets ; sur téléphone, les quatre principaux restent dans la barre du bas, les autres passent sous « Plus ». */
 const ONGLETS: { id: Ecran; nom: string; icone: string; principal?: boolean }[] = [
@@ -64,6 +65,13 @@ export default function App() {
   // Sur téléphone : le menu des onglets secondaires
   const [menuPlus, setMenuPlus] = useState(false)
   const connecte = compte.statut === 'connecte' && !!s.agent
+  // Le réseau revient après un lancement hors ligne : on recharge, la session reprend d'elle-même
+  const reseau = useEnLigneReseau()
+  const avaitPerduLeReseau = useRef(!navigator.onLine)
+  useEffect(() => {
+    if (!reseau) avaitPerduLeReseau.current = true
+    else if (avaitPerduLeReseau.current && compte.statut !== 'connecte') location.reload()
+  }, [reseau, compte.statut])
   // Le dossier en cours est aussi gardé dans l'onglet : un rechargement en pleine ouverture le rouvre là où il en était
   const setTirage = useCallback(
     (t: Tirage | null) => {
@@ -79,6 +87,14 @@ export default function App() {
   useCloche(connecte, annoncer)
   useDuelsEntrants(connecte)
   const nonLus = totalNonLus(useConversations())
+  // Application installée : une pastille sur son icône (notifications, messages et offres en attente)
+  const { nonLues: notificationsNonLues } = useNotificationsJeu()
+  const pastille = connecte ? notificationsNonLues + nonLus + s.offresRecues : 0
+  useEffect(() => {
+    const n = navigator as Navigator & { setAppBadge?: (n?: number) => Promise<void>; clearAppBadge?: () => Promise<void> }
+    if (pastille > 0) void n.setAppBadge?.(pastille).catch(() => undefined)
+    else void n.clearAppBadge?.().catch(() => undefined)
+  }, [pastille])
   const [duelDemarre] = useDuelDemarre()
 
   useEffect(() => {
@@ -136,6 +152,20 @@ export default function App() {
       <div className="chargement">
         <Logo taille={72} />
         <p>Serveur non configuré : VITE_SUPABASE_URL et VITE_SUPABASE_PUBLISHABLE_KEY sont absents.</p>
+      </div>
+    )
+  }
+
+  // Lancée sans réseau, l'application le dit (et repart d'elle-même au retour de la connexion)
+  if (!reseau && compte.statut !== 'connecte') {
+    return (
+      <div className="chargement hors-ligne-lancement">
+        <Logo taille={72} />
+        <p>Hors ligne : le terminal ne joint pas la Fondation.</p>
+        <p className="discret">Le jeu se joue en ligne. Il reprendra dès le retour du réseau.</p>
+        <button className="btn" onClick={() => location.reload()}>
+          Réessayer
+        </button>
       </div>
     )
   }

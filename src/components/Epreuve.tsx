@@ -6,6 +6,8 @@ import { Pseudo } from './Badges'
 import { usePleinEcran } from './pleinEcran'
 import { QuestionAlteree } from './QuestionAlteree'
 import { Caviarde } from './Anime'
+import { partager } from '../state/pwa'
+import { notifier } from '../state/sauvegarde'
 
 /**
  * L'Épreuve de la semaine : dix questions, les mêmes pour tous les agents, une seule tentative. Le serveur tire les
@@ -227,6 +229,16 @@ export function EpreuvePartie({ onQuitter }: { onQuitter: () => void }) {
           <p className="gains">{vue.score} points</p>
           <p className="discret">Le classement se fige lundi, et les récompenses tombent avec. {RECOMPENSES}.</p>
           <div className="actions centre">
+            <button
+              className="btn btn-partager"
+              onClick={() =>
+                void partager(`Épreuve de la semaine sur SCP Masters : ${vue.score} points, ${vue.bonnes}/${vue.total} bonnes réponses. À vous.`).then(
+                  (r) => r === 'copie' && notifier('Texte copié : collez-le où vous voulez', 'succes'),
+                )
+              }
+            >
+              Partager mon score
+            </button>
             <button className="btn btn-principal" onClick={onQuitter}>
               Voir le classement
             </button>

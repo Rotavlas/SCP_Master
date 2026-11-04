@@ -101,3 +101,25 @@ export function useInstallation(): { possible: boolean; ios: boolean; installer:
 export function useEnLigneReseau(): boolean {
   return useSyncExternalStore(abonner, () => navigator.onLine)
 }
+
+/**
+ * Partager un tirage ou un score : la feuille de partage du téléphone (Messages, Discord…), sinon le texte copié dans
+ * le presse-papiers. Renvoie ce qui s'est passé, pour le dire au joueur.
+ */
+export async function partager(texte: string): Promise<'partage' | 'copie' | 'annule'> {
+  const url = location.origin
+  if (navigator.share) {
+    try {
+      await navigator.share({ title: 'SCP Masters', text: texte, url })
+      return 'partage'
+    } catch {
+      return 'annule'
+    }
+  }
+  try {
+    await navigator.clipboard.writeText(`${texte} ${url}`)
+    return 'copie'
+  } catch {
+    return 'annule'
+  }
+}

@@ -12132,3 +12132,106 @@ html {
     bottom: calc(72px + env(safe-area-inset-bottom, 0px));
   }
 }
+
+/* ---------- Téléphone : les fiches montent du bas, comme un panneau ---------- */
+@media (max-width: 760px) {
+  /* Le fond défile ; la fiche se cale en bas (marge automatique) sans jamais rogner son haut quand elle est longue */
+  .modale-fond {
+    display: flex;
+    flex-direction: column;
+    padding: max(24px, env(safe-area-inset-top, 0px)) 0 0;
+  }
+
+  .modale {
+    width: 100%;
+    margin-top: auto;
+    padding: 1.6rem 1rem calc(1.2rem + env(safe-area-inset-bottom, 0px));
+    border-bottom: 0;
+    border-radius: 18px 18px 0 0;
+    animation: feuille-monte 0.34s cubic-bezier(0.2, 0.9, 0.3, 1);
+  }
+
+  /* La poignée qu'on tire vers le bas */
+  .modale::before {
+    content: '';
+    position: absolute;
+    top: 0.55rem;
+    left: 50%;
+    width: 42px;
+    height: 4px;
+    margin-left: -21px;
+    border-radius: 2px;
+    background: var(--bord);
+  }
+
+  @keyframes feuille-monte {
+    from {
+      transform: translateY(100%);
+    }
+  }
+}
+
+/* ---------- Partage, invitation à installer, hors-ligne au lancement ---------- */
+.btn-partager::before {
+  content: '↗ ';
+}
+
+.invitation-installation {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem 1.2rem;
+  margin: 1rem 0 0;
+  padding: 0.9rem 1rem;
+  background: linear-gradient(135deg, rgba(240, 180, 60, 0.1), transparent 70%), var(--panneau);
+  border: 1px solid rgba(240, 180, 60, 0.45);
+  border-radius: 10px;
+}
+
+.invitation-installation p {
+  margin: 0.2rem 0 0;
+  font-size: 0.86rem;
+  color: var(--discret);
+}
+
+.invitation-installation .actions {
+  margin: 0;
+}
+
+.hors-ligne-lancement {
+  gap: 0.6rem;
+  padding: 0 24px;
+  text-align: center;
+}
+
+/* ---------- Tablette et petits écrans d'ordinateur : les onglets sur leur propre ligne ---------- */
+/* Entre le téléphone (barre du bas) et le grand écran, les dix onglets ne tiennent pas à côté du logo et du compte :
+   ils passent sous l'en-tête, en entier, au lieu d'être rognés dans une bande qui défile. */
+@media (min-width: 761px) and (max-width: 1599px) {
+  .barre {
+    flex-wrap: wrap;
+    row-gap: 0.2rem;
+    padding-bottom: 0;
+  }
+
+  .onglets {
+    order: 1;
+    flex: 1 0 100%;
+    margin: 0 -16px;
+    padding: 0 16px;
+    justify-content: space-between;
+  }
+
+  .onglets button {
+    padding: 0.5rem 0.55rem;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 959px) {
+  .onglets button {
+    padding: 0.5rem 0.3rem;
+    font-size: 0.72rem;
+    letter-spacing: 0.02em;
+  }
+}

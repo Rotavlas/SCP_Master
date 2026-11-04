@@ -12,6 +12,19 @@ export interface Entree {
 export const JOURNAL: Entree[] = [
   {
     date: '2026-11-04',
+    titre: 'L’application, encore plus à l’aise sur téléphone et tablette',
+    points: [
+      'Sur téléphone, la fiche d’une carte et le profil d’un agent montent du bas de l’écran comme un panneau : on les ferme en les faisant glisser vers le bas.',
+      'Sur iPhone, l’application installée s’ouvre sur un écran de démarrage aux couleurs de la Fondation au lieu d’une page blanche.',
+      'Pendant un duel, une Épreuve ou l’ouverture d’un dossier, l’écran ne se met plus en veille.',
+      'L’icône de l’application installée affiche une pastille quand des messages, des offres d’échange ou des notifications vous attendent.',
+      'Une Légendaire ou une Mythique sortie d’un dossier, ou votre score à l’Épreuve, se partagent d’un geste (Messages, Discord…) ; sur ordinateur, le texte est copié.',
+      'Le Terminal propose d’installer l’application (« Plus tard » la fait disparaître). Lancée sans réseau, elle le dit clairement et repart d’elle-même au retour de la connexion.',
+      'Sur tablette et petit écran d’ordinateur, les onglets passent sur leur propre ligne sous l’en-tête : tous visibles, plus aucun caché hors de l’écran.',
+    ],
+  },
+  {
+    date: '2026-11-04',
     titre: 'Déchirer un dossier',
     points: [
       'Découper le scellé ouvre maintenant une vraie fente en dents de scie derrière les ciseaux : le rabat se décolle, des fibres de papier s’envolent, et sur Android le téléphone vibre à chaque quart.',

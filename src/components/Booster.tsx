@@ -13,6 +13,7 @@ import { Carte } from './Carte'
 import { CompteARebours } from './CompteARebours'
 import { Logo } from './Logo'
 import { AnimationMythique, animationPleinEcran, dureeAnimation, prechargerMythique } from './AnimationsMythiques'
+import { partager } from '../state/pwa'
 
 export interface Tirage {
   id: number
@@ -482,6 +483,15 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
   }
 
   const nbNouvelles = tirage.cartes.filter((t) => tirage.nouvelles.has(t.carte.id)).length
+  // La plus belle fiche du dossier, à partager quand elle est Légendaire ou Mythique
+  const belle = tirage.cartes.reduce<CarteTiree | null>((m, t) => (t.carte.ra >= 4 && (!m || t.carte.ra > m.carte.ra) ? t : m), null)
+  async function partagerBelle() {
+    if (!belle) return
+    const c = belle.carte
+    const rang = c.ra === 5 ? `Mythique${belle.numero ? `, exemplaire n° ${belle.numero}/${EDITION_MYTHIQUE}` : ''}` : 'Légendaire'
+    const r = await partager(`Je viens d’ouvrir ${designation(c)} (${rang}) dans SCP Masters.`)
+    if (r === 'copie') notifier('Texte copié : collez-le où vous voulez', 'succes')
+  }
   const nbVariantes = tirage.cartes.filter((t) => t.variante !== 'std').length
   return (
     <section className="booster-ouverture">
@@ -500,6 +510,11 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
           </div>
         ))}
       </div>
+      {belle && (
+        <button className="btn btn-partager" onClick={() => void partagerBelle()}>
+          Partager {designation(belle.carte)}
+        </button>
+      )}
       <p className="bilan-texte">
         {nbNouvelles} nouvelle{nbNouvelles > 1 ? 's' : ''} fiche{nbNouvelles > 1 ? 's' : ''}
         {nbVariantes > 0 && ` · ${nbVariantes} variante${nbVariantes > 1 ? 's' : ''} rare${nbVariantes > 1 ? 's' : ''}`}

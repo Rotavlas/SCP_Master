@@ -13,6 +13,7 @@ import { Protocole } from './Booster'
 import { Carte } from './Carte'
 import { MarcheCarte } from './MarcheCarte'
 import { JaugeRecyclage } from './JaugeRecyclage'
+import { useGlisserPourFermer } from './feuille'
 
 export function CarteDetail({
   carte: source,
@@ -26,6 +27,8 @@ export function CarteDetail({
   voirMarche: (carte: TCarte) => void
 }) {
   const s = useSauvegarde()
+  // Sur téléphone, la fiche monte du bas et se ferme d'un glissement vers le bas
+  const feuille = useGlisserPourFermer(onFermer)
   const restantRecyclage = useRecyclageRestant()
   const editions = useEditionsMythiques()
   const numeros = useNumerosMythiques()
@@ -99,7 +102,7 @@ export function CarteDetail({
 
   return (
     <div className="modale-fond" onClick={onFermer}>
-      <div className="modale detail" onClick={(e) => e.stopPropagation()} role="dialog" aria-label={`Dossier ${carte.num ?? carte.nm}`}>
+      <div className="modale detail" ref={feuille} onClick={(e) => e.stopPropagation()} role="dialog" aria-label={`Dossier ${carte.num ?? carte.nm}`}>
         <button className="fermer" onClick={onFermer} aria-label="Fermer">
           ✕
         </button>

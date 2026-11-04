@@ -3,20 +3,11 @@ import type { Base } from '../data/catalogue'
 import { defier } from '../state/jcj'
 import { accreditation, useSauvegarde } from '../state/sauvegarde'
 import { BADGES, MAX_BADGES_AFFICHES } from '../data/badges'
-import {
-  bloquer,
-  choisirBadges,
-  debloquer,
-  demanderAmi,
-  majVitrine,
-  profilPublic,
-  repondreAmi,
-  retirerAmi,
-  type ProfilPublic,
-} from '../state/social'
+import { bloquer, choisirBadges, debloquer, demanderAmi, majVitrine, profilPublic, repondreAmi, retirerAmi, type ProfilPublic } from '../state/social'
 import type { Carte as TCarte } from '../types'
 import { BadgesAffiches, PastilleBadge } from './Badges'
 import { Carte } from './Carte'
+import { useGlisserPourFermer } from './feuille'
 
 const ROLES = { chef: 'Chef', officier: 'Officier', membre: 'Membre' }
 const ISSUES = { victoire: 'Victoire', defaite: 'Défaite', nul: 'Nul' }
@@ -32,6 +23,8 @@ interface Props {
 
 /** Profil public d'un agent : Elo, collection, vitrine, clan, derniers duels, et ce qu'on peut faire avec lui. */
 export function Profil({ pseudo, base, onFermer, ouvrirCarte, ecrire }: Props) {
+  // Sur téléphone, le profil monte du bas et se ferme d'un glissement vers le bas
+  const feuille = useGlisserPourFermer(onFermer)
   const s = useSauvegarde()
   const [p, setP] = useState<ProfilPublic | null>(null)
   const [occupe, setOccupe] = useState(false)
@@ -57,7 +50,7 @@ export function Profil({ pseudo, base, onFermer, ouvrirCarte, ecrire }: Props) {
 
   return (
     <div className="modale-fond" onClick={onFermer}>
-      <div className="modale profil" onClick={(e) => e.stopPropagation()} role="dialog" aria-label={`Profil de ${pseudo}`}>
+      <div className="modale profil" ref={feuille} onClick={(e) => e.stopPropagation()} role="dialog" aria-label={`Profil de ${pseudo}`}>
         <button className="fermer" onClick={onFermer} aria-label="Fermer">
           ✕
         </button>
@@ -67,7 +60,10 @@ export function Profil({ pseudo, base, onFermer, ouvrirCarte, ecrire }: Props) {
           <>
             <p className="dossier-entete">Dossier du personnel{p.clan && ` · [${p.clan.tag}] ${p.clan.nom}`}</p>
             <h2 className="profil-nom">
-              <span className={`point-presence ${p.enLigne ? 'en-ligne' : ''}`} title={p.enLigne ? 'En ligne' : `Vu le ${new Date(p.vuLe).toLocaleString('fr-FR')}`} />
+              <span
+                className={`point-presence ${p.enLigne ? 'en-ligne' : ''}`}
+                title={p.enLigne ? 'En ligne' : `Vu le ${new Date(p.vuLe).toLocaleString('fr-FR')}`}
+              />
               {p.pseudo}
               {p.clan && <span className="tag-clan">{p.clan.tag}</span>}
               <BadgesAffiches ids={p.badgesAffiches ?? []} />
@@ -91,7 +87,8 @@ export function Profil({ pseudo, base, onFermer, ouvrirCarte, ecrire }: Props) {
               <div>
                 <dt>Collection</dt>
                 <dd>
-                  {p.collection.toLocaleString('fr-FR')} fiches · {p.legendaires} légendaire{p.legendaires > 1 ? 's' : ''} ou mythique{p.legendaires > 1 ? 's' : ''}
+                  {p.collection.toLocaleString('fr-FR')} fiches · {p.legendaires} légendaire{p.legendaires > 1 ? 's' : ''} ou mythique
+                  {p.legendaires > 1 ? 's' : ''}
                 </dd>
               </div>
               <div>
@@ -101,7 +98,10 @@ export function Profil({ pseudo, base, onFermer, ouvrirCarte, ecrire }: Props) {
             </dl>
 
             <h3>
-              Badges <small className="discret">{(p.badges ?? []).length}/{Object.keys(BADGES).length - (p.badges?.includes('createur') ? 0 : 1)}</small>
+              Badges{' '}
+              <small className="discret">
+                {(p.badges ?? []).length}/{Object.keys(BADGES).length - (p.badges?.includes('createur') ? 0 : 1)}
+              </small>
             </h3>
             {p.moi && <p className="discret">Choisissez jusqu'à {MAX_BADGES_AFFICHES} badges à afficher à côté de votre pseudo.</p>}
             <ul className="grille-badges">
@@ -118,11 +118,7 @@ export function Profil({ pseudo, base, onFermer, ouvrirCarte, ecrire }: Props) {
                         className="badge-ligne"
                         disabled={!choisissable || occupe}
                         aria-pressed={p.moi ? affiche : undefined}
-                        onClick={() =>
-                          void agir(() =>
-                            choisirBadges(affiche ? p.badgesAffiches.filter((x) => x !== id) : [...(p.badgesAffiches ?? []), id]),
-                          )
-                        }
+                        onClick={() => void agir(() => choisirBadges(affiche ? p.badgesAffiches.filter((x) => x !== id) : [...(p.badgesAffiches ?? []), id]))}
                       >
                         <PastilleBadge id={id} inactif={!obtenu} />
                         <span>
@@ -147,7 +143,7 @@ export function Profil({ pseudo, base, onFermer, ouvrirCarte, ecrire }: Props) {
                   ))}
               </div>
             ) : (
-              <p className="discret">{p.moi ? 'Votre vitrine est vide.' : 'Cet agent n\'expose aucune carte.'}</p>
+              <p className="discret">{p.moi ? 'Votre vitrine est vide.' : "Cet agent n'expose aucune carte."}</p>
             )}
             {p.moi && (
               <div className="actions">
@@ -195,7 +191,12 @@ export function Profil({ pseudo, base, onFermer, ouvrirCarte, ecrire }: Props) {
                 )}
                 {p.relation === 'ami' && (
                   <>
-                    <button className="btn btn-principal" disabled={occupe || !p.enLigne} title={p.enLigne ? '' : 'Hors ligne'} onClick={() => void agir(() => defier(p.pseudo))}>
+                    <button
+                      className="btn btn-principal"
+                      disabled={occupe || !p.enLigne}
+                      title={p.enLigne ? '' : 'Hors ligne'}
+                      onClick={() => void agir(() => defier(p.pseudo))}
+                    >
                       Défier
                     </button>
                     <button className="btn" onClick={() => ecrire(p.pseudo)}>
