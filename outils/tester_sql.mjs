@@ -1329,4 +1329,130 @@ await test('variantes des Mythiques : Négatif et Épreuve d’artiste, numéro 
   await echoue(admin("insert into public.exemplaires (proprietaire, carte_id, variante, origine) values ($1, 'scp-173', 'inconnue', 'booster')", [R2]), /check/)
 })
 
+console.log('Registre, fusion, cote, collections, cosmétiques, notifications sur l’appareil')
+const P1 = '00000000-0000-0000-0000-0000000000c1'
+const P2 = '00000000-0000-0000-0000-0000000000c2'
+await db.exec(`insert into auth.users (id) values ('${P1}'), ('${P2}')`)
+await admin(`update public.profils set pseudo = 'Archiviste Un', credits = 20000 where id = '${P1}'`)
+await admin(`update public.profils set pseudo = 'Archiviste Deux', credits = 20000 where id = '${P2}'`)
+const MYTHIQUE = 'dr-clef-s-proposal'
+
+await test('registre : une Mythique garde ses détenteurs successifs, le prix payé aux enchères et sa destruction', async () => {
+  await admin("insert into public.exemplaires (proprietaire, carte_id, variante, numero_serie, origine) values ($1, $2, 'std', 44, 'booster')", [P1, MYTHIQUE])
+  await valeur(P1, "select public.mettre_aux_encheres($1, 'std', 1000, 60, 5000)", [MYTHIQUE])
+  const id = (await admin("select id from public.encheres where carte_id = $1 and statut = 'ouverte'", [MYTHIQUE])).rows[0].id
+  await valeur(P2, 'select public.encherir($1, 5000)', [id])
+  let r = await valeur(P1, 'select public.registre_mythique($1)', [MYTHIQUE])
+  const ex = r.find((x) => x.numero === 44)
+  assert.equal(ex.detenteur, 'Archiviste Deux')
+  assert.deepEqual(
+    ex.historique.map((h) => [h.pseudo, h.evenement, h.prix]),
+    [
+      ['Archiviste Un', 'tire', null],
+      ['Archiviste Deux', 'enchere', 5000],
+    ],
+  )
+  assert.equal(ex.moi, false)
+  await valeur(P2, "select public.bruler($1, 'std')", [MYTHIQUE])
+  r = await valeur(P2, 'select public.registre_mythique($1)', [MYTHIQUE])
+  const detruit = r.find((x) => x.numero === 44)
+  assert.equal(detruit.detenteur, null)
+  assert.equal(detruit.historique.at(-1).evenement, 'brule')
+  // Une carte qui n'est pas Mythique n'a pas de registre
+  assert.deepEqual(await valeur(P1, "select public.registre_mythique('scp-117')"), [])
+})
+
+await test('fusion : 5 doublons deviennent une variante, frais prélevés, l’exemplaire gardé reste, 3 par jour', async () => {
+  await donner(P1, 'scp-117', 6)
+  const avant = await credits(P1)
+  const r = await valeur(P1, "select public.fusionner('scp-117')")
+  assert.ok(['holo', 'exp', 'arch', 'breche', 'o5'].includes(r.variante), r.variante)
+  assert.equal(Number(r.frais), 25)
+  assert.equal(r.restantes, 2)
+  assert.equal(await credits(P1), avant - 25)
+  const reste = (await admin("select variante, origine from public.exemplaires where proprietaire = $1 and carte_id = 'scp-117'", [P1])).rows
+  assert.equal(reste.filter((x) => x.variante === 'std').length, 1)
+  assert.equal(reste.filter((x) => x.origine === 'fusion').length, 1)
+  // Plus assez de doublons : refusé ; une Mythique : refusée
+  await echoue(en(P1, "select public.fusionner('scp-117')"), /5 doublons/)
+  await echoue(en(P1, 'select public.fusionner($1)', [MYTHIQUE]), /Mythique/)
+  await donner(P1, 'scp-416', 11)
+  await valeur(P1, "select public.fusionner('scp-416')")
+  await valeur(P1, "select public.fusionner('scp-416')")
+  assert.equal(await valeur(P1, 'select public.fusions_restantes()'), 0)
+  await donner(P1, 'scp-1373', 6)
+  await echoue(en(P1, "select public.fusionner('scp-1373')"), /Trois fusions par jour/)
+  // Les variantes rares sortent moins souvent que les autres
+  const n = (await admin('select v, count(*)::int as n from (select prive.tirer_variante_fusion() as v from generate_series(1, 20000)) x group by v')).rows
+  const part = (v) => (n.find((x) => x.v === v)?.n ?? 0) / 20000
+  assert.ok(part('holo') > 0.45 && part('holo') < 0.58, `holo ${part('holo')}`)
+  assert.ok(part('o5') < 0.04, `o5 ${part('o5')}`)
+})
+
+await test('cote du marché : volume de la semaine et records', async () => {
+  const c = await valeur(P1, 'select public.cote_marche()')
+  assert.ok(c.ventes7 >= 1)
+  assert.ok(c.records.some((x) => x.carte === MYTHIQUE && Number(x.prix) === 5000))
+  for (const cle of ['hausses', 'baisses', 'echangees']) assert.ok(Array.isArray(c[cle]))
+})
+
+await test('cosmétiques : achat, port, et ce qui ne s’achète pas', async () => {
+  await admin(`update public.profils set credits = 1000 where id = '${P2}'`)
+  await echoue(en(P2, "select public.acheter_cosmetique('titre-agent-terrain')"), /Crédits insuffisants/)
+  await admin(`update public.profils set credits = 20000 where id = '${P2}'`)
+  const r = await valeur(P2, "select public.acheter_cosmetique('titre-agent-terrain')")
+  assert.equal(r.cosmetiques.portes.titre, 'titre-agent-terrain')
+  assert.equal(await credits(P2), 18500)
+  await echoue(en(P2, "select public.acheter_cosmetique('titre-agent-terrain')"), /déjà/)
+  await echoue(en(P2, "select public.acheter_cosmetique('titre-dieu-brise')"), /ne s'achète pas/)
+  await echoue(en(P2, "select public.porter_cosmetique('cadre', 'cadre-acier')"), /ne possédez pas/)
+  await echoue(en(P2, "select public.porter_cosmetique('cadre', 'titre-agent-terrain')"), /ne possédez pas/)
+  const p = await valeur(P1, "select public.profil_public('Archiviste Deux')")
+  assert.equal(p.titre, 'titre-agent-terrain')
+  const sans = await valeur(P2, "select public.porter_cosmetique('titre', null)")
+  assert.equal(sans.portes.titre, undefined)
+})
+
+await test('collections des Groupes d’intérêt : une collection complète se réclame contre un titre et un cadre', async () => {
+  const liste = await valeur(P1, 'select public.collections_gdi()')
+  assert.equal(liste.length, 12)
+  const eglise = liste.find((x) => x.id === 'dieu-brise')
+  assert.ok(eglise.cartes.includes('gdi:church-of-the-broken-god'))
+  await echoue(en(P1, "select public.reclamer_collection('dieu-brise')"), /incomplète/)
+  for (const c of eglise.cartes) await donner(P1, c)
+  const avant = await credits(P1)
+  const r = await valeur(P1, "select public.reclamer_collection('dieu-brise')")
+  assert.equal(r.collections.find((x) => x.id === 'dieu-brise').reclamee, true)
+  const possedes = r.cosmetiques.catalogue.filter((x) => x.possede).map((x) => x.id)
+  assert.deepEqual(possedes.sort(), ['cadre-dieu-brise', 'titre-dieu-brise'])
+  assert.equal(await credits(P1), avant, 'aucun crédit')
+  await echoue(en(P1, "select public.reclamer_collection('dieu-brise')"), /déjà réclamée/)
+  await valeur(P1, "select public.porter_cosmetique('cadre', 'cadre-dieu-brise')")
+})
+
+await test('notifications sur l’appareil : abonnement, file d’attente, messages privés regroupés, réservé au serveur', async () => {
+  const cle = 'B' + 'x'.repeat(86)
+  await valeur(P1, "select public.abonner_push('https://push.exemple.org/abc', $1, 'aaaaaaaaaaaaaaaaaaaaaa')", [cle])
+  await echoue(en(P1, "select public.abonner_push('http://non-securise', $1, 'aaaaaaaaaaaaaaaaaaaaaa')", [cle]), /invalide/)
+  // Un agent dans le jeu ne reçoit rien sur l'appareil : la cloche suffit
+  await admin(`update public.profils set vu_le = now() where id = '${P1}'`)
+  await admin(`select prive.notifier($1, 'echange_recu', '{"de": "Archiviste Deux"}')`, [P1])
+  assert.equal((await admin('select count(*)::int as n from prive.push_file')).rows[0].n, 0)
+  await admin(`update public.profils set vu_le = now() - interval '1 hour' where id = '${P1}'`)
+  await admin(`select prive.notifier($1, 'echange_recu', '{"de": "Archiviste Deux"}')`, [P1])
+  const salon = (await admin('select prive.salon_mp($1, $2) as s', [P1, P2])).rows[0].s
+  for (const texte of ['Salut', 'Tu es là ?'])
+    await admin("insert into public.messages (salon, auteur, pseudo, texte) values ($1, $2, 'Archiviste Deux', $3)", [salon, P2, texte])
+  await echoue(en(P1, 'select public.push_a_envoyer()'), /permission denied/)
+  const lot = await db.transaction(async (tx) => {
+    await tx.exec('set local role service_role')
+    return (await tx.query('select public.push_a_envoyer() as l')).rows[0].l
+  })
+  assert.deepEqual(lot.map((x) => x.type).sort(), ['echange_recu', 'message'])
+  assert.equal(lot[0].appareils[0].endpoint, 'https://push.exemple.org/abc')
+  assert.equal((await admin('select count(*)::int as n from prive.push_file')).rows[0].n, 0, 'la file est vidée')
+  await valeur(P1, "select public.desabonner_push('https://push.exemple.org/abc')")
+  assert.equal((await admin('select count(*)::int as n from prive.abonnements_push')).rows[0].n, 0)
+})
+
 console.log(`\n${reussis} tests réussis${process.exitCode ? ', des échecs' : ''}.`)

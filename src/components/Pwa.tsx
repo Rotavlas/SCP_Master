@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useEnLigneReseau, useInstallation, useMiseAJour } from '../state/pwa'
+import { activerPush, desactiverPush, useEtatPush } from '../state/push'
 
 /**
  * Les bandeaux de l'application installable : une nouvelle version prête à charger, et le réseau perdu (le jeu se
@@ -91,6 +92,74 @@ export function InvitationInstallation() {
             Installer
           </button>
         )}
+        <button className="btn" onClick={masquer}>
+          Plus tard
+        </button>
+      </div>
+    </div>
+  )
+}
+
+/** Dans le menu du compte : recevoir (ou non) les notifications sur cet appareil */
+export function NotificationsAppareil() {
+  const etat = useEtatPush()
+  const [occupe, setOccupe] = useState(false)
+  if (etat === 'indisponible') return null
+  if (etat === 'refuse')
+    return <p className="aide-installation">Notifications bloquées pour ce site : autorisez-les dans les réglages du navigateur pour les recevoir.</p>
+  return (
+    <button
+      className={`btn ${etat === 'actif' ? 'btn-actif' : ''}`}
+      role="menuitemcheckbox"
+      aria-checked={etat === 'actif'}
+      disabled={occupe}
+      onClick={async () => {
+        setOccupe(true)
+        if (etat === 'actif') await desactiverPush()
+        else await activerPush()
+        setOccupe(false)
+      }}
+    >
+      {etat === 'actif' ? '🔔 Notifications sur l’appareil : activées' : '🔕 Recevoir les notifications sur l’appareil'}
+    </button>
+  )
+}
+
+const CLE_INVITATION_PUSH = 'scp-masters:invitation-notifications'
+
+/**
+ * Sur le Terminal : proposer les notifications sur l'appareil (surenchère, offre d'échange, message…), une fois, tant
+ * qu'elles ne sont ni activées ni refusées. Sur iPhone, elles demandent l'application installée : l'invitation à
+ * installer passe d'abord.
+ */
+export function InvitationNotifications() {
+  const etat = useEtatPush()
+  const [masquee, setMasquee] = useState(() => {
+    try {
+      return localStorage.getItem(CLE_INVITATION_PUSH) === '1'
+    } catch {
+      return false
+    }
+  })
+  if (masquee || etat !== 'inactif') return null
+  const masquer = () => {
+    setMasquee(true)
+    try {
+      localStorage.setItem(CLE_INVITATION_PUSH, '1')
+    } catch {
+      // Navigation privée : elle reviendra à la prochaine visite
+    }
+  }
+  return (
+    <div className="invitation-installation invitation-notifications">
+      <div>
+        <strong>Ne ratez plus une surenchère</strong>
+        <p>Surenchère, offre d’échange, vente conclue, message privé : une notification sur cet appareil, même le jeu fermé.</p>
+      </div>
+      <div className="actions">
+        <button className="btn btn-principal" onClick={() => void activerPush().then((e) => e !== 'inactif' && masquer())}>
+          Activer
+        </button>
         <button className="btn" onClick={masquer}>
           Plus tard
         </button>

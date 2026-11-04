@@ -56,7 +56,11 @@ export default function App() {
   const [carteOuverte, setCarteOuverte] = useState<string | null>(null)
   // Carte à retrouver en ouvrant le marché depuis sa fiche
   const [rechercheMarche, setRechercheMarche] = useState('')
-  const [ongletMarche, setOngletMarche] = useState<OngletMarche>('encheres')
+  const [ongletMarche, setOngletMarche] = useState<OngletMarche>(() => {
+    // Une notification sur l'appareil ouvre directement l'onglet du marché concerné : /?ecran=marche&onglet=echanges
+    const o = new URLSearchParams(location.search).get('onglet')
+    return o === 'ventes' || o === 'echanges' || o === 'cote' ? o : 'encheres'
+  })
   const s = useSauvegarde()
   const compte = useCompte()
   const [profilOuvert, setProfilOuvert] = useState<string | null>(null)
@@ -116,6 +120,20 @@ export default function App() {
     setEcran(e)
     window.scrollTo({ top: 0 })
   }, [])
+  // Une notification touchée alors que le jeu est déjà ouvert : le service worker demande d'aller à son écran
+  useEffect(() => {
+    if (!('serviceWorker' in navigator)) return
+    const recevoir = (m: MessageEvent) => {
+      if (m.data?.type !== 'ouvrir' || typeof m.data.url !== 'string') return
+      const q = new URL(m.data.url, location.origin).searchParams
+      const e = q.get('ecran')
+      const o = q.get('onglet')
+      if (o === 'encheres' || o === 'ventes' || o === 'echanges' || o === 'cote') setOngletMarche(o)
+      if (ONGLETS.some((x) => x.id === e)) aller(e as Ecran)
+    }
+    navigator.serviceWorker.addEventListener('message', recevoir)
+    return () => navigator.serviceWorker.removeEventListener('message', recevoir)
+  }, [aller])
   // Au chargement : un dossier dont la révélation a été interrompue (page rechargée) reprend sur l'écran des dossiers
   const [repris, setRepris] = useState(false)
   useEffect(() => {

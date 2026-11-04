@@ -93,3 +93,41 @@ self.addEventListener('fetch', (e) => {
     e.respondWith(cacheEtMiseAJour(req))
   }
 })
+
+// ---------- Notifications sur l'appareil (Web Push, envoyées par serveur/push.ts) ----------
+self.addEventListener('push', (e) => {
+  let c = { titre: 'SCP Masters', texte: 'Du nouveau au terminal.', url: '/', etiquette: 'scp' }
+  try {
+    c = { ...c, ...e.data.json() }
+  } catch {
+    // Contenu illisible : la notification générique
+  }
+  e.waitUntil(
+    self.registration.showNotification(c.titre, {
+      body: c.texte,
+      tag: c.etiquette,
+      icon: '/icone-192.png',
+      badge: '/badge-96.png',
+      data: { url: c.url },
+      lang: 'fr',
+    }),
+  )
+})
+
+// Au toucher : l'application déjà ouverte va à l'écran concerné ; sinon, elle s'ouvre dessus
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close()
+  const url = (e.notification.data && e.notification.data.url) || '/'
+  e.waitUntil(
+    (async () => {
+      const fenetres = await self.clients.matchAll({ type: 'window', includeUncontrolled: true })
+      const ouverte = fenetres.find((f) => new URL(f.url).origin === self.location.origin)
+      if (ouverte) {
+        await ouverte.focus()
+        ouverte.postMessage({ type: 'ouvrir', url })
+        return
+      }
+      await self.clients.openWindow(url)
+    })(),
+  )
+})

@@ -267,6 +267,13 @@ export function Reglement() {
             de Paris).
           </span>
         </div>
+        <ul className="reglement-liste">
+          <li>
+            <strong>Fusion</strong> : 5 doublons standard d’une carte (en plus de l’exemplaire gardé) sont détruits pour 1 exemplaire dans une variante tirée au
+            hasard, au prorata des chances des dossiers (Holographique la moitié du temps, Sceau O5 environ 2 %). Frais : la valeur de recyclage des 5 doublons.{' '}
+            <strong>3 fusions par jour</strong>, jamais pour une Mythique.
+          </li>
+        </ul>
       </Article>
 
       <Article n={5} id="marche" titre="Marché">
@@ -277,6 +284,11 @@ export function Reglement() {
           <li>Durées de vente : {DUREES.map((d) => d.nom).join(', ')}.</li>
           <li>Une enchère dépasse la précédente d’au moins 5 %.</li>
           <li>Les échanges entre agents ne sont pas taxés.</li>
+          <li>Chaque Mythique a son registre public : détenteurs successifs de chaque exemplaire numéroté, prix payé aux enchères, destruction.</li>
+          <li>
+            Cosmétiques (titres, cadres de profil, couvertures de dossier) : de 1 500 à 60 000 ₵, achetés une fois, sans effet sur le jeu. Ces crédits sortent
+            du jeu. Ceux des Groupes d’intérêt ne s’achètent pas : ils récompensent une collection complète, sans aucun crédit.
+          </li>
         </ul>
       </Article>
 

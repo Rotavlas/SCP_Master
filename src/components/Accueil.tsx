@@ -14,7 +14,7 @@ import { Rapport } from './Rapport'
 import { Section } from './Section'
 import { Caviarde, NombreAnime, peuDAnimations } from './Anime'
 import { useNumerosMythiques } from '../state/enLigne'
-import { InvitationInstallation } from './Pwa'
+import { InvitationInstallation, InvitationNotifications } from './Pwa'
 
 interface Props {
   base: Base
@@ -138,6 +138,7 @@ export function Accueil({ base, aller, ouvrirCarte, allerClan }: Props) {
       </div>
 
       <InvitationInstallation />
+      <InvitationNotifications />
 
       <div className="tuiles">
         <button className="tuile tuile-booster" onClick={() => aller('booster')}>

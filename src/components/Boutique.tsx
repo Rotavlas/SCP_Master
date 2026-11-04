@@ -10,6 +10,7 @@ import { tirer, type Tirage } from './Booster'
 import { BoutonConfirme } from './Confirmer'
 import { Logo } from './Logo'
 import { JaugeRecyclage } from './JaugeRecyclage'
+import { Cosmetiques } from './Cosmetiques'
 
 export function Boutique({ base, ouvrir, voirReglement }: { base: Base; ouvrir: (t: Tirage) => void; voirReglement: () => void }) {
   const s = useSauvegarde()
@@ -104,6 +105,8 @@ export function Boutique({ base, ouvrir, voirReglement }: { base: Base; ouvrir: 
           ))}
         </ul>
       </div>
+
+      <Cosmetiques />
 
       <div className="encart">
         <h3>Gagner des crédits</h3>

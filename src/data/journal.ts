@@ -11,6 +11,18 @@ export interface Entree {
 
 export const JOURNAL: Entree[] = [
   {
+    date: '2026-11-05',
+    titre: 'Registre des Mythiques, fusion, cote, collections, cosmétiques et notifications',
+    points: [
+      'Chaque Mythique a son registre : la fiche d’une Mythique montre tous ses exemplaires numérotés sortis, leur détenteur actuel et toute leur histoire (tiré d’un dossier par qui, racheté aux enchères à quel prix, échangé, détruit).',
+      'Fusion : 5 doublons d’une même carte (en plus de celui qu’on garde) deviennent un exemplaire dans une variante tirée au hasard. Holographique le plus souvent, Sceau O5 presque jamais. Frais : la valeur de recyclage des 5 doublons, 3 fusions par jour, jamais pour une Mythique.',
+      'Le marché a sa cote : volume de la semaine, plus fortes hausses et baisses, cartes les plus échangées et records du mois.',
+      'Douze collections des Groupes d’intérêt dans les Archives (la Main du Serpent, l’Insurrection du Chaos, MC&D, la Coalition occulte mondiale…) : le Groupe et tous ses documents. Complète, une collection rapporte un titre et un cadre de profil introuvables ailleurs.',
+      'Cosmétiques à l’Intendance : titres sous votre pseudo, cadres de profil, couvertures pour les dossiers que vous ouvrez. Sans aucun effet sur le jeu.',
+      'Notifications sur l’appareil : surenchère, offre d’échange, vente conclue, message privé… arrivent même le jeu fermé. À activer depuis le Terminal ou le menu du compte (sur iPhone, dans l’application installée).',
+    ],
+  },
+  {
     date: '2026-11-04',
     titre: 'L’application, encore plus à l’aise sur téléphone et tablette',
     points: [

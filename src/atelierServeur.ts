@@ -203,6 +203,117 @@ const DEMO_HALL: Record<string, () => unknown> = {
           precedent: { semaine: '2026-10-26', cible: 'scp-106', pv: 850, degats: 900, vaincue: true, moi: 120, reclame: false, contributeurs: [] },
         }
       : null,
+  // Registre, fusion, cote, collections et cosmétiques (?mode=app)
+  profil_public: () =>
+    enHall
+      ? {
+          pseudo: 'Agent atelier',
+          titre: 'titre-dieu-brise',
+          cadre: new URLSearchParams(location.search).get('cadre') ?? 'cadre-dieu-brise',
+          xp: 3400,
+          elo: 1184,
+          rangElo: 12,
+          credits: 2350,
+          jcj: { victoires: 9, defaites: 6, nuls: 1 },
+          stats: { duels: 30, victoires: 21 },
+          enLigne: true,
+          vuLe: new Date().toISOString(),
+          creeLe: '2026-10-26T10:00:00Z',
+          moi: true,
+          collection: 82,
+          legendaires: 6,
+          badges: ['premier-dossier', 'legende'],
+          badgesAffiches: ['legende'],
+          vitrine: [],
+          clan: null,
+          relation: null,
+          duels: [],
+        }
+      : null,
+  fusions_restantes: () => (enHall ? 2 : null),
+  registre_mythique: () =>
+    enHall
+      ? [
+          {
+            numero: 3,
+            variante: 'std',
+            detenteur: 'Agent atelier',
+            moi: true,
+            historique: [
+              { pseudo: 'Dr Clef', evenement: 'tire', prix: null, le: '2026-10-29T10:00:00Z' },
+              { pseudo: 'Agent atelier', evenement: 'enchere', prix: 18500, le: '2026-11-02T18:40:00Z' },
+            ],
+          },
+          {
+            numero: 11,
+            variante: 'negatif',
+            detenteur: 'Bright',
+            moi: false,
+            historique: [{ pseudo: 'Bright', evenement: 'tire', prix: null, le: '2026-11-01T09:12:00Z' }],
+          },
+          {
+            numero: 17,
+            variante: 'std',
+            detenteur: null,
+            moi: false,
+            historique: [
+              { pseudo: 'Kondraki', evenement: 'tire', prix: null, le: '2026-11-01T21:00:00Z' },
+              { pseudo: 'Kondraki', evenement: 'brule', prix: null, le: '2026-11-03T08:30:00Z' },
+            ],
+          },
+        ]
+      : null,
+  cote_marche: () =>
+    enHall
+      ? {
+          ventes7: 142,
+          credits7: 386400,
+          ventesAvant: 118,
+          creditsAvant: 352000,
+          hausses: [
+            { carte: 'scp-096', variante: 'std', prix: 420, avant: 260, pct: 62 },
+            { carte: 'scp-682', variante: 'holo', prix: 2600, avant: 1900, pct: 37 },
+          ],
+          baisses: [{ carte: 'scp-049', variante: 'std', prix: 140, avant: 210, pct: -33 }],
+          echangees: [
+            { carte: 'scp-173', variante: 'std', ventes: 14, prix: 320 },
+            { carte: 'scp-131', variante: 'std', ventes: 9, prix: 45 },
+          ],
+          records: [
+            { carte: 'scp-999', variante: 'o5', prix: 48000, le: '2026-11-03T20:00:00Z' },
+            { carte: 'scp-682', variante: 'std', prix: 9500, le: '2026-10-21T20:00:00Z' },
+          ],
+        }
+      : null,
+  cosmetiques: () =>
+    enHall
+      ? {
+          catalogue: [
+            { id: 'titre-agent-terrain', type: 'titre', prix: 1500, possede: true },
+            { id: 'titre-chercheur', type: 'titre', prix: 3000, possede: false },
+            { id: 'titre-directeur', type: 'titre', prix: 25000, possede: false },
+            { id: 'titre-dieu-brise', type: 'titre', prix: null, possede: true },
+            { id: 'cadre-acier', type: 'cadre', prix: 5000, possede: false },
+            { id: 'cadre-laiton', type: 'cadre', prix: 10000, possede: false },
+            { id: 'cadre-confinement', type: 'cadre', prix: 20000, possede: false },
+            { id: 'cadre-sceau-or', type: 'cadre', prix: 50000, possede: false },
+            { id: 'cadre-dieu-brise', type: 'cadre', prix: null, possede: true },
+            { id: 'couv-quadrille', type: 'couverture', prix: 5000, possede: false },
+            { id: 'couv-ruban-keter', type: 'couverture', prix: 8000, possede: true },
+            { id: 'couv-marbre', type: 'couverture', prix: 15000, possede: false },
+            { id: 'couv-dorure-o5', type: 'couverture', prix: 40000, possede: false },
+          ],
+          portes: { titre: 'titre-dieu-brise', cadre: 'cadre-dieu-brise', couverture: 'couv-ruban-keter' },
+        }
+      : null,
+  collections_gdi: () =>
+    enHall
+      ? [
+          { id: 'dieu-brise', titre: 'L’Église du Dieu Brisé', cartes: Array.from({ length: 19 }, (_, i) => `x-${i}`), possedees: 19, reclamee: true },
+          { id: 'insurrection', titre: 'L’Insurrection du Chaos', cartes: Array.from({ length: 24 }, (_, i) => `y-${i}`), possedees: 24, reclamee: false },
+          { id: 'main-du-serpent', titre: 'La Main du Serpent', cartes: Array.from({ length: 75 }, (_, i) => `z-${i}`), possedees: 12, reclamee: false },
+        ]
+      : null,
 }
 
 export function brancherServeurLocal(equipe: string[] = EQUIPE_DEMO) {

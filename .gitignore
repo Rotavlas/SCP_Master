@@ -9,3 +9,6 @@ dist
 outils/.cache
 # Catalogue léger, produit par outils/catalogue_leger.mjs
 public/data/leger
+
+# Clé privée VAPID des notifications sur l'appareil (secret VAPID_JWK de la fonction Edge) : jamais publiée
+supabase/.vapid.jwk.json

@@ -23,6 +23,7 @@ const env = {
   cleService: cleService(),
   site,
   origines: [site, 'http://localhost:5191'],
+  vapid: Deno.env.get('VAPID_JWK'),
 }
 
 Deno.serve((req) => traiter(req, env))

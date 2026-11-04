@@ -3007,6 +3007,243 @@ async function traiterReco(env, idJoueur, action, corps, maintenant) {
 		default: return repondre$1(env, idJoueur, corps, maintenant);
 	}
 }
+// serveur/push.ts
+/**
+* Notifications sur l'appareil (Web Push) : la file d'attente remplie par la base (prive.push_file) part vers les
+* téléphones et ordinateurs abonnés. Appelée chaque minute par pg_cron et pg_net (action « push »), seulement quand la
+* file n'est pas vide ; sans effet si on l'appelle à vide, d'où l'absence de jeton.
+*
+* Le chiffrement suit les normes du Web Push (RFC 8291, contenu « aes128gcm ») et l'identification du serveur, VAPID
+* (RFC 8292), avec la seule WebCrypto : aucune bibliothèque, rien à installer sur la fonction Edge.
+*/
+const credits = (n) => `${Number(n ?? 0).toLocaleString("fr-FR")} ₵`;
+const rang = (r) => `${r ?? "?"}${r === 1 ? "er" : "e"}`;
+function contenu(type, d, b) {
+	const c = typeof d.carte === "string" ? b?.parId.get(d.carte) : void 0;
+	const nom = c ? designation(c) : "une carte";
+	const variante = typeof d.variante === "string" && d.variante !== "std" ? " (variante)" : "";
+	const marche = (onglet) => `/?ecran=marche&onglet=${onglet}`;
+	switch (type) {
+		case "souhait_en_vente": return {
+			titre: "Carte souhaitée en vente",
+			texte: `${nom}${variante} est en vente à partir de ${credits(d.prix)}.`,
+			url: marche("encheres"),
+			etiquette: `souhait:${d.enchere}`
+		};
+		case "surencheri": return {
+			titre: "Vous êtes surenchéri",
+			texte: `${d.par ?? "Un agent"} mise ${credits(d.mise)} sur ${nom}.`,
+			url: marche("encheres"),
+			etiquette: `enchere:${d.enchere}`
+		};
+		case "enchere_gagnee": return {
+			titre: "Enchère remportée",
+			texte: `${nom}${variante} est à vous pour ${credits(d.prix)}.`,
+			url: "/?ecran=collection",
+			etiquette: `enchere:${d.enchere}`
+		};
+		case "vente_conclue": return {
+			titre: "Vente conclue",
+			texte: `${nom} vendue à ${d.acheteur ?? "un agent"} pour ${credits(d.prix)}.`,
+			url: marche("ventes"),
+			etiquette: `vente:${d.enchere}`
+		};
+		case "vente_invendue": return {
+			titre: "Vente sans preneur",
+			texte: `${nom} revient dans vos archives.`,
+			url: marche("ventes"),
+			etiquette: `vente:${d.enchere}`
+		};
+		case "echange_recu": return {
+			titre: "Proposition d’échange",
+			texte: `${d.de ?? "Un agent"} vous propose un échange.`,
+			url: marche("echanges"),
+			etiquette: `echange:${d.offre}`
+		};
+		case "echange_accepte": return {
+			titre: "Échange accepté",
+			texte: `${d.avec ?? "L’agent"} a accepté votre échange.`,
+			url: marche("echanges"),
+			etiquette: `echange:${d.offre}`
+		};
+		case "echange_refuse": return {
+			titre: "Échange refusé",
+			texte: `${d.avec ?? "L’agent"} a refusé votre échange.`,
+			url: marche("echanges"),
+			etiquette: `echange:${d.offre}`
+		};
+		case "epreuve_resultat": return {
+			titre: "Épreuve de la semaine",
+			texte: `${rang(d.rang)} sur ${d.participants ?? "?"} avec ${d.score ?? 0} points : +${credits(d.credits)}.`,
+			url: "/?ecran=duel",
+			etiquette: "epreuve"
+		};
+		case "saison_resultat": return {
+			titre: "Saison classée close",
+			texte: `Vous finissez ${rang(d.rang)} : +${credits(d.credits)}.`,
+			url: "/?ecran=classement",
+			etiquette: "saison"
+		};
+		case "raid_vaincu": return {
+			titre: "Raid réussi",
+			texte: `${nom} est reconfiné. Réclamez votre part dans la page du clan.`,
+			url: "/?ecran=social",
+			etiquette: "raid"
+		};
+		case "message": return {
+			titre: `Message de ${d.de ?? "un agent"}`,
+			texte: String(d.texte ?? ""),
+			url: "/?ecran=social",
+			etiquette: `message:${d.de}`
+		};
+		default: return {
+			titre: "SCP Masters",
+			texte: "Du nouveau au terminal.",
+			url: "/",
+			etiquette: type
+		};
+	}
+}
+const encodeur = new TextEncoder();
+function enBase64Url(octets) {
+	let s = "";
+	for (const o of octets) s += String.fromCharCode(o);
+	return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+}
+function depuisBase64Url(texte) {
+	const b = atob(texte.replace(/-/g, "+").replace(/_/g, "/") + "=".repeat((4 - texte.length % 4) % 4));
+	return Uint8Array.from(b, (c) => c.charCodeAt(0));
+}
+function concat(...parties) {
+	const r = new Uint8Array(parties.reduce((n, p) => n + p.length, 0));
+	let i = 0;
+	for (const p of parties) {
+		r.set(p, i);
+		i += p.length;
+	}
+	return r;
+}
+async function hmac(cle, donnees) {
+	const k = await crypto.subtle.importKey("raw", cle, {
+		name: "HMAC",
+		hash: "SHA-256"
+	}, false, ["sign"]);
+	return new Uint8Array(await crypto.subtle.sign("HMAC", k, donnees));
+}
+/** Chiffre le contenu pour un appareil : en-tête (sel, taille d'enregistrement, clé publique éphémère) puis le texte chiffré */
+async function chiffrer(texte, appareil, sel = crypto.getRandomValues(/* @__PURE__ */ new Uint8Array(16))) {
+	const cleAppareil = depuisBase64Url(appareil.p256dh);
+	const secret = depuisBase64Url(appareil.auth);
+	const ephemere = await crypto.subtle.generateKey({
+		name: "ECDH",
+		namedCurve: "P-256"
+	}, true, ["deriveBits"]);
+	const publiqueEphemere = new Uint8Array(await crypto.subtle.exportKey("raw", ephemere.publicKey));
+	const publiqueAppareil = await crypto.subtle.importKey("raw", cleAppareil, {
+		name: "ECDH",
+		namedCurve: "P-256"
+	}, false, []);
+	const prk = await hmac(sel, await hmac(await hmac(secret, new Uint8Array(await crypto.subtle.deriveBits({
+		name: "ECDH",
+		public: publiqueAppareil
+	}, ephemere.privateKey, 256))), concat(encodeur.encode("WebPush: info\0"), cleAppareil, publiqueEphemere, new Uint8Array([1]))));
+	const cek = (await hmac(prk, concat(encodeur.encode("Content-Encoding: aes128gcm\0"), new Uint8Array([1])))).slice(0, 16);
+	const nonce = (await hmac(prk, concat(encodeur.encode("Content-Encoding: nonce\0"), new Uint8Array([1])))).slice(0, 12);
+	const cle = await crypto.subtle.importKey("raw", cek, "AES-GCM", false, ["encrypt"]);
+	const clair = concat(encodeur.encode(texte), new Uint8Array([2]));
+	const chiffre = new Uint8Array(await crypto.subtle.encrypt({
+		name: "AES-GCM",
+		iv: nonce
+	}, cle, clair));
+	const entete = new Uint8Array(21 + publiqueEphemere.length);
+	entete.set(sel, 0);
+	new DataView(entete.buffer).setUint32(16, 4096);
+	entete[20] = publiqueEphemere.length;
+	entete.set(publiqueEphemere, 21);
+	return concat(entete, chiffre);
+}
+async function lireCleVapid(jwk) {
+	const j = JSON.parse(jwk);
+	return {
+		privee: await crypto.subtle.importKey("jwk", {
+			...j,
+			key_ops: ["sign"]
+		}, {
+			name: "ECDSA",
+			namedCurve: "P-256"
+		}, false, ["sign"]),
+		publique: enBase64Url(concat(new Uint8Array([4]), depuisBase64Url(j.x ?? ""), depuisBase64Url(j.y ?? "")))
+	};
+}
+async function enteteVapid(endpoint, cle, sujet) {
+	const json = (o) => enBase64Url(encodeur.encode(JSON.stringify(o)));
+	const corps = `${json({
+		typ: "JWT",
+		alg: "ES256"
+	})}.${json({
+		aud: new URL(endpoint).origin,
+		exp: Math.floor(Date.now() / 1e3) + 43200,
+		sub: sujet
+	})}`;
+	return `vapid t=${corps}.${enBase64Url(new Uint8Array(await crypto.subtle.sign({
+		name: "ECDSA",
+		hash: "SHA-256"
+	}, cle.privee, encodeur.encode(corps))))}, k=${cle.publique}`;
+}
+/** Envoie à un appareil ; renvoie le statut du service de notifications (201 : accepté ; 404 ou 410 : désabonné) */
+async function envoyer(appareil, c, cle, sujet) {
+	const corps = await chiffrer(JSON.stringify(c), appareil);
+	const r = await fetch(appareil.endpoint, {
+		method: "POST",
+		headers: {
+			Authorization: await enteteVapid(appareil.endpoint, cle, sujet),
+			"Content-Encoding": "aes128gcm",
+			"Content-Type": "application/octet-stream",
+			TTL: "86400",
+			Urgency: "normal",
+			Topic: c.etiquette.replace(/[^A-Za-z0-9_-]/g, "").slice(0, 32) || "scp"
+		},
+		body: corps
+	});
+	await r.body?.cancel().catch(() => void 0);
+	return r.status;
+}
+let cleVapid = null;
+async function traiterPush(env) {
+	if (!env.vapid) return {
+		envoyes: 0,
+		echecs: 0,
+		desabonnes: 0
+	};
+	cleVapid ??= lireCleVapid(env.vapid);
+	const cle = await cleVapid;
+	const lot = await rpc(env, "push_a_envoyer", {});
+	if (!lot.length) return {
+		envoyes: 0,
+		echecs: 0,
+		desabonnes: 0
+	};
+	const b = await base(env, "vf").catch(() => null);
+	const desabonnes = [];
+	let envoyes = 0;
+	let echecs = 0;
+	await Promise.all(lot.flatMap((e) => e.appareils.map(async (a) => {
+		try {
+			const statut = await envoyer(a, contenu(e.type, e.donnees, b), cle, env.site);
+			if (statut === 404 || statut === 410) desabonnes.push(a.endpoint);
+			else if (statut >= 200 && statut < 300) envoyes++;
+			else echecs++;
+		} catch {
+			echecs++;
+		}
+	})));
+	if (desabonnes.length) await rpc(env, "push_expires", { p_endpoints: desabonnes });
+	return {
+		envoyes,
+		echecs,
+		desabonnes: desabonnes.length
+	};
+}
 // serveur/duel.ts
 /**
 * Duels contre l'IA, arbitrés par le serveur (fonction Edge « duel ») ; les duels entre joueurs passent par
@@ -3235,9 +3472,10 @@ async function traiter(req, env) {
 	try {
 		if (req.method !== "POST") throw new Erreur(405, "Méthode non autorisée");
 		if (!env.url || !env.cleService) throw new Erreur(500, "Configuration du serveur incomplète");
-		const idJoueur = await joueur(env, req);
 		const corps = await req.json().catch(() => null);
 		if (!corps || typeof corps !== "object") throw new Erreur(400, "Requête invalide");
+		if (corps.action === "push") return repondreJson(200, await traiterPush(env));
+		const idJoueur = await joueur(env, req);
 		const maintenant = (env.maintenant ?? Date.now)();
 		switch (corps.action) {
 			case "debuter": return repondreJson(200, await debuter(env, idJoueur, corps));
@@ -3273,6 +3511,7 @@ const env = {
 	url: Deno.env.get("SUPABASE_URL") ?? "",
 	cleService: cleService(),
 	site,
-	origines: [site, "http://localhost:5191"]
+	origines: [site, "http://localhost:5191"],
+	vapid: Deno.env.get("VAPID_JWK")
 };
 Deno.serve((req) => traiter(req, env));

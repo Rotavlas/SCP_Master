@@ -4,7 +4,7 @@ import { useSauvegarde } from '../state/sauvegarde'
 import { useBadgesDe } from '../state/social'
 import { BadgesAffiches } from './Badges'
 import { Logo } from './Logo'
-import { InstallerApplication } from './Pwa'
+import { InstallerApplication, NotificationsAppareil } from './Pwa'
 
 const NOMS_FOURNISSEURS = { discord: 'Discord', google: 'Google', github: 'GitHub' } as const
 
@@ -53,6 +53,7 @@ export function BoutonCompte({ ouvrirProfil }: { ouvrirProfil: (pseudo: string) 
             </button>
           )}
           <InstallerApplication />
+          <NotificationsAppareil />
           <button
             className="btn"
             role="menuitem"

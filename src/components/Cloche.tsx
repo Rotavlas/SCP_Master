@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { designation, type Base } from '../data/catalogue'
 import { lireNotifications, useNotificationsJeu, type Notification } from '../state/notifications'
 
-export type OngletMarche = 'encheres' | 'ventes' | 'echanges'
+export type OngletMarche = 'encheres' | 'ventes' | 'echanges' | 'cote'
 
 const credits = (n?: number) => `${Number(n ?? 0).toLocaleString('fr-FR')} ₵`
 

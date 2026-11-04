@@ -15,6 +15,8 @@ const sorties = [
   ['src/engine/effets.ts', 'outils/.cache/effets.mjs'],
   // Le quiz classique entre joueurs, pour tester les duels commencés avant le Reconfinement
   ['serveur/jcj.ts', 'outils/.cache/jcj.mjs'],
+  // Le chiffrement des notifications sur l'appareil, pour outils/tester_push.mjs
+  ['serveur/push.ts', 'outils/.cache/push.mjs'],
 ]
 for (const [entree, fichier] of sorties) {
   await build({

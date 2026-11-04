@@ -57,6 +57,9 @@ export type Relation = 'ami' | 'demande_envoyee' | 'demande_recue' | 'bloque' | 
 
 export interface ProfilPublic {
   pseudo: string
+  /** Cosmétiques portés : titre et cadre de profil (src/data/cosmetiques.ts) */
+  titre?: string | null
+  cadre?: string | null
   xp: number
   elo: number
   rangElo: number

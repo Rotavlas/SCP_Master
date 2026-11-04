@@ -14,6 +14,8 @@ export interface Environnement {
   site: string
   /** Origines autorisées à appeler la fonction depuis un navigateur */
   origines: string[]
+  /** Clé VAPID des notifications sur l'appareil (JWK privée P-256, secret VAPID_JWK) */
+  vapid?: string
   maintenant?: () => number
 }
 

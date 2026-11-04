@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react'
+import { useCallback, useEffect, useState, type CSSProperties } from 'react'
 import type { Base } from '../data/catalogue'
 import { defier } from '../state/jcj'
 import { accreditation, useSauvegarde } from '../state/sauvegarde'
@@ -8,6 +8,7 @@ import type { Carte as TCarte } from '../types'
 import { BadgesAffiches, PastilleBadge } from './Badges'
 import { Carte } from './Carte'
 import { useGlisserPourFermer } from './feuille'
+import { COSMETIQUES, styleCadre } from '../data/cosmetiques'
 
 const ROLES = { chef: 'Chef', officier: 'Officier', membre: 'Membre' }
 const ISSUES = { victoire: 'Victoire', defaite: 'Défaite', nul: 'Nul' }
@@ -46,6 +47,8 @@ export function Profil({ pseudo, base, onFermer, ouvrirCarte, ecrire }: Props) {
   }
 
   const acc = p ? accreditation(p.xp) : null
+  const { className: classeCadre, style: styleDuCadre } = styleCadre(p?.cadre)
+  const cadre = { className: `profil-entete ${classeCadre}`, style: styleDuCadre as CSSProperties | undefined }
   const totalJcj = p ? p.jcj.victoires + p.jcj.defaites + p.jcj.nuls : 0
 
   return (
@@ -58,20 +61,27 @@ export function Profil({ pseudo, base, onFermer, ouvrirCarte, ecrire }: Props) {
           <p className="discret">Consultation du dossier personnel…</p>
         ) : (
           <>
-            <p className="dossier-entete">Dossier du personnel{p.clan && ` · [${p.clan.tag}] ${p.clan.nom}`}</p>
-            <h2 className="profil-nom">
-              <span
-                className={`point-presence ${p.enLigne ? 'en-ligne' : ''}`}
-                title={p.enLigne ? 'En ligne' : `Vu le ${new Date(p.vuLe).toLocaleString('fr-FR')}`}
-              />
-              {p.pseudo}
-              {p.clan && <span className="tag-clan">{p.clan.tag}</span>}
-              <BadgesAffiches ids={p.badgesAffiches ?? []} />
-            </h2>
-            <p className="discret">
-              {acc?.nom} · agent depuis le {new Date(p.creeLe).toLocaleDateString('fr-FR')}
-              {p.clan && ` · ${ROLES[p.clan.role]} de ${p.clan.nom}`}
-            </p>
+            <div {...cadre}>
+              <p className="dossier-entete">Dossier du personnel{p.clan && ` · [${p.clan.tag}] ${p.clan.nom}`}</p>
+              <h2 className="profil-nom">
+                <span
+                  className={`point-presence ${p.enLigne ? 'en-ligne' : ''}`}
+                  title={p.enLigne ? 'En ligne' : `Vu le ${new Date(p.vuLe).toLocaleString('fr-FR')}`}
+                />
+                {p.pseudo}
+                {p.clan && <span className="tag-clan">{p.clan.tag}</span>}
+                <BadgesAffiches ids={p.badgesAffiches ?? []} />
+              </h2>
+              {p.titre && COSMETIQUES[p.titre] && (
+                <p className="profil-titre" style={{ ['--titre' as string]: COSMETIQUES[p.titre].couleur }}>
+                  {COSMETIQUES[p.titre].nom}
+                </p>
+              )}
+              <p className="discret">
+                {acc?.nom} · agent depuis le {new Date(p.creeLe).toLocaleDateString('fr-FR')}
+                {p.clan && ` · ${ROLES[p.clan.role]} de ${p.clan.nom}`}
+              </p>
+            </div>
 
             <dl className="fiche profil-fiche">
               <div>

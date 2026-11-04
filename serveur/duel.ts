@@ -15,6 +15,7 @@ import { ACTIONS_BRECHE, traiterBreche } from './breche'
 import { ACTIONS_EPREUVE, traiterEpreuve } from './epreuve'
 import { ACTIONS_JCJ, traiterJcj } from './jcj'
 import { ACTIONS_RECO, traiterReco } from './reconfinement'
+import { traiterPush } from './push'
 
 export type { Environnement } from './commun'
 
@@ -231,9 +232,11 @@ export async function traiter(req: Request, env: Environnement): Promise<Respons
   try {
     if (req.method !== 'POST') throw new Erreur(405, 'Méthode non autorisée')
     if (!env.url || !env.cleService) throw new Erreur(500, 'Configuration du serveur incomplète')
-    const idJoueur = await joueur(env, req)
     const corps = (await req.json().catch(() => null)) as Record<string, unknown> | null
     if (!corps || typeof corps !== 'object') throw new Erreur(400, 'Requête invalide')
+    // Notifications sur l'appareil : réveillée par pg_cron, sans joueur ; vide la file d'attente (serveur/push.ts)
+    if (corps.action === 'push') return repondreJson(200, await traiterPush(env))
+    const idJoueur = await joueur(env, req)
     const maintenant = (env.maintenant ?? Date.now)()
     switch (corps.action) {
       case 'debuter':

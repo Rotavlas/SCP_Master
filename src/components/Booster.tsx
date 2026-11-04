@@ -14,6 +14,7 @@ import { CompteARebours } from './CompteARebours'
 import { Logo } from './Logo'
 import { AnimationMythique, animationPleinEcran, dureeAnimation, prechargerMythique } from './AnimationsMythiques'
 import { partager } from '../state/pwa'
+import { useCosmetiques } from '../state/cosmetiques'
 
 export interface Tirage {
   id: number
@@ -170,6 +171,8 @@ type Etape = 'scelle' | 'dechire' | 'pile' | 'bilan'
 
 function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }: Props & { tirage: Tirage; ouvrirStock: () => void }) {
   const s = useSauvegarde()
+  // La couverture de dossier portée (cosmétique), sur la chemise à déchirer
+  const couverture = useCosmetiques()?.portes.couverture
   const [etape, setEtape] = useState<Etape>('scelle')
   const [dechirure, setDechirure] = useState(0)
   const [index, setIndex] = useState(0)
@@ -331,7 +334,7 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
       <section className="booster-ouverture">
         <p className="dossier-entete">{tirage.type.nom}</p>
         <div
-          className={`paquet paquet-scelle dossier-scelle dossier-${tirage.type.id} ${etape === 'dechire' ? 'paquet-ouvert' : ''}`}
+          className={`paquet paquet-scelle dossier-scelle dossier-${tirage.type.id} ${couverture ? `couv ${couverture}` : ''} ${etape === 'dechire' ? 'paquet-ouvert' : ''}`}
           style={
             {
               ['--paquet' as string]: tirage.type.couleur,

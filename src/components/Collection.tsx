@@ -11,6 +11,7 @@ import type { Carte as TCarte, Classe, TypeFiche } from '../types'
 import { Carte } from './Carte'
 import { BoutonConfirme } from './Confirmer'
 import { JaugeRecyclage } from './JaugeRecyclage'
+import { CollectionsGdi } from './Cosmetiques'
 
 const PAR_PAGE = 60
 
@@ -260,6 +261,7 @@ export function Collection({ base, ouvrirCarte, voirReglement }: { base: Base; o
       </div>
 
       <Album />
+      <CollectionsGdi base={base} ouvrirCarte={ouvrirCarte} />
 
       <div className="filtres-archives">
         <div className="filtres-recherche">

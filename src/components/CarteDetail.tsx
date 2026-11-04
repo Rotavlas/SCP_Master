@@ -14,6 +14,7 @@ import { Carte } from './Carte'
 import { MarcheCarte } from './MarcheCarte'
 import { JaugeRecyclage } from './JaugeRecyclage'
 import { useGlisserPourFermer } from './feuille'
+import { Fusion, Registre } from './Registre'
 
 export function CarteDetail({
   carte: source,
@@ -201,6 +202,7 @@ export function CarteDetail({
                     ₵)
                   </button>
                 )}
+                <Fusion carte={carte} doublons={doublons} />
                 {doublons > 0 && <JaugeRecyclage compacte />}
                 {carte.ra >= 4 && (
                   <button className="btn btn-cinematique" style={{ ['--r' as string]: RARETES[carte.ra].couleur }} onClick={() => setCinematique(true)}>
@@ -230,6 +232,7 @@ export function CarteDetail({
               </div>
             </>
           )}
+          {carte.ra === 5 && <Registre key={carte.id} carte={carte} />}
           <MarcheCarte key={carte.id} carte={carte} variante={variante} voirMarche={() => voirMarche(carte)} />
           <p className="attribution">
             <a href={lienWiki(carte)} target="_blank" rel="noreferrer">

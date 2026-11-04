@@ -25,8 +25,9 @@ import { useSauvegarde } from '../state/sauvegarde'
 import type { Carte as TCarte } from '../types'
 import { Carte } from './Carte'
 import { BoutonConfirme } from './Confirmer'
+import { Cote } from './Cote'
 
-type Onglet = 'encheres' | 'ventes' | 'echanges'
+type Onglet = 'encheres' | 'ventes' | 'echanges' | 'cote'
 const credits = (n: number) => `${n.toLocaleString('fr-FR')} ₵`
 
 /** Hôtel des ventes en direct, ventes personnelles et échanges entre joueurs. */
@@ -91,6 +92,7 @@ export function Marche({
               ['encheres', 'Enchères en direct', etat?.ouvertes.length],
               ['ventes', 'Mes ventes', miennes],
               ['echanges', 'Échanges', s.offresRecues],
+              ['cote', 'Cote', 0],
             ] as const
           ).map(([id, nom, n]) => (
             <button key={id} role="tab" aria-selected={onglet === id} className={onglet === id ? 'actif' : ''} onClick={() => setOnglet(id)}>
@@ -106,6 +108,7 @@ export function Marche({
       )}
       {onglet === 'ventes' && <MesVentes base={base} etat={etat} maintenant={maintenant + decalage} ouvrirCarte={ouvrirCarte} rafraichir={rafraichir} />}
       {onglet === 'echanges' && <Echanges base={base} ouvrirCarte={ouvrirCarte} />}
+      {onglet === 'cote' && <Cote base={base} ouvrirCarte={ouvrirCarte} />}
     </section>
   )
 }
