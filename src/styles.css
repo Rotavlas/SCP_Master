@@ -11751,6 +11751,28 @@ canvas {
   .btn-circulaire:hover {
     transform: none;
   }
+
+  /* Le contour de survol ne reste pas sur la tuile ou le bouton qu'on vient de toucher */
+  .tuile:hover {
+    border-color: var(--bord);
+  }
+
+  .tuile-booster:hover {
+    border-color: var(--rouge);
+  }
+
+  .objectif:not(.pret):hover {
+    border-color: var(--bord);
+  }
+
+  .btn:hover:not(:disabled) {
+    border-color: var(--bord);
+  }
+
+  .btn-principal:hover:not(:disabled) {
+    background: var(--rouge);
+    border-color: var(--rouge);
+  }
 }
 
 @media (max-width: 760px) {
