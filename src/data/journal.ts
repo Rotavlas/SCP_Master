@@ -11,6 +11,18 @@ export interface Entree {
 
 export const JOURNAL: Entree[] = [
   {
+    date: '2026-11-04',
+    titre: 'Le jeu sur téléphone, et en application',
+    points: [
+      'Plus aucun défilement de côté sur téléphone, même sur les plus petits écrans (320 px) : l’en-tête, le Rapport quotidien, les missions, la page Social, la circulaire et l’ouverture des dossiers tiennent dans la largeur.',
+      'Sur téléphone, l’en-tête ne garde que l’essentiel : la langue (VO/VF) et le son passent dans le menu « Plus », et le compte devient une pastille avec votre initiale.',
+      'Les champs ne font plus zoomer l’iPhone, les boutons sont à la taille d’un doigt, un appui long sur une carte n’ouvre plus le menu de l’image, et tirer l’écran vers le bas en pleine partie ne recharge plus la page.',
+      'SCP Masters s’installe comme une application : « Installer l’application » dans le menu du compte (sur iPhone, la marche à suivre dans Safari). Une fois installé, il s’ouvre en plein écran, et un appui long sur son icône propose d’aller droit aux dossiers, aux duels ou aux archives.',
+      'L’application démarre plus vite : son code, ses polices et le catalogue sont gardés sur l’appareil. Quand une nouvelle version sort, un bandeau propose de la charger d’un geste.',
+      'Sans réseau, un bandeau le signale : le jeu se joue en ligne et reprend dès le retour de la connexion.',
+    ],
+  },
+  {
     date: '2026-11-03',
     titre: 'La circulaire 05-ECO, et le plafond de recyclage bien en vue',
     points: [

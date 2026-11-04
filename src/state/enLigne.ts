@@ -58,6 +58,14 @@ function majCompte(c: Compte) {
   abonnes.forEach((a) => a())
 }
 
+/** Atelier seulement : un agent de démonstration connecté sans session Supabase (audit des écrans) */
+let demonstration = false
+export function connexionDeDemonstration() {
+  demonstration = true
+  utilisateur = 'agent-atelier'
+  majCompte({ statut: 'connecte', email: 'atelier@demonstration' })
+}
+
 /** Identifiant du joueur connecté (pour filtrer le direct : ses duels, ses invitations). */
 export function idUtilisateur(): string | null {
   return utilisateur
@@ -223,6 +231,8 @@ if (supabase) {
         })
       }, 0)
     } else {
+      // L'agent de démonstration de l'atelier n'a pas de session : on le garde connecté
+      if (demonstration) return
       utilisateur = null
       majCompte({ statut: 'deconnecte' })
       vider()

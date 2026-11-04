@@ -27,6 +27,7 @@ import { useCloche, type Notification } from './state/notifications'
 import { Cloche, decrire, type OngletMarche } from './components/Cloche'
 import type { Ecran, Traductions } from './types'
 import { Reglement } from './components/Reglement'
+import { BandeauxPwa } from './components/Pwa'
 
 /** Les onglets ; sur téléphone, les quatre principaux restent dans la barre du bas, les autres passent sous « Plus ». */
 const ONGLETS: { id: Ecran; nom: string; icone: string; principal?: boolean }[] = [
@@ -45,7 +46,11 @@ export default function App() {
   const [baseVO, setBaseVO] = useState<Base | null>(null)
   const [traductions, setTraductions] = useState<Traductions | null>(null)
   const [erreur, setErreur] = useState<string | null>(null)
-  const [ecran, setEcran] = useState<Ecran>('accueil')
+  // Un raccourci de l'application installée (manifeste) ouvre directement un écran : /?ecran=booster
+  const [ecran, setEcran] = useState<Ecran>(() => {
+    const demande = new URLSearchParams(location.search).get('ecran')
+    return ONGLETS.some((o) => o.id === demande) ? (demande as Ecran) : 'accueil'
+  })
   const [tirage, setTirageBrut] = useState<Tirage | null>(null)
   const [carteOuverte, setCarteOuverte] = useState<string | null>(null)
   // Carte à retrouver en ouvrant le marché depuis sa fiche
@@ -154,6 +159,7 @@ export default function App() {
         <Pied genere={base.genere} />
         <Analytics route="/connexion" path="/connexion" />
         <Notifications />
+        <BandeauxPwa />
       </div>
     )
   }
@@ -235,27 +241,15 @@ export default function App() {
                     {o.id === 'social' && nonLus > 0 && <span className="compteur compteur-alerte">{nonLus}</span>}
                   </button>
                 ))}
+                {/* Téléphone : la langue et le son quittent l'en-tête pour ce menu */}
+                <div className="menu-plus-reglages">
+                  <ChoixLangue />
+                  <BoutonSon />
+                </div>
               </div>
             </div>
           )}
-          <div className="langue" role="radiogroup" aria-label="Langue des fiches">
-            {(['vo', 'vf'] as const).map((l) => (
-              <button
-                key={l}
-                role="radio"
-                aria-checked={s.langue === l}
-                className={s.langue === l ? 'actif' : ''}
-                title={l === 'vo' ? 'Textes originaux en anglais' : 'Traductions de la branche française, quand elles existent'}
-                onClick={() => {
-                  // Le clic sert de geste pour télécharger le modèle de traduction du navigateur
-                  if (l === 'vf') preparerTraducteur(true)
-                  modifier((x) => ({ ...x, langue: l }))
-                }}
-              >
-                {l.toUpperCase()}
-              </button>
-            ))}
-          </div>
+          <ChoixLangue />
           <BoutonSon />
           <span className="solde" title="Crédits">
             <NombreAnime valeur={s.credits} /> ₵
@@ -341,6 +335,7 @@ export default function App() {
 
       {profilOuvert && <Profil pseudo={profilOuvert} base={base} onFermer={fermerProfil} ouvrirCarte={setCarteOuverte} ecrire={ecrire} />}
       {ecran !== 'duel' && <BandeauDefis aller={aller} />}
+      <BandeauxPwa />
 
       <Notifications />
       {/* Statistiques de visite sans cookie : le jeu ne change pas d'adresse, chaque écran compte comme une page */}
@@ -472,6 +467,31 @@ function BoutonJournal({ ouvert, ouvrir }: { ouvert: boolean; ouvrir: () => void
       </svg>
       {nouveau && <span className="point-nouveau" />}
     </button>
+  )
+}
+
+/** VO ou VF : les textes originaux, ou les traductions de la branche française */
+function ChoixLangue() {
+  const s = useSauvegarde()
+  return (
+    <div className="langue" role="radiogroup" aria-label="Langue des fiches">
+      {(['vo', 'vf'] as const).map((l) => (
+        <button
+          key={l}
+          role="radio"
+          aria-checked={s.langue === l}
+          className={s.langue === l ? 'actif' : ''}
+          title={l === 'vo' ? 'Textes originaux en anglais' : 'Traductions de la branche française, quand elles existent'}
+          onClick={() => {
+            // Le clic sert de geste pour télécharger le modèle de traduction du navigateur
+            if (l === 'vf') preparerTraducteur(true)
+            modifier((x) => ({ ...x, langue: l }))
+          }}
+        >
+          {l.toUpperCase()}
+        </button>
+      ))}
+    </div>
   )
 }
 

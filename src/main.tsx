@@ -12,8 +12,11 @@ import '@fontsource/inter/600.css'
 import '@fontsource/inter/700.css'
 import '@fontsource/special-elite/400.css'
 import './styles.css'
+import { enregistrerServiceWorker } from './state/pwa'
 
 preparerSons()
+// L'application installable : service worker (production seulement), invite d'installation, réseau
+enregistrerServiceWorker()
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

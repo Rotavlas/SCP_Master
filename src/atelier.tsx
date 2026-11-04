@@ -34,6 +34,10 @@ import type { Alteration } from './engine/effets'
 import { ADVERSAIRES } from './engine/duel'
 import './styles.css'
 import { Reglement } from './components/Reglement'
+import type { IdVariante } from './engine/variantes'
+import { remplacer, sauvegardeVide } from './state/sauvegarde'
+import { connexionDeDemonstration } from './state/enLigne'
+import App from './App'
 
 // Les originaux (public/sunny/, public/photos/), pour comparer avec la fin de l'animation
 const ORIGINAUX: Record<string, string> = {
@@ -242,6 +246,7 @@ function Atelier({ base }: { base: Base }) {
   const mode = params.get('mode') ?? (params.has('breche') ? 'breche' : null)
   if (mode === 'alterations') return <PlancheAlterations />
   if (mode === 'frappe') return <EssaiFrappe base={base} />
+  if (mode === 'app') return <JeuDeDemonstration base={base} />
   if (mode === 'reglement') {
     brancherServeurLocal()
     modifier((x) => (x.agent ? x : { ...x, agent: 'Agent atelier', boosters: 4, credits: 2350 }))
@@ -346,6 +351,38 @@ function Atelier({ base }: { base: Base }) {
       {cinematique && <Protocole key={cinematique.id + Date.now()} carte={cinematique} onFini={() => setCinematique(null)} />}
     </main>
   )
+}
+
+/**
+ * atelier.html?mode=app : le jeu entier, connecté avec un agent de démonstration (une petite collection de chaque
+ * rareté) et sans appel au vrai serveur, pour vérifier chaque écran (téléphone, tablette).
+ */
+function JeuDeDemonstration({ base }: { base: Base }) {
+  const [pret] = useState(() => {
+    brancherServeurLocal()
+    connexionDeDemonstration()
+    const collection: Record<string, number> = {}
+    const variantes: Record<string, Partial<Record<IdVariante, number>>> = {}
+    ;[40, 20, 10, 6, 4, 2].forEach((n, ra) => base.parRarete[ra].slice(0, n).forEach((c, i) => (collection[c.id] = 1 + (i % 3))))
+    variantes[base.parRarete[4][0].id] = { holo: 1 }
+    variantes[base.parRarete[5][0].id] = { negatif: 1 }
+    const vide = sauvegardeVide()
+    remplacer({
+      ...vide,
+      agent: 'Agent atelier',
+      collection,
+      variantes,
+      deck: Object.keys(collection).slice(-5),
+      credits: 2350,
+      xp: 3400,
+      boosters: 4,
+      keterOfferts: 1,
+      nouvelles: Object.keys(collection).slice(0, 3),
+      favoris: Object.keys(collection).slice(-3),
+    })
+    return true
+  })
+  return pret ? <App /> : null
 }
 
 // Une seule racine React, même quand le rechargement à chaud réexécute ce fichier

@@ -41,11 +41,52 @@ const ecouteurs = new Set<() => void>()
 /** L'état complet de la partie en cours, bonne réponse comprise : pour tester depuis la console de l'atelier */
 export const etatAtelier = () => (duelJcj ? { etat: duelJcj.etat, secret: duelJcj.secret } : [...parties.values()].at(-1)?.etat)
 
-const enHall = ['hall', 'reglement'].includes(new URLSearchParams(location.search).get('mode') ?? '')
+const modeAtelier = new URLSearchParams(location.search).get('mode') ?? ''
+const enHall = ['hall', 'reglement', 'app'].includes(modeAtelier)
 const DEMO_HALL: Record<string, () => unknown> = {
+  // L'ouverture d'un dossier (?mode=app) : cinq fiches de démonstration, dont une Légendaire
+  ouvrir_booster: () =>
+    modeAtelier === 'app'
+      ? {
+          cartes: [
+            { id: 'scp-131', v: 'std' },
+            { id: 'scp-999', v: 'holo' },
+            { id: 'scp-049', v: 'std' },
+            { id: 'scp-096', v: 'std' },
+            { id: 'scp-682', v: 'std' },
+          ],
+          profil: {
+            pseudo: 'Agent atelier',
+            credits: 2350,
+            xp: 3405,
+            boosters: 3,
+            dernier_booster: new Date().toISOString(),
+            meilleur_adversaire: 3,
+            stats: {},
+            keter_offerts: 1,
+          },
+        }
+      : null,
   achats_restants: () => (enHall ? { keter: 2, o5: 0, apollyon: 1 } : null),
   recyclage_restant: () => (enHall ? 650 : null),
-  tableau_duels: () => (enHall ? { elo: 1184, rang: 12, jcj: { victoires: 9, defaites: 6, nuls: 1 }, enLigne: 7, iaRestants: 3, jcjRestants: 5 } : null),
+  tableau_duels: () =>
+    enHall
+      ? {
+          elo: 1184,
+          rang: 12,
+          jcj: { victoires: 9, defaites: 6, nuls: 1 },
+          enLigne: 7,
+          iaRestants: 3,
+          jcjRestants: 5,
+          enFile: 1,
+          enCours: null,
+          invitations: [],
+          amisEnLigne: [
+            { pseudo: 'Dr Clef', elo: 1290, occupe: false },
+            { pseudo: 'Bright', elo: 1105, occupe: true },
+          ],
+        }
+      : null,
   missions: () =>
     enHall
       ? [
@@ -267,7 +308,13 @@ export function brancherServeurLocal(equipe: string[] = EQUIPE_DEMO) {
   // Le classement de l'Épreuve et le raid ne se lisent qu'en ligne : ici, des données de démonstration (?mode=hall)
   const vraiRpc = supabase.rpc.bind(supabase)
   Object.defineProperty(supabase, 'rpc', {
-    value: (nom: string, params?: object) => (nom in DEMO_HALL ? Promise.resolve({ data: DEMO_HALL[nom](), error: null }) : vraiRpc(nom, params)),
+    value: (nom: string, params?: object) =>
+      nom in DEMO_HALL
+        ? Promise.resolve({ data: DEMO_HALL[nom](), error: null })
+        : // Le jeu entier (?mode=app) : rien ne part vers le vrai serveur, les écrans s'affichent vides
+          modeAtelier === 'app'
+          ? Promise.resolve({ data: null, error: null })
+          : vraiRpc(nom, params),
     configurable: true,
   })
   // Le direct : chaque écriture du duel prévient l'écran, comme Realtime

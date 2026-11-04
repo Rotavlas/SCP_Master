@@ -135,7 +135,7 @@ const prevenir = () => abonnes.forEach((a) => a())
 export async function rafraichirInvitations() {
   const t = await tableauDuels()
   if (!t) return null
-  invitations = t.invitations
+  invitations = t.invitations ?? []
   prevenir()
   return t
 }

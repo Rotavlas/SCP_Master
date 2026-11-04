@@ -4,6 +4,7 @@ import { useSauvegarde } from '../state/sauvegarde'
 import { useBadgesDe } from '../state/social'
 import { BadgesAffiches } from './Badges'
 import { Logo } from './Logo'
+import { InstallerApplication } from './Pwa'
 
 const NOMS_FOURNISSEURS = { discord: 'Discord', google: 'Google', github: 'GitHub' } as const
 
@@ -28,9 +29,13 @@ export function BoutonCompte({ ouvrirProfil }: { ouvrirProfil: (pseudo: string) 
   if (compte.statut !== 'connecte') return null
   return (
     <div className="compte-menu">
-      <button className="btn btn-compte connecte" onClick={() => setMenu(!menu)} aria-expanded={menu} title="Ton profil">
+      <button className="btn btn-compte connecte" onClick={() => setMenu(!menu)} aria-expanded={menu} title="Ton profil" aria-label={s.agent || 'Ton profil'}>
         <span className="pastille-en-ligne" aria-hidden="true" />
-        {s.agent || 'Ton profil'}
+        {/* Téléphone : l'initiale seule, dans une pastille */}
+        <span className="compte-initiale" aria-hidden="true">
+          {(s.agent || '?').trim().charAt(0).toUpperCase()}
+        </span>
+        <span className="compte-nom">{s.agent || 'Ton profil'}</span>
         <BadgesAffiches ids={badges} />
       </button>
       {menu && (
@@ -47,6 +52,7 @@ export function BoutonCompte({ ouvrirProfil }: { ouvrirProfil: (pseudo: string) 
               Ton profil et tes badges
             </button>
           )}
+          <InstallerApplication />
           <button
             className="btn"
             role="menuitem"
@@ -78,9 +84,9 @@ export function Portail({ nombreCartes }: { nombreCartes: number }) {
       <p className="dossier-entete">Fondation SCP · Terminal d'accès</p>
       <h1>Sécuriser. Contenir. Collectionner.</h1>
       <p className="intro">
-        Chaque dossier du wiki SCP devient une carte : {nombreCartes.toLocaleString('fr-FR')} fiches (SCP, contes, équipes FIM, personnel, Conseil O5,
-        Groupes d'intérêt…). Ouvrez des boosters, constituez votre collection et affrontez d'autres membres du personnel dans des confrontations où il faut
-        connaître ses dossiers.
+        Chaque dossier du wiki SCP devient une carte : {nombreCartes.toLocaleString('fr-FR')} fiches (SCP, contes, équipes FIM, personnel, Conseil O5, Groupes
+        d'intérêt…). Ouvrez des boosters, constituez votre collection et affrontez d'autres membres du personnel dans des confrontations où il faut connaître
+        ses dossiers.
       </p>
 
       <div className="portail-connexion">
@@ -118,7 +124,15 @@ export function Portail({ nombreCartes }: { nombreCartes: number }) {
             >
               <label htmlFor="code">Ou saisissez le code de l'e-mail</label>
               <div>
-                <input id="code" inputMode="numeric" autoComplete="one-time-code" value={code} onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))} placeholder="123456" maxLength={10} />
+                <input
+                  id="code"
+                  inputMode="numeric"
+                  autoComplete="one-time-code"
+                  value={code}
+                  onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+                  placeholder="123456"
+                  maxLength={10}
+                />
                 <button className="btn" disabled={occupe || code.length < 6}>
                   Valider
                 </button>
@@ -149,8 +163,9 @@ export function Portail({ nombreCartes }: { nombreCartes: number }) {
         )}
 
         <p className="discret petit">
-          Pas de mot de passe{fournisseurs.includes('discord') ? ' : connectez-vous avec Discord, ou recevez un lien par e-mail' : ' : un lien de connexion arrive par e-mail'}. Votre collection est
-          enregistrée sur le serveur et vous suit sur tous vos appareils. <a href="/confidentialite.html">Données personnelles</a>
+          Pas de mot de passe
+          {fournisseurs.includes('discord') ? ' : connectez-vous avec Discord, ou recevez un lien par e-mail' : ' : un lien de connexion arrive par e-mail'}.
+          Votre collection est enregistrée sur le serveur et vous suit sur tous vos appareils. <a href="/confidentialite.html">Données personnelles</a>
         </p>
       </div>
     </section>
