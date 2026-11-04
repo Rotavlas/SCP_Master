@@ -12107,3 +12107,28 @@ html {
   background: var(--fond);
   pointer-events: none;
 }
+
+/* ---------- iPhone : les écrans par-dessus tout commencent sous l'heure et la Dynamic Island ---------- */
+/* Le bandeau défilant des cinématiques (Légendaire, Mythique) passait sous la barre d'état, flouté */
+.pm-bandeau {
+  top: env(safe-area-inset-top, 0px);
+}
+
+.protocole-mythique {
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Fiches, profils et tutoriels : leur haut et leur bas restent hors de la barre d'état et de la barre d'accueil */
+.modale-fond,
+.tuto-fond {
+  padding-top: max(16px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+}
+
+@media (max-width: 760px) {
+  /* Un défi reçu s'affiche au-dessus de la barre d'onglets du bas, pas dessous */
+  .bandeau-defi {
+    bottom: calc(72px + env(safe-area-inset-bottom, 0px));
+  }
+}
