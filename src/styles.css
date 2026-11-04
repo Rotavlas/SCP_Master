@@ -12067,3 +12067,21 @@ canvas {
     display: none;
   }
 }
+
+/* ---------- iPhone : rien ne transparaît derrière l'heure et la Dynamic Island ---------- */
+/* Sur iPhone (Safari comme application installée), la zone de la barre d'état montre, floutée, la page qui a défilé
+   au-dessus de l'en-tête. Un pan opaque, de la couleur du fond, prolonge l'en-tête vers le haut et la masque. */
+html {
+  background: var(--fond);
+}
+
+.barre::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 100%;
+  height: 120px;
+  background: var(--fond);
+  pointer-events: none;
+}
