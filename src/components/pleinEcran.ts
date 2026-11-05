@@ -16,6 +16,19 @@ export function usePleinEcran() {
       racine.style.setProperty('--hauteur-jeu', `${Math.max(420, window.innerHeight - Math.max(0, haut) - Math.max(0, bas) - 16)}px`)
     }
     document.body.classList.add('en-partie')
+    // Une question apparaît (tous les modes) : elle est amenée à l'écran, la table défilant au besoin
+    const questions = new MutationObserver((mutations) => {
+      for (const m of mutations)
+        for (const n of m.addedNodes) {
+          if (!(n instanceof HTMLElement)) continue
+          const q = n.matches('.duel-question') ? n : n.querySelector('.duel-question')
+          if (q) {
+            requestAnimationFrame(() => q.scrollIntoView({ block: 'nearest', behavior: 'smooth' }))
+            return
+          }
+        }
+    })
+    questions.observe(document.body, { childList: true, subtree: true })
     mesurer()
     window.addEventListener('resize', mesurer)
     // Écran allumé (le verrou tombe quand l'onglet passe en arrière-plan : on le reprend au retour)
@@ -38,6 +51,7 @@ export function usePleinEcran() {
       document.removeEventListener('visibilitychange', garderAllume)
       void verrou?.release().catch(() => undefined)
       window.removeEventListener('resize', mesurer)
+      questions.disconnect()
       document.body.classList.remove('en-partie')
       racine.style.removeProperty('--hauteur-jeu')
     }

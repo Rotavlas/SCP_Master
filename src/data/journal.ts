@@ -14,6 +14,7 @@ export const JOURNAL: Entree[] = [
     date: '2026-11-06',
     titre: 'Des pages mieux rangées',
     points: [
+      'En combat sur téléphone, une question prend toute la place : plus de petit cadre à faire défiler. Pendant la question, la main, votre carte et les jauges de Manifestation s’effacent, la carte adverse passe en vignette à côté de son effet, et la question vient d’elle-même à l’écran.',
       'Terminal : sur grand écran, deux colonnes, le quotidien à gauche (objectifs, Rapport, missions), la progression à droite (piste, raretés, vitrine).',
       'Confrontation et Intendance passent en onglets : « Entre agents », « Contre l’IA », « Épreuve » d’un côté ; « Dossiers », « Contrats et Mythiques », « Cosmétiques », « Crédits et compte » de l’autre. L’onglet ouvert est retenu.',
       'Archives : un en-tête avec les actions, l’équipe repliée, les filtres de rareté, de type, de classe et de série rangés derrière un bouton « Filtres ».',

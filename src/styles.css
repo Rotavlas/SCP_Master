@@ -13559,3 +13559,76 @@ html {
     font-size: 0.8rem;
   }
 }
+
+/* ---------- Téléphone, en partie : une question prend toute la place ----------
+   La table est découpée en rangées (adversaire, scène, joueur, main) ; sur un petit écran, la scène ne gardait
+   que quelques lignes et la question défilait dans un petit cadre. Pendant une question, on ne peut pas jouer :
+   la main et les cartes du face-à-face s'effacent, la main dévoilée de l'adversaire aussi. */
+@media (max-width: 760px) {
+  body.en-partie .reco:has(.reco-centre .duel-question) .reco-main,
+  body.en-partie .breche:has(.breche-question) .breche-main,
+  body.en-partie .breche:has(.breche-question) .plateau-joueur {
+    display: none;
+  }
+
+  /* Les rangées de la table suivent leur contenu : la question n'est plus comprimée sous le plateau */
+  body.en-partie .breche-table {
+    grid-auto-rows: max-content;
+    align-content: start;
+  }
+
+  body.en-partie .reco:has(.reco-centre .duel-question) .reco-carte.joueur,
+  body.en-partie .reco:has(.reco-centre .duel-question) .site-reco-main-vue,
+  body.en-partie .reco:has(.reco-centre .duel-question) .jauge-manifestation {
+    display: none;
+  }
+
+  body.en-partie .reco:has(.reco-centre .duel-question) .reco-face-a-face {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  /* La carte adverse en vignette, son effet à côté (et « Regarder » si elle est voilée) */
+  body.en-partie .reco:has(.reco-centre .duel-question) .reco-carte.ia {
+    grid-template-columns: 4.2rem minmax(0, 1fr);
+    justify-items: start;
+    align-items: center;
+    column-gap: 0.6rem;
+    row-gap: 0.2rem;
+    text-align: left;
+  }
+
+  body.en-partie .reco:has(.reco-centre .duel-question) .reco-carte.ia .carte {
+    grid-column: 1;
+    grid-row: 1 / span 3;
+    width: 4.2rem;
+  }
+
+  body.en-partie .reco:has(.reco-centre .duel-question) .reco-carte.ia > :not(.carte) {
+    grid-column: 2;
+  }
+
+  body.en-partie .reco:has(.reco-centre .duel-question) .reco-carte.ia .reco-effet {
+    margin: 0;
+    font-size: 0.78rem;
+  }
+
+  body.en-partie .reco:has(.reco-centre .duel-question) .reco-scene {
+    align-content: start;
+  }
+
+  /* Les panneaux des deux camps, plus serrés en partie */
+  body.en-partie .site-reco {
+    padding: 0.45rem 0.6rem;
+  }
+
+  body.en-partie .site-reco-jauges {
+    gap: 0.25rem;
+  }
+
+  /* Les réponses : assez hautes pour le doigt, sans plus */
+  body.en-partie .duel-question .option {
+    padding-top: 0.55rem;
+    padding-bottom: 0.55rem;
+  }
+}
