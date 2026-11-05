@@ -195,14 +195,26 @@ async function enteteVapid(endpoint: string, cle: CleVapid, sujet: string): Prom
   return `vapid t=${corps}.${enBase64Url(signature)}, k=${cle.publique}`
 }
 
+/** Les services de notifications des navigateurs : Google (Chrome, Edge Android), Mozilla, Apple, Microsoft */
+const SERVICES =
+  /^https:\/\/(fcm\.googleapis\.com|updates\.push\.services\.mozilla\.com|push\.services\.mozilla\.com|web\.push\.apple\.com|[a-z0-9-]+\.push\.apple\.com|[a-z0-9.-]+\.notify\.windows\.com)\//
+
+export function serviceConnu(endpoint: string): boolean {
+  return SERVICES.test(endpoint)
+}
+
 /**
  * Envoie à un appareil ; renvoie le statut du service de notifications (201 : accepté ; 404 ou 410 : désabonné) et,
  * en cas de refus, sa raison (Apple : {"reason": "…"})
  */
 export async function envoyer(appareil: Appareil, c: Contenu, cle: CleVapid, sujet: string): Promise<{ statut: number; raison: string }> {
+  // Seulement vers un vrai service de notifications (même règle que public.abonner_push) : jamais une adresse choisie
+  // par un joueur (SSRF)
+  if (!serviceConnu(appareil.endpoint)) return { statut: 410, raison: 'service de notifications inconnu' }
   const corps = await chiffrer(JSON.stringify(c), appareil)
   const r = await fetch(appareil.endpoint, {
     method: 'POST',
+    redirect: 'manual',
     headers: {
       Authorization: await enteteVapid(appareil.endpoint, cle, sujet),
       'Content-Encoding': 'aes128gcm',
@@ -231,9 +243,24 @@ export interface Resultat {
   raison: string
 }
 
-export async function traiterPush(
-  env: Environnement & { vapid?: string },
-): Promise<{ envoyes: number; echecs: number; desabonnes: number; details?: Resultat[]; cle?: false }> {
+type Bilan = { envoyes: number; echecs: number; desabonnes: number; details?: Resultat[]; cle?: false; patienter?: true }
+
+// L'action « push » est appelée sans compte (par pg_cron, une fois par minute) : un passage à la fois, et pas plus d'un
+// toutes les dix secondes, pour qu'on ne puisse pas la marteler
+let enCours: Promise<Bilan> | null = null
+let dernierPassage = 0
+
+export async function traiterPush(env: Environnement & { vapid?: string }, maintenant = Date.now()): Promise<Bilan> {
+  if (enCours) return enCours
+  if (maintenant - dernierPassage < 10_000) return { envoyes: 0, echecs: 0, desabonnes: 0, patienter: true }
+  dernierPassage = maintenant
+  enCours = passerLaFile(env).finally(() => {
+    enCours = null
+  })
+  return enCours
+}
+
+async function passerLaFile(env: Environnement & { vapid?: string }): Promise<Bilan> {
   if (!env.vapid) {
     console.error('push : secret VAPID_JWK absent ou vide')
     return { envoyes: 0, echecs: 0, desabonnes: 0, cle: false }

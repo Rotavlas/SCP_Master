@@ -84,6 +84,12 @@ await test('pseudo valide accepté', async () => {
 await test('pseudo déjà pris refusé', async () => {
   await echoue(en(B, "select public.definir_pseudo('Agent Lambert')"), /déjà pris/)
 })
+await test('pseudo déjà pris, même avec d’autres majuscules', async () => {
+  await echoue(en(B, "select public.definir_pseudo('AGENT lambert')"), /déjà pris/)
+  // L'agent garde le sien en changeant seulement la casse
+  assert.equal((await valeur(A, "select public.definir_pseudo('Agent LAMBERT')")).pseudo, 'Agent LAMBERT')
+  await valeur(A, "select public.definir_pseudo('Agent Lambert')")
+})
 await test('pseudo trop court ou avec des caractères interdits refusé', async () => {
   await echoue(en(B, "select public.definir_pseudo('ab')"), /check constraint/)
   await echoue(en(B, "select public.definir_pseudo('<script>')"), /check constraint/)
@@ -220,7 +226,8 @@ await test('une Mythique se recycle 2 500 ₵ et compte dans le classement des l
   const avant = await valeur(A, "select (public.classement('legendaires') -> 'moi' ->> 'valeur')::int")
   assert.ok(avant >= 5, `légendaires et mythiques : ${avant}`)
   // Seuls les exemplaires standard se recyclent (une Mythique peut aussi sortir en Négatif ou en Épreuve d'artiste)
-  const n = (await admin(`select count(*)::int as n from public.exemplaires where proprietaire = '${A}' and carte_id = $1 and variante = 'std'`, [id])).rows[0].n
+  const n = (await admin(`select count(*)::int as n from public.exemplaires where proprietaire = '${A}' and carte_id = $1 and variante = 'std'`, [id])).rows[0]
+    .n
   if (n >= 2) {
     // Plafond du jour remis à zéro : 3 000 à plein tarif, 20 % au-delà
     await admin(`update public.mouvements_credits set le = le - interval '1 day' where joueur = '${A}' and motif in ('recyclage', 'brulage')`)
@@ -868,6 +875,18 @@ await test('un message signalé est conservé pour la modération', async () => 
   await valeur(F, 'select public.signaler_message($1, $2)', [id, 'test'])
   assert.equal((await admin('select count(*)::int as n from prive.signalements')).rows[0].n, 1)
   await echoue(en(G, 'select public.signaler_message($1, $2)', [id, 'test']), /introuvable/)
+  // Signaler deux fois le même message ne l'enregistre qu'une fois ; vingt signalements par jour au plus
+  await valeur(F, 'select public.signaler_message($1, $2)', [id, 'encore'])
+  assert.equal((await admin('select count(*)::int as n from prive.signalements')).rows[0].n, 1)
+  await admin('insert into prive.signalements (signaleur, message) select $1, -g from generate_series(1, 19) g', [F])
+  const autre = (
+    await admin(
+      "insert into public.messages (salon, auteur, pseudo, texte) select salon, auteur, pseudo, 'Un autre' from public.messages where id = $1 returning id",
+      [id],
+    )
+  ).rows[0].id
+  await echoue(en(F, 'select public.signaler_message($1, $2)', [autre, 'x']), /Vingt signalements/)
+  await admin('delete from prive.signalements where message < 0')
 })
 
 console.log('Classements et profils')
@@ -1438,8 +1457,17 @@ await test('collections des Groupes d’intérêt : une collection complète se 
 
 await test('notifications sur l’appareil : abonnement, file d’attente, messages privés regroupés, réservé au serveur', async () => {
   const cle = 'B' + 'x'.repeat(86)
-  await valeur(P1, "select public.abonner_push('https://push.exemple.org/abc', $1, 'aaaaaaaaaaaaaaaaaaaaaa')", [cle])
+  await valeur(P1, "select public.abonner_push('https://fcm.googleapis.com/fcm/send/abc', $1, 'aaaaaaaaaaaaaaaaaaaaaa')", [cle])
   await echoue(en(P1, "select public.abonner_push('http://non-securise', $1, 'aaaaaaaaaaaaaaaaaaaaaa')", [cle]), /invalide/)
+  // Seulement un vrai service de notifications : une adresse quelconque recevrait les requêtes du serveur (SSRF)
+  for (const adresse of ['https://attaquant.exemple.org/x', 'https://fcm.googleapis.com.attaquant.org/x', 'https://169.254.169.254/latest'])
+    await echoue(en(P1, 'select public.abonner_push($2, $1, $3)', [cle, adresse, 'aaaaaaaaaaaaaaaaaaaaaa']), /invalide/)
+  for (const adresse of [
+    'https://web.push.apple.com/QAbc',
+    'https://updates.push.services.mozilla.com/wpush/v2/x',
+    'https://wns2-par02p.notify.windows.com/w/?token=x',
+  ])
+    assert.equal(await admin('select prive.service_push_connu($1) as ok', [adresse]).then((x) => x.rows[0].ok), true, adresse)
   // Le jeu à l'écran : rien sur l'appareil, la cloche suffit ; dès qu'il le quitte, la notification part
   await valeur(P1, 'select public.premier_plan(true)')
   await admin(`select prive.notifier($1, 'echange_recu', '{"de": "Archiviste Deux"}')`, [P1])
@@ -1455,13 +1483,13 @@ await test('notifications sur l’appareil : abonnement, file d’attente, messa
     return (await tx.query('select public.push_a_envoyer() as l')).rows[0].l
   })
   assert.deepEqual(lot.map((x) => x.type).sort(), ['echange_recu', 'message'])
-  assert.equal(lot[0].appareils[0].endpoint, 'https://push.exemple.org/abc')
+  assert.equal(lot[0].appareils[0].endpoint, 'https://fcm.googleapis.com/fcm/send/abc')
   assert.equal((await admin('select count(*)::int as n from prive.push_file')).rows[0].n, 0, 'la file est vidée')
   // La notification d'essai : vers les appareils de l'agent, une par minute au plus
   assert.equal(await valeur(P1, 'select public.essai_push()'), 1)
   await echoue(en(P1, 'select public.essai_push()'), /par minute au plus/)
   assert.equal((await admin("select count(*)::int as n from prive.push_file where type = 'essai'")).rows[0].n, 1)
-  await valeur(P1, "select public.desabonner_push('https://push.exemple.org/abc')")
+  await valeur(P1, "select public.desabonner_push('https://fcm.googleapis.com/fcm/send/abc')")
   await echoue(en(P2, 'select public.essai_push()'), /Aucun appareil/)
   assert.equal((await admin('select count(*)::int as n from prive.abonnements_push')).rows[0].n, 0)
 })
@@ -1477,13 +1505,18 @@ await test('variantes : deux fois moins sur les communes et peu communes', async
 })
 
 await test('codes : récompense une fois par agent, codes expirés ou épuisés refusés, dix essais par heure', async () => {
-  await admin(`insert into prive.codes (code, recompense, utilisations_max) values ('BIENVENUE', '{"credits": 300, "dossiers": 20, "keter": 1, "cosmetique": "titre-chercheur"}', 2)`)
+  await admin(
+    `insert into prive.codes (code, recompense, utilisations_max) values ('BIENVENUE', '{"credits": 300, "dossiers": 20, "keter": 1, "cosmetique": "titre-chercheur"}', 2)`,
+  )
   await admin(`insert into prive.codes (code, recompense, expire_le) values ('PERIME', '{"credits": 1}', now() - interval '1 day')`)
   const r = await valeur(Q1, "select public.utiliser_code(' bienvenue ')")
   assert.equal(Number(r.recompense.credits), 300)
   const p = (await admin('select credits, boosters, keter_offerts from public.profils where id = $1', [Q1])).rows[0]
   assert.deepEqual([Number(p.credits), p.boosters, p.keter_offerts], [1300, 10, 1], 'crédits, réserve plafonnée à 10, Keter offert')
-  assert.equal((await admin("select count(*)::int as n from prive.cosmetiques_possedes where joueur = $1 and cosmetique = 'titre-chercheur'", [Q1])).rows[0].n, 1)
+  assert.equal(
+    (await admin("select count(*)::int as n from prive.cosmetiques_possedes where joueur = $1 and cosmetique = 'titre-chercheur'", [Q1])).rows[0].n,
+    1,
+  )
   await echoue(en(Q1, "select public.utiliser_code('BIENVENUE')"), /déjà utilisé/)
   assert.equal((await valeur(Q1, "select public.utiliser_code('PERIME')")).erreur, 'Code inconnu ou expiré')
   assert.equal((await valeur(Q1, "select public.utiliser_code('NIMPORTEQUOI')")).erreur, 'Code inconnu ou expiré')
@@ -1498,7 +1531,10 @@ await test('contrats : trois fiches par semaine, chacune rachetée une fois cont
   const raretes = (await admin('select ra from public.cartes where id = any($1)', [c.contrats.map((x) => x.carte)])).rows.map((x) => x.ra).sort()
   assert.deepEqual(raretes, [2, 2, 3])
   // Les mêmes pour tous les agents
-  assert.deepEqual((await valeur(P1, 'select public.contrats()')).contrats.map((x) => x.carte), c.contrats.map((x) => x.carte))
+  assert.deepEqual(
+    (await valeur(P1, 'select public.contrats()')).contrats.map((x) => x.carte),
+    c.contrats.map((x) => x.carte),
+  )
   const carte = c.contrats[0].carte
   await echoue(en(Q1, 'select public.remplir_contrat($1)', [carte]), /exemplaire standard libre/)
   await donner(Q1, carte, 2)
@@ -1522,7 +1558,10 @@ await test('succès : progression, seuils au total du catalogue, réclamation av
   assert.equal(r.reclames, 2, 'Sites et 50 fiches, pas tout le catalogue')
   assert.ok(r.succes.find((s) => s.id === 'archives-l').obtenu)
   assert.equal(r.succes.find((s) => s.id === 'fiches-toutes').obtenu, null)
-  assert.equal((await admin("select count(*)::int as n from prive.cosmetiques_possedes where joueur = $1 and cosmetique = 'cadre-archives-l'", [Q1])).rows[0].n, 1)
+  assert.equal(
+    (await admin("select count(*)::int as n from prive.cosmetiques_possedes where joueur = $1 and cosmetique = 'cadre-archives-l'", [Q1])).rows[0].n,
+    1,
+  )
   const encore = await valeur(Q1, "select public.reclamer_succes(array['archives-l'])")
   assert.equal(encore.reclames, 0, 'une seule fois')
 })
@@ -1547,13 +1586,17 @@ await test('gestion des codes : réservée au créateur, récompenses vérifiée
   await echoue(en(K1, "select public.creer_code('X', '{\"credits\": 1}', null, null, null)"), /3 à 32/)
   await echoue(en(K1, "select public.creer_code('VIDE', '{}', null, null, null)"), /ne donne rien/)
   await echoue(en(K1, "select public.creer_code('MAUVAIS', '{\"diamants\": 5}', null, null, null)"), /inconnue/)
-  await echoue(en(K1, "select public.creer_code('MAUVAIS', '{\"offerts\": {\"inexistant\": 1}}', null, null, null)"), /Dossier offert invalide/)
-  await echoue(en(K1, "select public.creer_code('MAUVAIS', '{\"cartes\": [{\"c\": \"scp-117\", \"v\": \"negatif\"}]}', null, null, null)"), /Variante impossible/)
-  const liste = await valeur(
-    K1,
-    `select public.creer_code('apollyon-pour-tous', $1, 'Test complet', 5, now() + interval '1 day')`,
-    [JSON.stringify({ credits: 250, xp: 40, offerts: { apollyon: 2, o5: 1, keter: 1 }, cosmetiques: ['couv-marbre'], cartes: [{ c: 'scp-117', v: 'holo', n: 2 }, { c: 'dr-clef-s-proposal' }] })],
-  )
+  await echoue(en(K1, 'select public.creer_code(\'MAUVAIS\', \'{"offerts": {"inexistant": 1}}\', null, null, null)'), /Dossier offert invalide/)
+  await echoue(en(K1, 'select public.creer_code(\'MAUVAIS\', \'{"cartes": [{"c": "scp-117", "v": "negatif"}]}\', null, null, null)'), /Variante impossible/)
+  const liste = await valeur(K1, `select public.creer_code('apollyon-pour-tous', $1, 'Test complet', 5, now() + interval '1 day')`, [
+    JSON.stringify({
+      credits: 250,
+      xp: 40,
+      offerts: { apollyon: 2, o5: 1, keter: 1 },
+      cosmetiques: ['couv-marbre'],
+      cartes: [{ c: 'scp-117', v: 'holo', n: 2 }, { c: 'dr-clef-s-proposal' }],
+    }),
+  ])
   assert.equal(liste[0].code, 'APOLLYON-POUR-TOUS')
   assert.equal(liste[0].actif, true)
 })

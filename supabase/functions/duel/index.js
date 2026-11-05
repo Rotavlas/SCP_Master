@@ -3196,14 +3196,24 @@ async function enteteVapid(endpoint, cle, sujet) {
 		hash: "SHA-256"
 	}, cle.privee, encodeur.encode(corps))))}, k=${cle.publique}`;
 }
+/** Les services de notifications des navigateurs : Google (Chrome, Edge Android), Mozilla, Apple, Microsoft */
+const SERVICES = /^https:\/\/(fcm\.googleapis\.com|updates\.push\.services\.mozilla\.com|push\.services\.mozilla\.com|web\.push\.apple\.com|[a-z0-9-]+\.push\.apple\.com|[a-z0-9.-]+\.notify\.windows\.com)\//;
+function serviceConnu(endpoint) {
+	return SERVICES.test(endpoint);
+}
 /**
 * Envoie à un appareil ; renvoie le statut du service de notifications (201 : accepté ; 404 ou 410 : désabonné) et,
 * en cas de refus, sa raison (Apple : {"reason": "…"})
 */
 async function envoyer(appareil, c, cle, sujet) {
+	if (!serviceConnu(appareil.endpoint)) return {
+		statut: 410,
+		raison: "service de notifications inconnu"
+	};
 	const corps = await chiffrer(JSON.stringify(c), appareil);
 	const r = await fetch(appareil.endpoint, {
 		method: "POST",
+		redirect: "manual",
 		headers: {
 			Authorization: await enteteVapid(appareil.endpoint, cle, sujet),
 			"Content-Encoding": "aes128gcm",
@@ -3221,7 +3231,23 @@ async function envoyer(appareil, c, cle, sujet) {
 	};
 }
 let cleVapid = null;
-async function traiterPush(env) {
+let enCours = null;
+let dernierPassage = 0;
+async function traiterPush(env, maintenant = Date.now()) {
+	if (enCours) return enCours;
+	if (maintenant - dernierPassage < 1e4) return {
+		envoyes: 0,
+		echecs: 0,
+		desabonnes: 0,
+		patienter: true
+	};
+	dernierPassage = maintenant;
+	enCours = passerLaFile(env).finally(() => {
+		enCours = null;
+	});
+	return enCours;
+}
+async function passerLaFile(env) {
 	if (!env.vapid) {
 		console.error("push : secret VAPID_JWK absent ou vide");
 		return {

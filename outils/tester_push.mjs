@@ -75,4 +75,13 @@ assert.ok(revendications.exp > Date.now() / 1000)
 const publique = await crypto.subtle.importKey('raw', depuisBase64Url(k), { name: 'ECDSA', namedCurve: 'P-256' }, false, ['verify'])
 assert.ok(await crypto.subtle.verify({ name: 'ECDSA', hash: 'SHA-256' }, publique, depuisBase64Url(signature), enc.encode(`${entete}.${charge}`)))
 
-console.log('Notifications sur l’appareil : chiffrement, signature VAPID et textes vérifiés.')
+// Jamais vers une adresse qui n'est pas un service de notifications (SSRF), et sans suivre de redirection
+assert.equal(requete.redirect, 'manual')
+requete = null
+for (const endpoint of ['https://attaquant.exemple.org/x', 'https://fcm.googleapis.com.attaquant.org/x', 'http://fcm.googleapis.com/x']) {
+  const r = await envoyer({ endpoint, p256dh: enBase64Url(publiqueAppareil), auth: enBase64Url(secret) }, c, cle, 'https://scp-masters.vercel.app')
+  assert.equal(r.statut, 410, endpoint)
+  assert.equal(requete, null, endpoint)
+}
+
+console.log('Notifications sur l’appareil : chiffrement, signature VAPID, textes et services autorisés vérifiés.')
