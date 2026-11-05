@@ -5,7 +5,7 @@
  * Sur iPhone et iPad, seulement dans l'application installée sur l'écran d'accueil (iOS 16.4 et plus).
  */
 import { useSyncExternalStore } from 'react'
-import { appeler } from './enLigne'
+import { appeler, supabase } from './enLigne'
 
 /** Clé publique VAPID du serveur (la privée est le secret VAPID_JWK de la fonction Edge) */
 const CLE_PUBLIQUE = 'BB_826hueZc8Qx6UD7BMhbEFqKrRI8XV0phk3BTe8Wmx9mleSNF1rYbNHZ_Fxi-XcIprYxIf3MzL0kFxId2BRt0'
@@ -85,6 +85,17 @@ export async function activerPush(): Promise<EtatPush> {
   const ok = await confier(abo)
   changer(ok ? 'actif' : 'inactif')
   return etat
+}
+
+/**
+ * Une notification d'essai vers les appareils abonnés. Elle part quelques secondes plus tard (le temps de quitter
+ * l'application), ou dans la minute si le téléphone a déjà suspendu le jeu.
+ */
+export async function essaiPush(): Promise<boolean> {
+  const n = await appeler<number>('essai_push')
+  if (!n) return false
+  setTimeout(() => void supabase?.functions.invoke('duel', { body: { action: 'push' } }).catch(() => undefined), 6000)
+  return true
 }
 
 export async function desactiverPush(): Promise<void> {

@@ -12,6 +12,14 @@ export interface Entree {
 export const JOURNAL: Entree[] = [
   {
     date: '2026-11-05',
+    titre: 'Les notifications partent dès qu’on quitte le jeu',
+    points: [
+      'Une notification n’arrivait pas sur le téléphone pendant les 3 minutes qui suivaient la fermeture du jeu (il vous croyait encore en ligne) : elle part maintenant dès que le jeu n’est plus à l’écran.',
+      'Nouveau, dans le menu du compte : « Envoyer une notification d’essai », pour vérifier qu’un appareil les reçoit bien.',
+    ],
+  },
+  {
+    date: '2026-11-05',
     titre: 'La variante Brèche répare son glitch',
     points: [
       'Sur téléphone, les quatre tuiles du Terminal (dossiers, Elo, archives, crédits) passent en 2 × 2 : le reste du Terminal arrive sans défiler un écran entier.',

@@ -3090,6 +3090,12 @@ function contenu(type, d, b) {
 			url: "/?ecran=social",
 			etiquette: "raid"
 		};
+		case "essai": return {
+			titre: "Notifications activées",
+			texte: "Surenchères, offres d’échange, ventes et messages arriveront ici, même le jeu fermé.",
+			url: "/",
+			etiquette: "essai"
+		};
 		case "message": return {
 			titre: `Message de ${d.de ?? "un agent"}`,
 			texte: String(d.texte ?? ""),

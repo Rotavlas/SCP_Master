@@ -1434,11 +1434,11 @@ await test('notifications sur l’appareil : abonnement, file d’attente, messa
   const cle = 'B' + 'x'.repeat(86)
   await valeur(P1, "select public.abonner_push('https://push.exemple.org/abc', $1, 'aaaaaaaaaaaaaaaaaaaaaa')", [cle])
   await echoue(en(P1, "select public.abonner_push('http://non-securise', $1, 'aaaaaaaaaaaaaaaaaaaaaa')", [cle]), /invalide/)
-  // Un agent dans le jeu ne reçoit rien sur l'appareil : la cloche suffit
-  await admin(`update public.profils set vu_le = now() where id = '${P1}'`)
+  // Le jeu à l'écran : rien sur l'appareil, la cloche suffit ; dès qu'il le quitte, la notification part
+  await valeur(P1, 'select public.premier_plan(true)')
   await admin(`select prive.notifier($1, 'echange_recu', '{"de": "Archiviste Deux"}')`, [P1])
   assert.equal((await admin('select count(*)::int as n from prive.push_file')).rows[0].n, 0)
-  await admin(`update public.profils set vu_le = now() - interval '1 hour' where id = '${P1}'`)
+  await valeur(P1, 'select public.premier_plan(false)')
   await admin(`select prive.notifier($1, 'echange_recu', '{"de": "Archiviste Deux"}')`, [P1])
   const salon = (await admin('select prive.salon_mp($1, $2) as s', [P1, P2])).rows[0].s
   for (const texte of ['Salut', 'Tu es là ?'])
@@ -1451,7 +1451,12 @@ await test('notifications sur l’appareil : abonnement, file d’attente, messa
   assert.deepEqual(lot.map((x) => x.type).sort(), ['echange_recu', 'message'])
   assert.equal(lot[0].appareils[0].endpoint, 'https://push.exemple.org/abc')
   assert.equal((await admin('select count(*)::int as n from prive.push_file')).rows[0].n, 0, 'la file est vidée')
+  // La notification d'essai : vers les appareils de l'agent, une par minute au plus
+  assert.equal(await valeur(P1, 'select public.essai_push()'), 1)
+  await echoue(en(P1, 'select public.essai_push()'), /par minute au plus/)
+  assert.equal((await admin("select count(*)::int as n from prive.push_file where type = 'essai'")).rows[0].n, 1)
   await valeur(P1, "select public.desabonner_push('https://push.exemple.org/abc')")
+  await echoue(en(P2, 'select public.essai_push()'), /Aucun appareil/)
   assert.equal((await admin('select count(*)::int as n from prive.abonnements_push')).rows[0].n, 0)
 })
 

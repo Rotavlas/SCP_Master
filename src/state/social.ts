@@ -4,7 +4,7 @@
  */
 import { useEffect, useRef, useSyncExternalStore } from 'react'
 import type { IdVariante } from '../engine/variantes'
-import { appeler, idUtilisateur, supabase } from './enLigne'
+import { appeler, appelerDiscret, appelerEnPartant, idUtilisateur, supabase } from './enLigne'
 import { notifier } from './sauvegarde'
 
 // ---------- Présence ----------
@@ -16,6 +16,27 @@ export function usePresence(actif: boolean) {
     void appeler('signaler_presence')
     const t = setInterval(() => void appeler('signaler_presence'), 60_000)
     return () => clearInterval(t)
+  }, [actif])
+
+  // Le jeu à l'écran ou non : tant qu'il l'est, les notifications restent dans la cloche ; dès qu'il ne l'est plus
+  // (appli quittée, téléphone verrouillé, autre onglet), elles partent sur l'appareil (public.premier_plan)
+  useEffect(() => {
+    if (!actif) return
+    const visible = () => document.visibilityState === 'visible'
+    const signaler = () => {
+      if (visible()) void appelerDiscret('premier_plan', { p_actif: true })
+    }
+    const changer = () => (visible() ? signaler() : appelerEnPartant('premier_plan', { p_actif: false }))
+    const partir = () => appelerEnPartant('premier_plan', { p_actif: false })
+    signaler()
+    const t = setInterval(signaler, 30_000)
+    document.addEventListener('visibilitychange', changer)
+    window.addEventListener('pagehide', partir)
+    return () => {
+      clearInterval(t)
+      document.removeEventListener('visibilitychange', changer)
+      window.removeEventListener('pagehide', partir)
+    }
   }, [actif])
 }
 

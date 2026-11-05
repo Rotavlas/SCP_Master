@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useEnLigneReseau, useInstallation, useMiseAJour } from '../state/pwa'
-import { activerPush, desactiverPush, useEtatPush } from '../state/push'
+import { activerPush, desactiverPush, essaiPush, useEtatPush } from '../state/push'
+import { notifier } from '../state/sauvegarde'
 
 /**
  * Les bandeaux de l'application installable : une nouvelle version prête à charger, et le réseau perdu (le jeu se
@@ -108,20 +109,36 @@ export function NotificationsAppareil() {
   if (etat === 'refuse')
     return <p className="aide-installation">Notifications bloquées pour ce site : autorisez-les dans les réglages du navigateur pour les recevoir.</p>
   return (
-    <button
-      className={`btn ${etat === 'actif' ? 'btn-actif' : ''}`}
-      role="menuitemcheckbox"
-      aria-checked={etat === 'actif'}
-      disabled={occupe}
-      onClick={async () => {
-        setOccupe(true)
-        if (etat === 'actif') await desactiverPush()
-        else await activerPush()
-        setOccupe(false)
-      }}
-    >
-      {etat === 'actif' ? '🔔 Notifications sur l’appareil : activées' : '🔕 Recevoir les notifications sur l’appareil'}
-    </button>
+    <>
+      <button
+        className={`btn ${etat === 'actif' ? 'btn-actif' : ''}`}
+        role="menuitemcheckbox"
+        aria-checked={etat === 'actif'}
+        disabled={occupe}
+        onClick={async () => {
+          setOccupe(true)
+          if (etat === 'actif') await desactiverPush()
+          else await activerPush()
+          setOccupe(false)
+        }}
+      >
+        {etat === 'actif' ? '🔔 Notifications sur l’appareil : activées' : '🔕 Recevoir les notifications sur l’appareil'}
+      </button>
+      {etat === 'actif' && (
+        <button
+          className="btn"
+          role="menuitem"
+          disabled={occupe}
+          onClick={async () => {
+            setOccupe(true)
+            if (await essaiPush()) notifier('Notification d’essai en route : quittez l’application, elle arrive dans quelques secondes', 'succes')
+            setOccupe(false)
+          }}
+        >
+          Envoyer une notification d’essai
+        </button>
+      )}
+    </>
   )
 }
 

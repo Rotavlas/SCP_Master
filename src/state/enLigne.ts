@@ -164,6 +164,28 @@ export async function appeler<T>(fonction: string, params?: Record<string, unkno
   return data as T
 }
 
+/** Le jeton de la session en cours, pour un appel qui doit partir même quand la page se ferme (appelerEnPartant) */
+let jeton: string | null = null
+
+/** Un appel sans prévenir le joueur en cas d'échec (signaux de fond : présence, premier plan) */
+export async function appelerDiscret(fonction: string, params?: Record<string, unknown>): Promise<void> {
+  await supabase?.rpc(fonction, params).then(
+    () => undefined,
+    () => undefined,
+  )
+}
+
+/** Un appel qui part même si la page se ferme ou passe en arrière-plan juste après (keepalive) */
+export function appelerEnPartant(fonction: string, params: Record<string, unknown>) {
+  if (!url || !cle || !jeton) return
+  void fetch(`${url}/rest/v1/rpc/${fonction}`, {
+    method: 'POST',
+    keepalive: true,
+    headers: { apikey: cle, Authorization: `Bearer ${jeton}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify(params),
+  }).catch(() => undefined)
+}
+
 /** Appelle la fonction Edge « duel » (duels arbitrés par le serveur) ; en cas d'erreur, prévient le joueur et renvoie null. */
 export async function appelerDuel<T>(action: string, params: Record<string, unknown> = {}): Promise<T | null> {
   if (!supabase) return null
@@ -219,6 +241,7 @@ surModification((avant, apres) => {
 
 if (supabase) {
   supabase.auth.onAuthStateChange((evenement, session) => {
+    jeton = session?.access_token ?? null
     if (session) {
       // Rafraîchissement de jeton ou retour sur l'onglet : même joueur, rien à recharger
       if (utilisateur === session.user.id && evenement !== 'USER_UPDATED') return

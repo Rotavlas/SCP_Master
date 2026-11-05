@@ -94,6 +94,13 @@ export function contenu(type: string, d: Record<string, unknown>, b: Base | null
       return { titre: 'Saison classée close', texte: `Vous finissez ${rang(d.rang)} : +${credits(d.credits)}.`, url: '/?ecran=classement', etiquette: 'saison' }
     case 'raid_vaincu':
       return { titre: 'Raid réussi', texte: `${nom} est reconfiné. Réclamez votre part dans la page du clan.`, url: '/?ecran=social', etiquette: 'raid' }
+    case 'essai':
+      return {
+        titre: 'Notifications activées',
+        texte: 'Surenchères, offres d’échange, ventes et messages arriveront ici, même le jeu fermé.',
+        url: '/',
+        etiquette: 'essai',
+      }
     case 'message':
       return { titre: `Message de ${d.de ?? 'un agent'}`, texte: String(d.texte ?? ''), url: '/?ecran=social', etiquette: `message:${d.de}` }
     default:
