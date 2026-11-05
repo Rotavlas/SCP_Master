@@ -12449,11 +12449,16 @@ html {
 }
 
 .apercu-titre {
-  font-family: var(--machine);
-  font-size: 0.68rem;
-  line-height: 1.15;
-  color: var(--ambre);
-  text-align: center;
+  display: grid;
+  place-items: center;
+  width: 2.8rem;
+  height: 2.2rem;
+  border: 1px solid var(--titre, var(--ambre));
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--titre, var(--ambre)) 14%, transparent);
+  color: var(--titre, var(--ambre));
+  font-size: 1.3rem;
+  line-height: 1;
 }
 
 .apercu-cadre {
@@ -12676,4 +12681,56 @@ html {
 .carte-legendaire.variante-arch .cl-note,
 .carte-legendaire.variante-arch .cl-stats span:nth-child(even) {
   color: #7a4f12;
+}
+
+/* Téléphone : les quatre tuiles du Terminal en 2 × 2, compactes, pour voir le reste sans défiler un écran entier */
+@media (max-width: 560px) {
+  .tuiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.5rem;
+    margin: 1.1rem 0;
+  }
+
+  .tuile {
+    padding: 0.7rem 0.75rem;
+    min-width: 0;
+  }
+
+  .tuile-titre {
+    font-size: 0.68rem;
+    letter-spacing: 0.05em;
+  }
+
+  .tuile-valeur {
+    font-size: 1.35rem;
+    white-space: nowrap;
+  }
+
+  .tuile-sous {
+    font-size: 0.74rem;
+    overflow-wrap: anywhere;
+  }
+}
+
+/* Le ✕ d'une fiche ou d'un profil : toujours au-dessus de la carte, sur une pastille qui se voit */
+.modale > .fermer {
+  z-index: 3;
+  display: grid;
+  place-items: center;
+  width: 2.2rem;
+  height: 2.2rem;
+  border-radius: 50%;
+  background: rgba(11, 13, 14, 0.82);
+  border: 1px solid var(--bord);
+  color: var(--texte);
+  line-height: 1;
+}
+
+@media (max-width: 760px) {
+  .modale > .fermer {
+    top: 0.9rem;
+    right: 0.7rem;
+    width: 44px;
+    height: 44px;
+  }
 }

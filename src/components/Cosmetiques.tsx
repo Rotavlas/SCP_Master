@@ -11,7 +11,13 @@ import { BoutonConfirme } from './Confirmer'
 /** Un aperçu de chaque cosmétique : le titre écrit, un cadre miniature, une chemise de dossier */
 function Apercu({ id, type }: { id: string; type: TypeCosmetique }) {
   const c = COSMETIQUES[id]
-  if (type === 'titre') return <span className="apercu-titre">{c?.nom ?? id}</span>
+  // Un titre : une plaque de grade à sa couleur (son nom est écrit juste à côté)
+  if (type === 'titre')
+    return (
+      <span className="apercu-titre" style={{ ['--titre' as string]: c?.couleur }} aria-hidden="true">
+        ❝
+      </span>
+    )
   if (type === 'cadre') {
     const { className, style } = styleCadre(id)
     return <span className={`apercu-cadre ${className}`} style={style} aria-hidden="true" />

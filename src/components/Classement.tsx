@@ -3,6 +3,7 @@ import type { Base } from '../data/catalogue'
 import { classement, classementClans, type Classement as TClassement, type LigneClan, type Tableau } from '../state/social'
 import { Carte } from './Carte'
 import { Pseudo } from './Badges'
+import { Indisponible } from './Anime'
 
 const TABLEAUX: { id: Tableau | 'clans'; nom: string; unite: (v: number) => string }[] = [
   { id: 'elo', nom: 'Elo', unite: (v) => `${v}` },
@@ -18,15 +19,18 @@ const MEDAILLES = ['🥇', '🥈', '🥉']
 
 export function Classement({ base, ouvrirProfil }: { base: Base; ouvrirProfil: (pseudo: string) => void }) {
   const [tableau, setTableau] = useState<Tableau | 'clans'>('elo')
-  const [joueurs, setJoueurs] = useState<TClassement | null>(null)
-  const [clans, setClans] = useState<LigneClan[] | null>(null)
+  // undefined : en chargement ; null : le serveur n'a pas répondu
+  const [joueurs, setJoueurs] = useState<TClassement | null | undefined>(undefined)
+  const [clans, setClans] = useState<LigneClan[] | null | undefined>(undefined)
+  const [essai, setEssai] = useState(0)
 
   useEffect(() => {
-    setJoueurs(null)
-    setClans(null)
+    setJoueurs(undefined)
+    setClans(undefined)
     if (tableau === 'clans') void classementClans().then(setClans)
     else void classement(tableau).then(setJoueurs)
-  }, [tableau])
+  }, [tableau, essai])
+  const reessayer = () => setEssai((n) => n + 1)
 
   const t = TABLEAUX.find((x) => x.id === tableau)!
 
@@ -53,8 +57,10 @@ export function Classement({ base, ouvrirProfil }: { base: Base; ouvrirProfil: (
       )}
 
       {tableau === 'clans' ? (
-        !clans ? (
+        clans === undefined ? (
           <p className="discret">Chargement…</p>
+        ) : !clans ? (
+          <Indisponible reessayer={reessayer} />
         ) : clans.length === 0 ? (
           <p className="discret">Aucun clan n'a encore été fondé. Lancez le premier depuis l'onglet Social.</p>
         ) : (
@@ -71,7 +77,10 @@ export function Classement({ base, ouvrirProfil }: { base: Base; ouvrirProfil: (
                       </span>
                     )}
                     <span className="tag-clan">{c.tag}</span> {c.nom}
-                    <span className="discret"> · {c.membres} membre{c.membres > 1 ? 's' : ''}</span>
+                    <span className="discret">
+                      {' '}
+                      · {c.membres} membre{c.membres > 1 ? 's' : ''}
+                    </span>
                   </span>
                   <span className="valeur">{t.unite(Number(c.score))}</span>
                 </li>
@@ -79,8 +88,10 @@ export function Classement({ base, ouvrirProfil }: { base: Base; ouvrirProfil: (
             })}
           </ol>
         )
-      ) : !joueurs ? (
+      ) : joueurs === undefined ? (
         <p className="discret">Chargement…</p>
+      ) : !joueurs ? (
+        <Indisponible reessayer={reessayer} />
       ) : (
         <ol className="table-classement">
           {joueurs.lignes.map((l) => (

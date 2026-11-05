@@ -26,6 +26,7 @@ import type { Carte as TCarte } from '../types'
 import { Carte } from './Carte'
 import { BoutonConfirme } from './Confirmer'
 import { Cote } from './Cote'
+import { Indisponible } from './Anime'
 
 type Onglet = 'encheres' | 'ventes' | 'echanges' | 'cote'
 const credits = (n: number) => `${n.toLocaleString('fr-FR')} ₵`
@@ -104,7 +105,14 @@ export function Marche({
       </div>
 
       {onglet === 'encheres' && (
-        <Encheres base={base} etat={etat} maintenant={maintenant + decalage} ouvrirCarte={ouvrirCarte} rechercheInitiale={rechercheInitiale} rafraichir={rafraichir} />
+        <Encheres
+          base={base}
+          etat={etat}
+          maintenant={maintenant + decalage}
+          ouvrirCarte={ouvrirCarte}
+          rechercheInitiale={rechercheInitiale}
+          rafraichir={rafraichir}
+        />
       )}
       {onglet === 'ventes' && <MesVentes base={base} etat={etat} maintenant={maintenant + decalage} ouvrirCarte={ouvrirCarte} rafraichir={rafraichir} />}
       {onglet === 'echanges' && <Echanges base={base} ouvrirCarte={ouvrirCarte} />}
@@ -151,7 +159,13 @@ function Encheres({
         if (enTete && !e.enTete) return false
         return !r || carte.id === r || `${carte.num ?? ''} ${carte.nm} ${e.vendeur}`.toLowerCase().includes(r)
       })
-      .sort((a, b) => (tri === 'prix' ? prix(b.e) - prix(a.e) : tri === 'rarete' ? b.carte.ra - a.carte.ra || Date.parse(a.e.fin) - Date.parse(b.e.fin) : Date.parse(a.e.fin) - Date.parse(b.e.fin)))
+      .sort((a, b) =>
+        tri === 'prix'
+          ? prix(b.e) - prix(a.e)
+          : tri === 'rarete'
+            ? b.carte.ra - a.carte.ra || Date.parse(a.e.fin) - Date.parse(b.e.fin)
+            : Date.parse(a.e.fin) - Date.parse(b.e.fin),
+      )
   }, [etat, base, recherche, rarete, variante, enTete, tri])
 
   if (!etat) return <p className="discret">Connexion au bureau des transferts…</p>
@@ -186,8 +200,8 @@ function Encheres({
         </label>
       </div>
       <p className="discret direct">
-        <span className="point-direct" aria-hidden="true" /> En direct · {etat.ouvertes.length} vente{etat.ouvertes.length > 1 ? 's' : ''} en cours. Mise minimale : +5 %. Une mise dans les 2 dernières minutes
-        prolonge la vente de 2 minutes.
+        <span className="point-direct" aria-hidden="true" /> En direct · {etat.ouvertes.length} vente{etat.ouvertes.length > 1 ? 's' : ''} en cours. Mise
+        minimale : +5 %. Une mise dans les 2 dernières minutes prolonge la vente de 2 minutes.
       </p>
       {liste.length === 0 ? (
         <p className="alerte">Aucune vente ne correspond. Mettez une carte en vente depuis sa fiche, dans vos archives.</p>
@@ -252,7 +266,7 @@ function LigneEnchere({
           <strong key={e.mise ?? 'depart'} className="prix-maj">
             {credits(e.mise ?? e.prixDepart)}
           </strong>
-          <span className="discret">{e.mise === null ? ' mise de départ' : ` par ${e.enTete ? 'vous' : e.meneur ?? '—'}`}</span>
+          <span className="discret">{e.mise === null ? ' mise de départ' : ` par ${e.enTete ? 'vous' : (e.meneur ?? '—')}`}</span>
           {e.enTete && <span className="badge-tete">Vous menez</span>}
         </p>
         <p className={`enchere-fin ${urgent ? 'urgent' : ''}`}>Fin dans {tempsRestant(fin, maintenant)}</p>
@@ -321,7 +335,9 @@ function HistoriqueMises({ idEnchere, nbMises }: { idEnchere: string; nbMises: n
             <li key={`${m.le}-${i}`} className={`${i === 0 ? 'meilleure' : ''} ${m.moi ? 'moi' : ''}`}>
               <strong>{credits(m.montant)}</strong>
               <span>{m.moi ? 'vous' : m.pseudo}</span>
-              <span className="discret">{new Date(m.le).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span>
+              <span className="discret">
+                {new Date(m.le).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+              </span>
             </li>
           ))}
         </ol>
@@ -358,7 +374,9 @@ function MesVentes({
         <div className="liste-encheres">
           {miennes.map((e) => {
             const carte = base.parId.get(e.carte)
-            return carte ? <LigneEnchere key={e.id} e={e} carte={carte} base={base} maintenant={maintenant} ouvrirCarte={ouvrirCarte} rafraichir={rafraichir} /> : null
+            return carte ? (
+              <LigneEnchere key={e.id} e={e} carte={carte} base={base} maintenant={maintenant} ouvrirCarte={ouvrirCarte} rafraichir={rafraichir} />
+            ) : null
           })}
         </div>
       )}
@@ -392,7 +410,9 @@ function MesVentes({
                   </td>
                   <td>{h.vendu ? 'Vendeur' : 'Acheteur'}</td>
                   <td>{STATUTS[h.statut]}</td>
-                  <td>{h.mise === null ? '—' : h.vendu && h.statut === 'vendue' ? `${credits(h.mise)} (net ${credits(netVendeur(h.mise))})` : credits(h.mise)}</td>
+                  <td>
+                    {h.mise === null ? '—' : h.vendu && h.statut === 'vendue' ? `${credits(h.mise)} (net ${credits(netVendeur(h.mise))})` : credits(h.mise)}
+                  </td>
                   <td>{new Date(h.close).toLocaleString('fr-FR', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</td>
                 </tr>
               )
@@ -407,12 +427,14 @@ function MesVentes({
 // ---------- Échanges ----------
 
 function Echanges({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id: string) => void }) {
-  const [offres, setOffres] = useState<Offre[] | null>(null)
+  // undefined : en chargement ; null : le serveur n'a pas répondu
+  const [offres, setOffres] = useState<Offre[] | null | undefined>(undefined)
   const [nouvelle, setNouvelle] = useState(false)
   const recharger = useCallback(() => void mesEchanges().then(setOffres), [])
   useEffect(recharger, [recharger])
 
-  if (!offres) return <p className="discret">Ouverture du registre des échanges…</p>
+  if (offres === undefined) return <p className="discret">Ouverture du registre des échanges…</p>
+  if (!offres) return <Indisponible reessayer={recharger} />
   const recues = offres.filter((o) => o.recue && o.statut === 'ouverte')
   const envoyees = offres.filter((o) => !o.recue && o.statut === 'ouverte')
   const closes = offres.filter((o) => o.statut !== 'ouverte')
@@ -432,13 +454,23 @@ function Echanges({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id: string)
           <button className="btn btn-principal" onClick={() => setNouvelle(true)}>
             Proposer un échange
           </button>
-          <p className="discret">Ce que vous proposez est réservé jusqu'à la réponse. L'échange se fait d'un coup, ou pas du tout. Une offre expire au bout de 7 jours.</p>
+          <p className="discret">
+            Ce que vous proposez est réservé jusqu'à la réponse. L'échange se fait d'un coup, ou pas du tout. Une offre expire au bout de 7 jours.
+          </p>
         </div>
       )}
       <h2>Offres reçues</h2>
-      {recues.length === 0 ? <p className="discret">Aucune offre en attente.</p> : recues.map((o) => <CarteOffre key={o.id} o={o} base={base} ouvrirCarte={ouvrirCarte} apres={recharger} />)}
+      {recues.length === 0 ? (
+        <p className="discret">Aucune offre en attente.</p>
+      ) : (
+        recues.map((o) => <CarteOffre key={o.id} o={o} base={base} ouvrirCarte={ouvrirCarte} apres={recharger} />)
+      )}
       <h2>Offres envoyées</h2>
-      {envoyees.length === 0 ? <p className="discret">Aucune offre en attente.</p> : envoyees.map((o) => <CarteOffre key={o.id} o={o} base={base} ouvrirCarte={ouvrirCarte} apres={recharger} />)}
+      {envoyees.length === 0 ? (
+        <p className="discret">Aucune offre en attente.</p>
+      ) : (
+        envoyees.map((o) => <CarteOffre key={o.id} o={o} base={base} ouvrirCarte={ouvrirCarte} apres={recharger} />)
+      )}
       {closes.length > 0 && (
         <>
           <h2>30 derniers jours</h2>
@@ -453,7 +485,17 @@ function Echanges({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id: string)
 
 const STATUTS_OFFRE = { ouverte: 'En attente', acceptee: 'Acceptée', refusee: 'Refusée', annulee: 'Annulée', expiree: 'Expirée' } as const
 
-function Lignes({ lignes, creditsOfferts, base, ouvrirCarte }: { lignes: LigneOffre[]; creditsOfferts: number; base: Base; ouvrirCarte: (id: string) => void }) {
+function Lignes({
+  lignes,
+  creditsOfferts,
+  base,
+  ouvrirCarte,
+}: {
+  lignes: LigneOffre[]
+  creditsOfferts: number
+  base: Base
+  ouvrirCarte: (id: string) => void
+}) {
   return (
     <ul className="lignes-offre">
       {lignes.map((l, i) => {
@@ -615,11 +657,28 @@ function NouvelleOffre({ base, fermer }: { base: Base; fermer: () => void }) {
     >
       <h2>Échange avec {joueur}</h2>
       <div className="offre-cotes">
-        <Selection titre="Vous donnez" base={base} disponibles={miennes} choix={donne} setChoix={setDonne} credits={creditsDonnes} setCredits={setCreditsDonnes} max={s.credits} />
+        <Selection
+          titre="Vous donnez"
+          base={base}
+          disponibles={miennes}
+          choix={donne}
+          setChoix={setDonne}
+          credits={creditsDonnes}
+          setCredits={setCreditsDonnes}
+          max={s.credits}
+        />
         <span className="offre-fleche" aria-hidden="true">
           ⇄
         </span>
-        <Selection titre={`Vous demandez à ${joueur}`} base={base} disponibles={siennes} choix={demande} setChoix={setDemande} credits={creditsDemandes} setCredits={setCreditsDemandes} />
+        <Selection
+          titre={`Vous demandez à ${joueur}`}
+          base={base}
+          disponibles={siennes}
+          choix={demande}
+          setChoix={setDemande}
+          credits={creditsDemandes}
+          setCredits={setCreditsDemandes}
+        />
       </div>
       <label>
         Message (facultatif)
@@ -676,7 +735,8 @@ function Selection({
           const carte = base.parId.get(x.c)
           return (
             <li key={i}>
-              <span style={{ color: carte ? RARETES[carte.ra].couleur : undefined }}>{carte ? designation(carte) : x.c}</span> <span className="discret">{PAR_ID[x.v].nom}</span>
+              <span style={{ color: carte ? RARETES[carte.ra].couleur : undefined }}>{carte ? designation(carte) : x.c}</span>{' '}
+              <span className="discret">{PAR_ID[x.v].nom}</span>
               <button type="button" className="btn-lien" onClick={() => setChoix(choix.filter((_, j) => j !== i))} aria-label="Retirer">
                 ✕
               </button>

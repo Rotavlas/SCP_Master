@@ -14,6 +14,10 @@ export const JOURNAL: Entree[] = [
     date: '2026-11-05',
     titre: 'La variante Brèche répare son glitch',
     points: [
+      'Sur téléphone, les quatre tuiles du Terminal (dossiers, Elo, archives, crédits) passent en 2 × 2 : le reste du Terminal arrive sans défiler un écran entier.',
+      'Le ✕ des fiches et des profils se voit enfin sur téléphone : une pastille sombre, au-dessus de la carte.',
+      'Quand le serveur ne répond pas, les amis, le clan, les classements, les échanges, le cours d’une carte et les profils ne restent plus bloqués sur « Chargement… » : un bouton Réessayer apparaît.',
+      'À l’Intendance, l’aperçu des titres ne coupe plus les mots en morceaux.',
       'Les cartes en variante Brèche restaient « cassées » les trois quarts du temps (en-tête et textes masqués, couleurs inversées) : elles ne glitchent plus que par un bref sursaut, et leurs lignes de balayage défilent de nouveau sur la carte.',
       'Les Mythiques retrouvent leur aura rouge pulsée, et le nom d’une Légendaire en Archive d’origine se lit de nouveau, à l’encre sur le papier jauni.',
       'Vérification des chances des variantes : celles tirées par le serveur sont exactement celles affichées, pour chaque dossier, les Mythiques et la fusion.',

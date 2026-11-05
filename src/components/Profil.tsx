@@ -9,6 +9,7 @@ import { BadgesAffiches, PastilleBadge } from './Badges'
 import { Carte } from './Carte'
 import { useGlisserPourFermer } from './feuille'
 import { COSMETIQUES, styleCadre } from '../data/cosmetiques'
+import { Indisponible } from './Anime'
 
 const ROLES = { chef: 'Chef', officier: 'Officier', membre: 'Membre' }
 const ISSUES = { victoire: 'Victoire', defaite: 'Défaite', nul: 'Nul' }
@@ -27,7 +28,8 @@ export function Profil({ pseudo, base, onFermer, ouvrirCarte, ecrire }: Props) {
   // Sur téléphone, le profil monte du bas et se ferme d'un glissement vers le bas
   const feuille = useGlisserPourFermer(onFermer)
   const s = useSauvegarde()
-  const [p, setP] = useState<ProfilPublic | null>(null)
+  // undefined : en chargement ; null : le serveur n'a pas répondu
+  const [p, setP] = useState<ProfilPublic | null | undefined>(undefined)
   const [occupe, setOccupe] = useState(false)
 
   const charger = useCallback(() => void profilPublic(pseudo).then(setP), [pseudo])
@@ -57,8 +59,10 @@ export function Profil({ pseudo, base, onFermer, ouvrirCarte, ecrire }: Props) {
         <button className="fermer" onClick={onFermer} aria-label="Fermer">
           ✕
         </button>
-        {!p ? (
+        {p === undefined ? (
           <p className="discret">Consultation du dossier personnel…</p>
+        ) : !p ? (
+          <Indisponible reessayer={charger} />
         ) : (
           <>
             <div {...cadre}>

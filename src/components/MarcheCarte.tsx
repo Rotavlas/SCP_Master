@@ -8,13 +8,15 @@ import { CoursGraphique } from './CoursGraphique'
 import { JaugeRecyclage } from './JaugeRecyclage'
 import { useRecyclageRestant } from '../state/enLigne'
 import { gainPlafonne } from '../engine/boosters'
+import { Indisponible } from './Anime'
 
 const credits = (n: number | null) => (n === null ? '—' : `${n.toLocaleString('fr-FR')} ₵`)
 
 /** Dans la fiche d'une carte : son cours, la mise aux enchères et le brûlage d'un exemplaire. */
 export function MarcheCarte({ carte, variante: varianteAffichee, voirMarche }: { carte: Carte; variante: IdVariante; voirMarche: () => void }) {
   const restantRecyclage = useRecyclageRestant()
-  const [cours, setCours] = useState<Cours | null>(null)
+  // undefined : en chargement ; null : le serveur n'a pas répondu
+  const [cours, setCours] = useState<Cours | null | undefined>(undefined)
   const [variante, setVariante] = useState<IdVariante>(varianteAffichee)
   const [vente, setVente] = useState(false)
   const [occupe, setOccupe] = useState(false)
@@ -28,7 +30,7 @@ export function MarcheCarte({ carte, variante: varianteAffichee, voirMarche }: {
     return (
       <section className="marche-carte">
         <h4>Marché</h4>
-        <p className="discret">Consultation des cours…</p>
+        {cours === undefined ? <p className="discret">Consultation des cours…</p> : <Indisponible reessayer={recharger} />}
       </section>
     )
 

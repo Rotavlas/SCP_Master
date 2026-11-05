@@ -38,6 +38,7 @@ import {
 import { Carte } from './Carte'
 import { BoutonConfirme, BoutonSaisie } from './Confirmer'
 import { Pseudo } from './Badges'
+import { Indisponible } from './Anime'
 
 export type OngletSocial = 'amis' | 'clan' | 'messages'
 
@@ -94,7 +95,8 @@ export function Social({ base, ouvrirProfil, onglet, setOnglet, conversation, se
 // ---------- Amis ----------
 
 function Amis({ ouvrirProfil, ecrire }: { ouvrirProfil: (p: string) => void; ecrire: (p: string) => void }) {
-  const [amis, setAmis] = useState<MesAmis | null>(null)
+  // undefined : en chargement ; null : le serveur n'a pas répondu
+  const [amis, setAmis] = useState<MesAmis | null | undefined>(undefined)
   const [recherche, setRecherche] = useState('')
   const [suggestions, setSuggestions] = useState<string[]>([])
   const charger = useCallback(() => void mesAmis().then(setAmis), [])
@@ -186,8 +188,10 @@ function Amis({ ouvrirProfil, ecrire }: { ouvrirProfil: (p: string) => void; ecr
 
       <div className="encart">
         <h3>Mes amis {amis && <span className="discret">({amis.amis.filter((a) => a.enLigne).length} en ligne)</span>}</h3>
-        {!amis ? (
+        {amis === undefined ? (
           <p className="discret">Chargement…</p>
+        ) : !amis ? (
+          <Indisponible reessayer={charger} />
         ) : amis.amis.length === 0 ? (
           <p className="discret">Pas encore d'amis. Ajoutez un agent par son pseudo, ou depuis les classements.</p>
         ) : (
@@ -229,11 +233,12 @@ function Amis({ ouvrirProfil, ecrire }: { ouvrirProfil: (p: string) => void; ecr
 const ROLES = { chef: 'Chef', officier: 'Officier', membre: 'Membre' }
 
 function Clan({ base, ouvrirProfil }: { base: Base; ouvrirProfil: (p: string) => void }) {
-  const [clan, setClan] = useState<MonClan | null>(null)
+  const [clan, setClan] = useState<MonClan | null | undefined>(undefined)
   const charger = useCallback(() => void monClan().then(setClan), [])
   useEffect(charger, [charger])
 
-  if (!clan) return <p className="discret">Chargement…</p>
+  if (clan === undefined) return <p className="discret">Chargement…</p>
+  if (!clan) return <Indisponible reessayer={charger} />
   if (!clan.tag) return <SansClan base={base} candidatures={clan.candidatures as string[]} recharger={charger} />
   return <MonClanVue base={base} clan={clan as FicheClan} recharger={charger} ouvrirProfil={ouvrirProfil} />
 }

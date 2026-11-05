@@ -52,6 +52,18 @@ export function NombreAnime({ valeur, format = (n: number) => n.toLocaleString('
  * sauter la page à l'arrivée des données.
  */
 const LONGUEURS = [92, 64, 78, 45, 86, 58, 71]
+
+/** Le serveur n'a pas répondu (l'erreur s'est affichée en notification) : on le dit, et on propose de recommencer */
+export function Indisponible({ reessayer }: { reessayer: () => void }) {
+  return (
+    <p className="discret">
+      Indisponible pour le moment.{' '}
+      <button className="btn-lien" onClick={reessayer}>
+        Réessayer
+      </button>
+    </p>
+  )
+}
 export function Caviarde({ lignes = 3, label = 'Chargement' }: { lignes?: number; label?: string }) {
   return (
     <div className="caviarde" role="status" aria-label={label}>

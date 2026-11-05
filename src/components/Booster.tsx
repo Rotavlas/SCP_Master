@@ -167,6 +167,12 @@ export function Booster({ base, tirage, setTirage, aller, ouvrirCarte }: Props) 
   return <Ouverture key={tirage.id} base={base} tirage={tirage} setTirage={setTirage} aller={aller} ouvrirCarte={ouvrirCarte} ouvrirStock={ouvrirStock} />
 }
 
+/** Une vibration (Android) ; jamais avant un premier toucher, que le navigateur refuserait */
+const vibrer = (motif: number | number[]) => {
+  if ((navigator as Navigator & { userActivation?: { hasBeenActive: boolean } }).userActivation?.hasBeenActive === false) return
+  navigator.vibrate?.(motif)
+}
+
 type Etape = 'scelle' | 'dechire' | 'pile' | 'bilan'
 
 function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }: Props & { tirage: Tirage; ouvrirStock: () => void }) {
@@ -215,7 +221,7 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
 
   const dechirer = useCallback(() => {
     jouer.dechirure()
-    navigator.vibrate?.([12, 40, 28])
+    vibrer([12, 40, 28])
     setDechirure(1)
     setEtape('dechire')
     // Le rabat s'envole, l'éclair jaillit, les fiches sortent du dossier : puis la pile
@@ -234,7 +240,7 @@ function Ouverture({ base, tirage, setTirage, aller, ouvrirCarte, ouvrirStock }:
     const q = Math.floor(d * 4)
     if (q > quart.current) {
       quart.current = q
-      navigator.vibrate?.(8)
+      vibrer(8)
       jouer.plume()
     }
     setDechirure(d)
