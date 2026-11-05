@@ -40,6 +40,8 @@ self.addEventListener('activate', (e) => {
 
 self.addEventListener('message', (e) => {
   if (e.data === 'activer') self.skipWaiting()
+  // Le jeu vérifie que le service worker en place sait afficher les notifications (les versions d'avant ne répondent pas)
+  if (e.data === 'version' && e.source) e.source.postMessage({ type: 'version', version: VERSION, push: true })
 })
 
 async function depuisLeCache(nomCache, req) {

@@ -54,7 +54,7 @@ globalThis.fetch = async (url, init) => {
 const c = contenu('surencheri', { par: 'Docteur Bravo', mise: 1200, enchere: 'e1' }, null)
 assert.equal(c.titre, 'Vous êtes surenchéri')
 assert.match(c.texte, /Docteur Bravo mise 1\s200 ₵ sur une carte/)
-const statut = await envoyer(
+const { statut } = await envoyer(
   { endpoint: 'https://fcm.googleapis.com/fcm/send/abc', p256dh: enBase64Url(publiqueAppareil), auth: enBase64Url(secret) },
   c,
   cle,

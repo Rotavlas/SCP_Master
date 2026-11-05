@@ -62,6 +62,43 @@ export function enregistrerServiceWorker() {
   })
 }
 
+/**
+ * Applique une mise à jour en attente (recharge la page sur elle). Renvoie false s'il n'y en a pas : le navigateur en
+ * cherche alors une, que le bandeau proposera.
+ */
+export async function appliquerMiseAJour(): Promise<boolean> {
+  const reg = await navigator.serviceWorker?.getRegistration().catch(() => undefined)
+  const sw = enAttente ?? reg?.waiting ?? null
+  if (!sw) {
+    await reg?.update().catch(() => undefined)
+    return false
+  }
+  miseAJourDemandee = true
+  sw.postMessage('activer')
+  return true
+}
+
+/** Le service worker en place sait-il afficher les notifications ? (les versions d'avant le 2026-11-04 ne répondent pas) */
+export async function serviceWorkerAJour(): Promise<boolean> {
+  const reg = await navigator.serviceWorker?.getRegistration().catch(() => undefined)
+  const actif = reg?.active
+  if (!actif) return false
+  return new Promise((resoudre) => {
+    const fin = setTimeout(() => {
+      navigator.serviceWorker.removeEventListener('message', recevoir)
+      resoudre(false)
+    }, 1500)
+    const recevoir = (m: MessageEvent) => {
+      if (m.data?.type !== 'version') return
+      clearTimeout(fin)
+      navigator.serviceWorker.removeEventListener('message', recevoir)
+      resoudre(m.data.push === true)
+    }
+    navigator.serviceWorker.addEventListener('message', recevoir)
+    actif.postMessage('version')
+  })
+}
+
 /** Une nouvelle version est prête : l'appliquer recharge la page sur elle */
 export function useMiseAJour(): { disponible: boolean; appliquer: () => void } {
   const disponible = useSyncExternalStore(abonner, () => enAttente !== null)

@@ -15,7 +15,7 @@ export const JOURNAL: Entree[] = [
     titre: 'Les notifications partent dès qu’on quitte le jeu',
     points: [
       'Une notification n’arrivait pas sur le téléphone pendant les 3 minutes qui suivaient la fermeture du jeu (il vous croyait encore en ligne) : elle part maintenant dès que le jeu n’est plus à l’écran.',
-      'Nouveau, dans le menu du compte : « Envoyer une notification d’essai », pour vérifier qu’un appareil les reçoit bien.',
+      'Nouveau, dans le menu du compte : « Envoyer une notification d’essai ». Le jeu affiche ce qu’Apple ou Google ont répondu, et met d’abord à jour le terminal installé s’il date d’avant les notifications.',
     ],
   },
   {

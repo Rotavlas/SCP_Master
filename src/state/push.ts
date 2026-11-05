@@ -6,6 +6,7 @@
  */
 import { useSyncExternalStore } from 'react'
 import { appeler, supabase } from './enLigne'
+import { appliquerMiseAJour, serviceWorkerAJour } from './pwa'
 
 /** Clé publique VAPID du serveur (la privée est le secret VAPID_JWK de la fonction Edge) */
 const CLE_PUBLIQUE = 'BB_826hueZc8Qx6UD7BMhbEFqKrRI8XV0phk3BTe8Wmx9mleSNF1rYbNHZ_Fxi-XcIprYxIf3MzL0kFxId2BRt0'
@@ -88,14 +89,36 @@ export async function activerPush(): Promise<EtatPush> {
 }
 
 /**
- * Une notification d'essai vers les appareils abonnés. Elle part quelques secondes plus tard (le temps de quitter
- * l'application), ou dans la minute si le téléphone a déjà suspendu le jeu.
+ * Une notification d'essai vers les appareils abonnés, envoyée deux secondes plus tard ; renvoie ce que chaque service
+ * de notifications (Apple, Google, Mozilla) a répondu, pour le dire au joueur. Si le téléphone suspend le jeu entre-temps,
+ * le serveur l'envoie de lui-même dans la minute.
  */
-export async function essaiPush(): Promise<boolean> {
+export async function essaiPush(): Promise<string | null> {
+  // Un service worker d'avant les notifications les recevrait sans pouvoir les afficher : on le met d'abord à jour
+  if (!(await serviceWorkerAJour())) {
+    return (await appliquerMiseAJour())
+      ? 'mise à jour du terminal en cours, recommencez l’essai après le rechargement.'
+      : 'le terminal installé doit d’abord être mis à jour : fermez complètement l’application, rouvrez-la, puis touchez « Mettre à jour » si le bandeau apparaît.'
+  }
   const n = await appeler<number>('essai_push')
-  if (!n) return false
-  setTimeout(() => void supabase?.functions.invoke('duel', { body: { action: 'push' } }).catch(() => undefined), 6000)
-  return true
+  if (!n) return null
+  await new Promise((r) => setTimeout(r, 2000))
+  const { data } = (await supabase?.functions.invoke('duel', { body: { action: 'push' } }).catch(() => ({ data: null }))) ?? { data: null }
+  const r = data as { cle?: false; details?: { service: string; statut: number; raison: string }[] } | null
+  if (!r) return 'Envoi demandé : le serveur la transmet dans la minute.'
+  if (r.cle === false) return 'Le serveur n’a pas de clé de notification (secret VAPID_JWK) : rien ne peut partir.'
+  const nom = (s: string) => (s.includes('apple') ? 'Apple' : s.includes('google') ? 'Google' : s.includes('mozilla') ? 'Mozilla' : s)
+  const essais = (r.details ?? []).filter((d) => d)
+  if (!essais.length) return 'Déjà transmise par le serveur : elle doit arriver sous peu.'
+  return essais
+    .map((d) =>
+      d.statut >= 200 && d.statut < 300
+        ? `${nom(d.service)} : acceptée`
+        : d.statut === 404 || d.statut === 410
+          ? `${nom(d.service)} : appareil désabonné (réactivez les notifications)`
+          : `${nom(d.service)} : refusée (${d.statut} ${d.raison})`,
+    )
+    .join(' · ')
 }
 
 export async function desactiverPush(): Promise<void> {

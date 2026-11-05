@@ -195,8 +195,11 @@ async function enteteVapid(endpoint: string, cle: CleVapid, sujet: string): Prom
   return `vapid t=${corps}.${enBase64Url(signature)}, k=${cle.publique}`
 }
 
-/** Envoie à un appareil ; renvoie le statut du service de notifications (201 : accepté ; 404 ou 410 : désabonné) */
-export async function envoyer(appareil: Appareil, c: Contenu, cle: CleVapid, sujet: string): Promise<number> {
+/**
+ * Envoie à un appareil ; renvoie le statut du service de notifications (201 : accepté ; 404 ou 410 : désabonné) et,
+ * en cas de refus, sa raison (Apple : {"reason": "…"})
+ */
+export async function envoyer(appareil: Appareil, c: Contenu, cle: CleVapid, sujet: string): Promise<{ statut: number; raison: string }> {
   const corps = await chiffrer(JSON.stringify(c), appareil)
   const r = await fetch(appareil.endpoint, {
     method: 'POST',
@@ -210,16 +213,30 @@ export async function envoyer(appareil: Appareil, c: Contenu, cle: CleVapid, suj
     },
     body: corps as BodyInit,
   })
-  await r.body?.cancel().catch(() => undefined)
-  return r.status
+  const raison = r.ok ? '' : (await r.text().catch(() => '')).slice(0, 160)
+  if (r.ok) await r.body?.cancel().catch(() => undefined)
+  return { statut: r.status, raison }
 }
 
 // ---------- Le passage de la file ----------
 
 let cleVapid: Promise<CleVapid> | null = null
 
-export async function traiterPush(env: Environnement & { vapid?: string }): Promise<{ envoyes: number; echecs: number; desabonnes: number }> {
-  if (!env.vapid) return { envoyes: 0, echecs: 0, desabonnes: 0 }
+/** Ce que chaque service de notifications a répondu, pour le diagnostic (journaux de la fonction, essai du joueur) */
+export interface Resultat {
+  type: string
+  service: string
+  statut: number
+  raison: string
+}
+
+export async function traiterPush(
+  env: Environnement & { vapid?: string },
+): Promise<{ envoyes: number; echecs: number; desabonnes: number; details?: Resultat[]; cle?: false }> {
+  if (!env.vapid) {
+    console.error('push : secret VAPID_JWK absent ou vide')
+    return { envoyes: 0, echecs: 0, desabonnes: 0, cle: false }
+  }
   cleVapid ??= lireCleVapid(env.vapid)
   const cle = await cleVapid
   const lot = await rpc<Envoi[]>(env, 'push_a_envoyer', {})
@@ -227,22 +244,27 @@ export async function traiterPush(env: Environnement & { vapid?: string }): Prom
   // Les noms des cartes ; sans catalogue, la notification part quand même (« une carte »)
   const b = await base(env, 'vf').catch(() => null)
   const desabonnes: string[] = []
+  const details: Resultat[] = []
   let envoyes = 0
   let echecs = 0
   await Promise.all(
     lot.flatMap((e) =>
       e.appareils.map(async (a) => {
+        const service = new URL(a.endpoint).host
         try {
-          const statut = await envoyer(a, contenu(e.type, e.donnees, b), cle, env.site)
+          const { statut, raison } = await envoyer(a, contenu(e.type, e.donnees, b), cle, env.site)
+          details.push({ type: e.type, service, statut, raison })
           if (statut === 404 || statut === 410) desabonnes.push(a.endpoint)
           else if (statut >= 200 && statut < 300) envoyes++
           else echecs++
-        } catch {
+        } catch (x) {
+          details.push({ type: e.type, service, statut: 0, raison: String(x).slice(0, 160) })
           echecs++
         }
       }),
     ),
   )
   if (desabonnes.length) await rpc(env, 'push_expires', { p_endpoints: desabonnes })
-  return { envoyes, echecs, desabonnes: desabonnes.length }
+  console.log('push', JSON.stringify(details))
+  return { envoyes, echecs, desabonnes: desabonnes.length, details }
 }

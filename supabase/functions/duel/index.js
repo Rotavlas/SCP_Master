@@ -3196,7 +3196,10 @@ async function enteteVapid(endpoint, cle, sujet) {
 		hash: "SHA-256"
 	}, cle.privee, encodeur.encode(corps))))}, k=${cle.publique}`;
 }
-/** Envoie à un appareil ; renvoie le statut du service de notifications (201 : accepté ; 404 ou 410 : désabonné) */
+/**
+* Envoie à un appareil ; renvoie le statut du service de notifications (201 : accepté ; 404 ou 410 : désabonné) et,
+* en cas de refus, sa raison (Apple : {"reason": "…"})
+*/
 async function envoyer(appareil, c, cle, sujet) {
 	const corps = await chiffrer(JSON.stringify(c), appareil);
 	const r = await fetch(appareil.endpoint, {
@@ -3211,16 +3214,24 @@ async function envoyer(appareil, c, cle, sujet) {
 		},
 		body: corps
 	});
-	await r.body?.cancel().catch(() => void 0);
-	return r.status;
+	const raison = r.ok ? "" : (await r.text().catch(() => "")).slice(0, 160);
+	if (r.ok) await r.body?.cancel().catch(() => void 0);
+	return {
+		statut: r.status,
+		raison
+	};
 }
 let cleVapid = null;
 async function traiterPush(env) {
-	if (!env.vapid) return {
-		envoyes: 0,
-		echecs: 0,
-		desabonnes: 0
-	};
+	if (!env.vapid) {
+		console.error("push : secret VAPID_JWK absent ou vide");
+		return {
+			envoyes: 0,
+			echecs: 0,
+			desabonnes: 0,
+			cle: false
+		};
+	}
 	cleVapid ??= lireCleVapid(env.vapid);
 	const cle = await cleVapid;
 	const lot = await rpc(env, "push_a_envoyer", {});
@@ -3231,23 +3242,39 @@ async function traiterPush(env) {
 	};
 	const b = await base(env, "vf").catch(() => null);
 	const desabonnes = [];
+	const details = [];
 	let envoyes = 0;
 	let echecs = 0;
 	await Promise.all(lot.flatMap((e) => e.appareils.map(async (a) => {
+		const service = new URL(a.endpoint).host;
 		try {
-			const statut = await envoyer(a, contenu(e.type, e.donnees, b), cle, env.site);
+			const { statut, raison } = await envoyer(a, contenu(e.type, e.donnees, b), cle, env.site);
+			details.push({
+				type: e.type,
+				service,
+				statut,
+				raison
+			});
 			if (statut === 404 || statut === 410) desabonnes.push(a.endpoint);
 			else if (statut >= 200 && statut < 300) envoyes++;
 			else echecs++;
-		} catch {
+		} catch (x) {
+			details.push({
+				type: e.type,
+				service,
+				statut: 0,
+				raison: String(x).slice(0, 160)
+			});
 			echecs++;
 		}
 	})));
 	if (desabonnes.length) await rpc(env, "push_expires", { p_endpoints: desabonnes });
+	console.log("push", JSON.stringify(details));
 	return {
 		envoyes,
 		echecs,
-		desabonnes: desabonnes.length
+		desabonnes: desabonnes.length,
+		details
 	};
 }
 // serveur/duel.ts

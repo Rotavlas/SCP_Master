@@ -131,7 +131,8 @@ export function NotificationsAppareil() {
           disabled={occupe}
           onClick={async () => {
             setOccupe(true)
-            if (await essaiPush()) notifier('Notification d’essai en route : quittez l’application, elle arrive dans quelques secondes', 'succes')
+            const r = await essaiPush()
+            if (r) notifier(`Notification d’essai : ${r}`, r.includes('refusée') || r.includes('pas de clé') ? 'info' : 'succes')
             setOccupe(false)
           }}
         >
