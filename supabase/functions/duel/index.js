@@ -3209,8 +3209,7 @@ async function envoyer(appareil, c, cle, sujet) {
 			"Content-Encoding": "aes128gcm",
 			"Content-Type": "application/octet-stream",
 			TTL: "86400",
-			Urgency: "normal",
-			Topic: c.etiquette.replace(/[^A-Za-z0-9_-]/g, "").slice(0, 32) || "scp"
+			Urgency: "normal"
 		},
 		body: corps
 	});

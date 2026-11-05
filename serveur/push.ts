@@ -209,7 +209,8 @@ export async function envoyer(appareil: Appareil, c: Contenu, cle: CleVapid, suj
       'Content-Type': 'application/octet-stream',
       TTL: '86400',
       Urgency: 'normal',
-      Topic: c.etiquette.replace(/[^A-Za-z0-9_-]/g, '').slice(0, 32) || 'scp',
+      // Pas d'en-tête Topic : Apple le refuse (400 BadWebPushTopic) ; le service worker remplace déjà une notification
+      // de même étiquette (tag)
     },
     body: corps as BodyInit,
   })
