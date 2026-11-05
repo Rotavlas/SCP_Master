@@ -1,6 +1,18 @@
 import { useState } from 'react'
-import { connexionEmail, connexionFournisseur, deconnexion, useCompte, useFournisseurs, verifierCode } from '../state/enLigne'
-import { useSauvegarde } from '../state/sauvegarde'
+import {
+  appeler,
+  appliquerProfil,
+  connexionEmail,
+  connexionFournisseur,
+  deconnexion,
+  useCompte,
+  useFournisseurs,
+  verifierCode,
+  type ProfilServeur,
+} from '../state/enLigne'
+import { modifier, notifier, useSauvegarde } from '../state/sauvegarde'
+import { COSMETIQUES } from '../data/cosmetiques'
+import { majCosmetiques, type EtatCosmetiques } from '../state/cosmetiques'
 import { useBadgesDe } from '../state/social'
 import { BadgesAffiches } from './Badges'
 import { Logo } from './Logo'
@@ -54,6 +66,7 @@ export function BoutonCompte({ ouvrirProfil }: { ouvrirProfil: (pseudo: string) 
           )}
           <InstallerApplication />
           <NotificationsAppareil />
+          <SaisirCode />
           <button
             className="btn"
             role="menuitem"
@@ -170,5 +183,61 @@ export function Portail({ nombreCartes }: { nombreCartes: number }) {
         </p>
       </div>
     </section>
+  )
+}
+
+/** Dans le menu du compte : saisir un code (récompense offerte lors d'un événement, d'un stream…) */
+function SaisirCode() {
+  const [ouvert, setOuvert] = useState(false)
+  const [code, setCode] = useState('')
+  const [envoi, setEnvoi] = useState(false)
+  if (!ouvert)
+    return (
+      <button className="btn" role="menuitem" onClick={() => setOuvert(true)}>
+        Saisir un code
+      </button>
+    )
+  return (
+    <form
+      className="saisie-code"
+      onSubmit={async (e) => {
+        e.preventDefault()
+        if (!code.trim()) return
+        setEnvoi(true)
+        const r = await appeler<{ erreur?: string; recompense?: Record<string, unknown>; description?: string; profil?: ProfilServeur }>('utiliser_code', {
+          p_code: code,
+        })
+        setEnvoi(false)
+        if (!r) return
+        if (r.erreur) return notifier(r.erreur)
+        if (r.profil) modifier((x) => appliquerProfil(x, r.profil!))
+        const g = r.recompense ?? {}
+        const morceaux = [
+          g.credits ? `+${Number(g.credits).toLocaleString('fr-FR')} ₵` : '',
+          g.dossiers ? `+${g.dossiers} dossier${Number(g.dossiers) > 1 ? 's' : ''}` : '',
+          g.keter ? `+${g.keter} dossier${Number(g.keter) > 1 ? 's' : ''} Keter` : '',
+          typeof g.cosmetique === 'string' ? `« ${COSMETIQUES[g.cosmetique]?.nom ?? g.cosmetique} »` : '',
+        ].filter(Boolean)
+        notifier(`Code accepté${r.description ? ` (${r.description})` : ''} : ${morceaux.join(', ') || 'récompense reçue'}`, 'succes')
+        if (typeof g.cosmetique === 'string') void appeler<EtatCosmetiques>('cosmetiques').then(majCosmetiques)
+        setCode('')
+        setOuvert(false)
+      }}
+    >
+      <input
+        value={code}
+        onChange={(e) => setCode(e.target.value.toUpperCase())}
+        placeholder="CODE"
+        maxLength={32}
+        autoFocus
+        autoCapitalize="characters"
+        autoComplete="off"
+        spellCheck={false}
+        aria-label="Code"
+      />
+      <button className="btn btn-principal" disabled={envoi || !code.trim()}>
+        Valider
+      </button>
+    </form>
   )
 }

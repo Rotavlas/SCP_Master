@@ -11,6 +11,7 @@ import { BoutonConfirme } from './Confirmer'
 import { Logo } from './Logo'
 import { JaugeRecyclage } from './JaugeRecyclage'
 import { Cosmetiques } from './Cosmetiques'
+import { Contrats, EditionsMythiques } from './Contrats'
 
 export function Boutique({ base, ouvrir, voirReglement }: { base: Base; ouvrir: (t: Tirage) => void; voirReglement: () => void }) {
   const s = useSauvegarde()
@@ -89,9 +90,9 @@ export function Boutique({ base, ouvrir, voirReglement }: { base: Base; ouvrir: 
       <div className="encart">
         <h3>Variantes rares</h3>
         <p className="discret">
-          Chaque fiche tirée peut sortir dans une version rare, à collectionner en plus de la version standard. Les dossiers Keter et O5 multiplient ces
-          chances. Une Mythique peut aussi sortir en Négatif ou en Épreuve d’artiste, deux variantes qui n’existent que pour elles ; son numéro reste le même,
-          quelle que soit sa variante.
+          Chaque fiche tirée peut sortir dans une version rare, à collectionner en plus de la version standard. Chances ci-dessous pour une fiche rare ou mieux
+          ; deux fois moins pour une commune ou une peu commune. Les dossiers du personnel, Keter, O5 et Apollyon les multiplient. Une Mythique peut aussi
+          sortir en Négatif ou en Épreuve d’artiste, deux variantes qui n’existent que pour elles ; son numéro reste le même, quelle que soit sa variante.
         </p>
         <ul className="probas probas-variantes">
           {VARIANTES.filter((v) => v.id !== 'std').map((v) => (
@@ -104,6 +105,14 @@ export function Boutique({ base, ouvrir, voirReglement }: { base: Base; ouvrir: 
             </li>
           ))}
         </ul>
+      </div>
+
+      <div className="encart">
+        <Contrats base={base} />
+      </div>
+
+      <div className="encart">
+        <EditionsMythiques base={base} />
       </div>
 
       <Cosmetiques />

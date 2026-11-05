@@ -3,7 +3,7 @@ import { RARETES } from '../data/catalogue'
 import { BOOSTERS, EDITION_MYTHIQUE, PART_AU_DELA, PLAFOND_RECYCLAGE, PREMIERE_EDITION, VALEUR_RECYCLAGE } from '../engine/boosters'
 import { ADVERSAIRES } from '../engine/duel'
 import { DUREES, FRAIS_VENTE, MULTIPLICATEUR_BRULAGE } from '../engine/marche'
-import { VARIANTES } from '../engine/variantes'
+import { FACTEUR_COMMUNES, VARIANTES } from '../engine/variantes'
 import { appeler } from '../state/enLigne'
 import { useSauvegarde } from '../state/sauvegarde'
 import { JaugeRecyclage } from './JaugeRecyclage'
@@ -132,7 +132,7 @@ export function Reglement() {
               {s.boosters}
               <small> / 10</small>
             </span>
-            <span className="quota-periode">un toutes les 10 minutes</span>
+            <span className="quota-periode">un toutes les 15 minutes</span>
           </div>
         </div>
         <JaugeRecyclage />
@@ -149,7 +149,7 @@ export function Reglement() {
       <Article n={1} id="dossiers" titre="Dossiers">
         <p>
           Chaque dossier contient 5 fiches ; la dernière est toujours d’une rareté meilleure. Le dossier standard gratuit s’accumule en réserve : un toutes les
-          10 minutes, 10 au plus. Les dossiers Keter offerts (Rapport quotidien, piste d’accréditation) ne comptent pas dans la limite d’achat.
+          15 minutes, 10 au plus. Les dossiers Keter offerts (Rapport quotidien, piste d’accréditation) ne comptent pas dans la limite d’achat.
         </p>
         <div className="tableau-defile">
           <table>
@@ -212,7 +212,8 @@ export function Reglement() {
             <thead>
               <tr>
                 <th>Variante</th>
-                <th>Chance par fiche</th>
+                <th>Rare et au-dessus</th>
+                <th>Commune, peu commune</th>
                 <th>Brûlage</th>
               </tr>
             </thead>
@@ -223,6 +224,7 @@ export function Reglement() {
                     <span className="puce" style={{ background: v.couleur }} /> {v.nom}
                   </th>
                   <td>{v.mythique ? `${pct(v.chance)} des Mythiques` : pct(v.chance)}</td>
+                  <td>{v.mythique ? '—' : pct(v.chance * FACTEUR_COMMUNES)}</td>
                   <td>×{MULTIPLICATEUR_BRULAGE[v.id]}</td>
                 </tr>
               ))}
@@ -283,7 +285,9 @@ export function Reglement() {
           </li>
           <li>Durées de vente : {DUREES.map((d) => d.nom).join(', ')}.</li>
           <li>Une enchère dépasse la précédente d’au moins 5 %.</li>
-          <li>Les échanges entre agents ne sont pas taxés.</li>
+          <li>
+            Dans un échange, les crédits reçus sont taxés à {FRAIS_VENTE * 100} % comme une vente ; les cartes échangées contre des cartes ne le sont pas.
+          </li>
           <li>Chaque Mythique a son registre public : détenteurs successifs de chaque exemplaire numéroté, prix payé aux enchères, destruction.</li>
           <li>
             Cosmétiques (titres, cadres de profil, couvertures de dossier) : de 1 500 à 60 000 ₵, achetés une fois, sans effet sur le jeu. Ces crédits sortent

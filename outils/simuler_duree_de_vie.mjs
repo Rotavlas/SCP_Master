@@ -65,7 +65,8 @@ function ouvrir(type, etat) {
     } else {
       const ra = tirerIndice(i === 4 ? t.derniere : t.poids)
       carte = hasard(parTypeRarete.get(`${tirerType(t.types)}:${ra}`) ?? parRarete[ra])
-      variante = tirerVariante(t.bonus)
+      // Communes et peu communes : deux fois moins de variantes (ouvrir_booster, migration 20261117090000)
+      variante = tirerVariante(t.bonus * (ra <= 1 ? 0.5 : 1))
     }
     etat.cartes.set(carte, (etat.cartes.get(carte) ?? 0) + 1)
     if (variante !== 'std') {

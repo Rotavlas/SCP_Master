@@ -1,5 +1,6 @@
 import { BADGES } from '../data/badges'
 import { useBadgesDe } from '../state/social'
+import { SceauCreateur, estCreateur, useCreateurs } from './Createur'
 
 /** Une pastille de badge ; `inactif` pour un badge pas encore obtenu. */
 export function PastilleBadge({ id, inactif, petite }: { id: string; inactif?: boolean; petite?: boolean }) {
@@ -7,12 +8,13 @@ export function PastilleBadge({ id, inactif, petite }: { id: string; inactif?: b
   if (!b) return null
   return (
     <span
-      className={`badge-profil ${petite ? 'petite' : ''} ${inactif ? 'inactif' : ''}`}
+      className={`badge-profil ${petite ? 'petite' : ''} ${inactif ? 'inactif' : ''} ${id === 'createur' ? 'badge-createur' : ''}`}
       style={{ ['--badge' as string]: b.couleur }}
       title={`${b.nom} — ${b.description}`}
       aria-label={b.nom}
     >
-      {b.glyphe}
+      {/* Le créateur : son sceau de cire plutôt qu'un glyphe */}
+      {id === 'createur' ? <SceauCreateur taille={petite ? 16 : 22} /> : b.glyphe}
     </span>
   )
 }
@@ -32,9 +34,10 @@ export function BadgesAffiches({ ids }: { ids: string[] }) {
 /** Un pseudo d'agent, suivi des badges qu'il affiche ; un bouton s'il ouvre son profil. */
 export function Pseudo({ pseudo, onClick, className = '' }: { pseudo: string; onClick?: () => void; className?: string }) {
   const badges = useBadgesDe(pseudo)
+  const createur = estCreateur(useCreateurs(), pseudo)
   const contenu = (
     <>
-      <span className="pseudo-nom">{pseudo}</span>
+      <span className={`pseudo-nom ${createur ? 'nom-createur' : ''}`}>{pseudo}</span>
       <BadgesAffiches ids={badges} />
     </>
   )

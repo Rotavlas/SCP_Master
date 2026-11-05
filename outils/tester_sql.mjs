@@ -194,18 +194,22 @@ await test('une Mythique tombe numérotée (toutes variantes confondues), sans d
   await admin(`update prive.types_boosters set mythique = 1 where id = 'standard'`)
   await admin(`update public.profils set boosters = 2 where id = '${A}'`)
   try {
+    // Un dossier ouvert plus tôt dans les tests a pu tirer une Mythique : on part des compteurs existants
+    const compteurs = Object.fromEntries(
+      (await admin("select carte_id, dernier from prive.compteurs_serie where variante = 'std'")).rows.map((x) => [x.carte_id, x.dernier]),
+    )
     const r = await valeur(A, "select public.ouvrir_booster('standard', true)")
     const ids = r.cartes.map((c) => c.id)
     const raretes = (await admin('select ra from public.cartes where id = any($1)', [ids])).rows.map((x) => x.ra)
     assert.deepEqual(raretes, [5, 5, 5, 5, 5])
     assert.equal(new Set(ids).size, 5)
     assert.ok(
-      r.cartes.every((c) => c.n === 1),
+      r.cartes.every((c) => c.n === (compteurs[c.id] ?? 0) + 1),
       JSON.stringify(r.cartes),
     )
     // Le numéro suit l'ordre d'obtention de chaque carte
     const s = await valeur(A, "select public.ouvrir_booster('standard', true)")
-    for (const c of s.cartes) assert.equal(c.n, ids.includes(c.id) ? 2 : 1)
+    for (const c of s.cartes) assert.equal(c.n, (compteurs[c.id] ?? 0) + (ids.includes(c.id) ? 2 : 1))
   } finally {
     await admin(`update prive.types_boosters set mythique = 0.0004 where id = 'standard'`)
   }
@@ -224,8 +228,8 @@ await test('une Mythique se recycle 2 500 ₵ et compte dans le classement des l
     assert.equal(await valeur(A, "select (public.recycler_doublons($1) ->> 'gain')::int", [id]), plein + Math.floor((brut - plein) * 0.2))
   }
 })
-await test('boosters gratuits recrédités avec le temps, 10 au maximum', async () => {
-  await admin(`update public.profils set boosters = 0, dernier_booster = now() - interval '35 minutes' where id = '${A}'`)
+await test('boosters gratuits recrédités avec le temps (un toutes les 15 minutes), 10 au maximum', async () => {
+  await admin(`update public.profils set boosters = 0, dernier_booster = now() - interval '50 minutes' where id = '${A}'`)
   assert.equal((await valeur(A, 'select public.mon_etat()')).profil.boosters, 3)
   await admin(`update public.profils set boosters = 0, dernier_booster = now() - interval '5 days' where id = '${A}'`)
   assert.equal((await valeur(A, 'select public.mon_etat()')).profil.boosters, 10)
@@ -642,7 +646,8 @@ await test("accepter échange tout d'un coup : cartes et crédits", async () => 
   assert.equal(await possede(A, 'scp-3000'), 1)
   assert.equal(await possede(B, 'scp-3000'), 0)
   assert.equal(await credits(A), a0)
-  assert.equal(await credits(B), b0 + 50)
+  // Les crédits reçus dans un échange sont taxés à 10 %, comme une vente (50 ₵ donnés, 45 ₵ reçus)
+  assert.equal(await credits(B), b0 + 45)
   const o = (await valeur(A, 'select public.mes_echanges()')).find((x) => x.id === offre)
   assert.equal(o.statut, 'acceptee')
   assert.ok(o.demande[0].s, 'le numéro de série reçu est connu')
@@ -1458,6 +1463,73 @@ await test('notifications sur l’appareil : abonnement, file d’attente, messa
   await valeur(P1, "select public.desabonner_push('https://push.exemple.org/abc')")
   await echoue(en(P2, 'select public.essai_push()'), /Aucun appareil/)
   assert.equal((await admin('select count(*)::int as n from prive.abonnements_push')).rows[0].n, 0)
+})
+
+console.log('Réglages, codes, contrats, succès, créateur')
+const Q1 = '00000000-0000-0000-0000-0000000000d1'
+await db.exec(`insert into auth.users (id) values ('${Q1}')`)
+await admin(`update public.profils set pseudo = 'Testeur Codes', credits = 1000, boosters = 2, keter_offerts = 0 where id = '${Q1}'`)
+
+await test('variantes : deux fois moins sur les communes et peu communes', async () => {
+  const def = (await admin("select pg_get_functiondef('public.ouvrir_booster(text, boolean)'::regprocedure) as d")).rows[0].d
+  assert.match(def, /rarete <= 1 then 0\.5 else 1/)
+})
+
+await test('codes : récompense une fois par agent, codes expirés ou épuisés refusés, dix essais par heure', async () => {
+  await admin(`insert into prive.codes (code, recompense, utilisations_max) values ('BIENVENUE', '{"credits": 300, "dossiers": 20, "keter": 1, "cosmetique": "titre-chercheur"}', 2)`)
+  await admin(`insert into prive.codes (code, recompense, expire_le) values ('PERIME', '{"credits": 1}', now() - interval '1 day')`)
+  const r = await valeur(Q1, "select public.utiliser_code(' bienvenue ')")
+  assert.equal(Number(r.recompense.credits), 300)
+  const p = (await admin('select credits, boosters, keter_offerts from public.profils where id = $1', [Q1])).rows[0]
+  assert.deepEqual([Number(p.credits), p.boosters, p.keter_offerts], [1300, 10, 1], 'crédits, réserve plafonnée à 10, Keter offert')
+  assert.equal((await admin("select count(*)::int as n from prive.cosmetiques_possedes where joueur = $1 and cosmetique = 'titre-chercheur'", [Q1])).rows[0].n, 1)
+  await echoue(en(Q1, "select public.utiliser_code('BIENVENUE')"), /déjà utilisé/)
+  assert.equal((await valeur(Q1, "select public.utiliser_code('PERIME')")).erreur, 'Code inconnu ou expiré')
+  assert.equal((await valeur(Q1, "select public.utiliser_code('NIMPORTEQUOI')")).erreur, 'Code inconnu ou expiré')
+  for (let i = 0; i < 7; i++) assert.ok((await valeur(Q1, "select public.utiliser_code('FAUX')")).erreur)
+  await echoue(en(Q1, "select public.utiliser_code('FAUX')"), /Trop d'essais/)
+  await echoue(admin(`insert into prive.codes (code, recompense) values ('minuscule', '{}')`), /check/)
+})
+
+await test('contrats : trois fiches par semaine, chacune rachetée une fois contre un dossier Keter', async () => {
+  const c = await valeur(Q1, 'select public.contrats()')
+  assert.equal(c.contrats.length, 3)
+  const raretes = (await admin('select ra from public.cartes where id = any($1)', [c.contrats.map((x) => x.carte)])).rows.map((x) => x.ra).sort()
+  assert.deepEqual(raretes, [2, 2, 3])
+  // Les mêmes pour tous les agents
+  assert.deepEqual((await valeur(P1, 'select public.contrats()')).contrats.map((x) => x.carte), c.contrats.map((x) => x.carte))
+  const carte = c.contrats[0].carte
+  await echoue(en(Q1, 'select public.remplir_contrat($1)', [carte]), /exemplaire standard libre/)
+  await donner(Q1, carte, 2)
+  const avant = (await admin('select keter_offerts from public.profils where id = $1', [Q1])).rows[0].keter_offerts
+  const r = await valeur(Q1, 'select public.remplir_contrat($1)', [carte])
+  assert.equal(r.contrats.contrats[0].rempli, true)
+  assert.equal((await admin('select keter_offerts from public.profils where id = $1', [Q1])).rows[0].keter_offerts, avant + 1)
+  assert.equal((await admin('select count(*)::int as n from public.exemplaires where proprietaire = $1 and carte_id = $2', [Q1, carte])).rows[0].n, 1)
+  await echoue(en(Q1, 'select public.remplir_contrat($1)', [carte]), /déjà rempli/)
+  await echoue(en(Q1, "select public.remplir_contrat('scp-173')"), /pas demandée/)
+})
+
+await test('succès : progression, seuils au total du catalogue, réclamation avec récompense', async () => {
+  const liste = await valeur(Q1, 'select public.succes()')
+  assert.ok(liste.length >= 50)
+  const sites = liste.find((s) => s.id === 'archives-l')
+  assert.equal(sites.seuil, (await admin("select count(*)::int as n from public.cartes where k = 'l'")).rows[0].n)
+  // Toutes les fiches de Sites : le cadre de prestige
+  for (const { id } of (await admin("select id from public.cartes where k = 'l'")).rows) await donner(Q1, id)
+  const r = await valeur(Q1, "select public.reclamer_succes(array['archives-l', 'fiches-toutes', 'fiches-50'])")
+  assert.equal(r.reclames, 2, 'Sites et 50 fiches, pas tout le catalogue')
+  assert.ok(r.succes.find((s) => s.id === 'archives-l').obtenu)
+  assert.equal(r.succes.find((s) => s.id === 'fiches-toutes').obtenu, null)
+  assert.equal((await admin("select count(*)::int as n from prive.cosmetiques_possedes where joueur = $1 and cosmetique = 'cadre-archives-l'", [Q1])).rows[0].n, 1)
+  const encore = await valeur(Q1, "select public.reclamer_succes(array['archives-l'])")
+  assert.equal(encore.reclames, 0, 'une seule fois')
+})
+
+await test('créateur : titre et cadre réservés, pseudo signé', async () => {
+  await admin(`insert into prive.badges_speciaux (joueur, badge) values ($1, 'createur') on conflict do nothing`, [Q1])
+  assert.deepEqual(await valeur(Q1, 'select public.createurs()'), ['Testeur Codes'])
+  await echoue(en(P2, "select public.acheter_cosmetique('cadre-createur')"), /ne s'achète pas/)
 })
 
 console.log(`\n${reussis} tests réussis${process.exitCode ? ', des échecs' : ''}.`)

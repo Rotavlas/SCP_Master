@@ -2,7 +2,7 @@ import { useSyncExternalStore } from 'react'
 import { PRESTIGE, type IdVariante } from '../engine/variantes'
 import type { Langue } from '../types'
 
-export const DELAI_BOOSTER = 10 * 60 * 1000
+export const DELAI_BOOSTER = 15 * 60 * 1000
 export const STOCK_MAX = 10
 export const TAILLE_DECK = 5
 

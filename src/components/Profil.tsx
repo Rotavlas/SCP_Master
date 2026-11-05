@@ -10,6 +10,7 @@ import { Carte } from './Carte'
 import { useGlisserPourFermer } from './feuille'
 import { COSMETIQUES, styleCadre } from '../data/cosmetiques'
 import { Indisponible } from './Anime'
+import { SceauCreateur, estCreateur, useCreateurs } from './Createur'
 
 const ROLES = { chef: 'Chef', officier: 'Officier', membre: 'Membre' }
 const ISSUES = { victoire: 'Victoire', defaite: 'Défaite', nul: 'Nul' }
@@ -49,6 +50,7 @@ export function Profil({ pseudo, base, onFermer, ouvrirCarte, ecrire }: Props) {
   }
 
   const acc = p ? accreditation(p.xp) : null
+  const createur = estCreateur(useCreateurs(), p?.pseudo)
   const { className: classeCadre, style: styleDuCadre } = styleCadre(p?.cadre)
   const cadre = { className: `profil-entete ${classeCadre}`, style: styleDuCadre as CSSProperties | undefined }
   const totalJcj = p ? p.jcj.victoires + p.jcj.defaites + p.jcj.nuls : 0
@@ -72,12 +74,16 @@ export function Profil({ pseudo, base, onFermer, ouvrirCarte, ecrire }: Props) {
                   className={`point-presence ${p.enLigne ? 'en-ligne' : ''}`}
                   title={p.enLigne ? 'En ligne' : `Vu le ${new Date(p.vuLe).toLocaleString('fr-FR')}`}
                 />
-                {p.pseudo}
+                <span className={createur ? 'nom-createur' : ''}>{p.pseudo}</span>
                 {p.clan && <span className="tag-clan">{p.clan.tag}</span>}
                 <BadgesAffiches ids={p.badgesAffiches ?? []} />
               </h2>
               {p.titre && COSMETIQUES[p.titre] && (
-                <p className="profil-titre" style={{ ['--titre' as string]: COSMETIQUES[p.titre].couleur }}>
+                <p
+                  className={`profil-titre ${p.titre === 'titre-createur' ? 'titre-createur' : ''}`}
+                  style={{ ['--titre' as string]: COSMETIQUES[p.titre].couleur }}
+                >
+                  {p.titre === 'titre-createur' && <SceauCreateur taille={22} />}
                   {COSMETIQUES[p.titre].nom}
                 </p>
               )}

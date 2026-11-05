@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react'
 import { RARETES, TYPES, lienWiki, lienWikiFr, nomClasse, type Base } from '../data/catalogue'
 import { VALEUR_RECYCLAGE, boostersPour, gainPlafonne, PREMIERE_EDITION } from '../engine/boosters'
 import { variantesPour } from '../engine/variantes'
-import { TAILLE_DECK, doublonsRecyclables, exemplairesStandard, modifier, useSauvegarde, varianteAffichee } from '../state/sauvegarde'
+import { TAILLE_DECK, doublonsRecyclables, exemplairesStandard, modifier, notifier, useSauvegarde, varianteAffichee } from '../state/sauvegarde'
 import { recycler } from '../state/actions'
 import { useEditionsMythiques, useNumerosMythiques, useRecyclageRestant } from '../state/enLigne'
 import { useCarteAffichee } from '../state/traduction'
@@ -15,6 +15,7 @@ import { MarcheCarte } from './MarcheCarte'
 import { JaugeRecyclage } from './JaugeRecyclage'
 import { useGlisserPourFermer } from './feuille'
 import { Fusion, Registre } from './Registre'
+import { imageDeCarte, partagerImage } from './imageCarte'
 
 export function CarteDetail({
   carte: source,
@@ -52,6 +53,17 @@ export function CarteDetail({
     window.addEventListener('keydown', touche)
     return () => window.removeEventListener('keydown', touche)
   }, [carte.id, onFermer]) // nouvelles lu au moment de l'ouverture seulement
+
+  // Partager la carte en image (avec son numéro et l'adresse du jeu)
+  const [partage, setPartage] = useState(false)
+  async function partagerCarte() {
+    setPartage(true)
+    const image = await imageDeCarte({ carte, base, variante, numero: mesNumeros[0], pseudo: s.agent }).catch(() => null)
+    setPartage(false)
+    if (!image) return notifier('Impossible de préparer l’image sur ce navigateur')
+    const r = await partagerImage(image, `scp-masters-${carte.id.replace(/[^a-z0-9-]/gi, '-')}`, `${carte.num ?? carte.nm} dans ma collection SCP Masters.`)
+    if (r === 'telechargee') notifier('Image enregistrée : partagez-la où vous voulez', 'succes')
+  }
 
   function basculerDeck() {
     modifier((x) => {
@@ -203,6 +215,9 @@ export function CarteDetail({
                   </button>
                 )}
                 <Fusion carte={carte} doublons={doublons} />
+                <button className="btn btn-partager" disabled={partage} onClick={() => void partagerCarte()}>
+                  Partager
+                </button>
                 {doublons > 0 && <JaugeRecyclage compacte />}
                 {carte.ra >= 4 && (
                   <button className="btn btn-cinematique" style={{ ['--r' as string]: RARETES[carte.ra].couleur }} onClick={() => setCinematique(true)}>

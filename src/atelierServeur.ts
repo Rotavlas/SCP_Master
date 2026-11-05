@@ -203,12 +203,153 @@ const DEMO_HALL: Record<string, () => unknown> = {
           precedent: { semaine: '2026-10-26', cible: 'scp-106', pv: 850, degats: 900, vaincue: true, moi: 120, reclame: false, contributeurs: [] },
         }
       : null,
+  // Succès, contrats, Mythiques en circulation, créateur (?mode=app)
+  createurs: () => (enHall ? ['Agent atelier'] : null),
+  editions_mythiques: () =>
+    enHall
+      ? {
+          'dr-clef-s-proposal': { emis: 41, total: 50 },
+          'scp-173': { emis: 50, total: 50 },
+          'scp-2747': { emis: 17, total: 50 },
+          'fim:alpha-1': { emis: 28, total: 50 },
+          'perso:the-administrator': { emis: 33, total: 50 },
+          'perso:aaron-siegel': { emis: 12, total: 50 },
+          'perso:o5-1': { emis: 46, total: 50 },
+          'perso:les-auteurs': { emis: 9, total: 50 },
+          'entite:scarlet-king': { emis: 38, total: 50 },
+        }
+      : null,
+  contrats: () =>
+    enHall
+      ? {
+          fin: new Date(Date.now() + 3 * 86_400_000).toISOString(),
+          contrats: [
+            { carte: 'scp-005', rempli: false, libres: 2 },
+            { carte: 'scp-009', rempli: true, libres: 1 },
+            { carte: 'scp-003', rempli: false, libres: 0 },
+          ],
+        }
+      : null,
+  succes: () =>
+    enHall
+      ? [
+          {
+            id: 'fiches-50',
+            categorie: 'Collection',
+            nom: 'Premier classeur',
+            description: 'Posséder 50 fiches différentes.',
+            recompense: null,
+            valeur: 82,
+            seuil: 50,
+            obtenu: '2026-11-01T10:00:00Z',
+          },
+          {
+            id: 'fiches-500',
+            categorie: 'Collection',
+            nom: 'Rayonnages',
+            description: 'Posséder 500 fiches différentes.',
+            recompense: null,
+            valeur: 82,
+            seuil: 500,
+            obtenu: null,
+          },
+          {
+            id: 'fiches-10000',
+            categorie: 'Collection',
+            nom: 'Mémoire de la Fondation',
+            description: 'Posséder 10 000 fiches différentes.',
+            recompense: 'titre-memoire',
+            valeur: 82,
+            seuil: 10000,
+            obtenu: null,
+          },
+          {
+            id: 'legendaires-1',
+            categorie: 'Raretés',
+            nom: 'Accès niveau 4',
+            description: 'Posséder une Légendaire.',
+            recompense: null,
+            valeur: 6,
+            seuil: 1,
+            obtenu: null,
+          },
+          {
+            id: 'mythiques-1',
+            categorie: 'Raretés',
+            nom: 'Niveau 5',
+            description: 'Posséder une Mythique.',
+            recompense: null,
+            valeur: 2,
+            seuil: 1,
+            obtenu: '2026-11-03T10:00:00Z',
+          },
+          {
+            id: 'arc-en-ciel',
+            categorie: 'Variantes',
+            nom: 'Arc-en-ciel',
+            description: 'Réunir les 5 variantes d’une même carte.',
+            recompense: 'titre-prisme',
+            valeur: 0,
+            seuil: 1,
+            obtenu: null,
+          },
+          {
+            id: 'o5-1',
+            categorie: 'Variantes',
+            nom: 'Sceau du Conseil',
+            description: 'Posséder une carte au Sceau O5.',
+            recompense: null,
+            valeur: 0,
+            seuil: 1,
+            obtenu: null,
+          },
+          {
+            id: 'archives-l',
+            categorie: 'Archives complètes',
+            nom: 'Tous les Sites',
+            description: 'Posséder toutes les fiches de Sites.',
+            recompense: 'cadre-archives-l',
+            valeur: 31,
+            seuil: 94,
+            obtenu: null,
+          },
+          {
+            id: 'archives-o',
+            categorie: 'Archives complètes',
+            nom: 'Tous les protocoles',
+            description: 'Posséder toutes les fiches de protocoles.',
+            recompense: 'cadre-archives-o',
+            valeur: 31,
+            seuil: 31,
+            obtenu: null,
+          },
+          {
+            id: 'jcj-1',
+            categorie: 'Confrontation',
+            nom: 'Premier sang',
+            description: 'Gagner un duel entre agents.',
+            recompense: null,
+            valeur: 9,
+            seuil: 1,
+            obtenu: '2026-10-30T10:00:00Z',
+          },
+        ]
+      : null,
+  albums: () =>
+    enHall
+      ? [
+          { id: 'codes', titre: 'Codes de confinement', credits: 600, total: 14, possedees: 14, reclame: false },
+          { id: 'ira', titre: 'Initiatives de Réponse Automatisée', credits: 800, total: 9, possedees: 4, reclame: false },
+          { id: 'conseil-o5', titre: 'Le Conseil O5', credits: 3000, total: 13, possedees: 13, reclame: true },
+          { id: 'mythiques', titre: 'Les Mythiques', credits: 10000, total: 9, possedees: 2, reclame: false },
+        ]
+      : null,
   // Registre, fusion, cote, collections et cosmétiques (?mode=app)
   profil_public: () =>
     enHall
       ? {
           pseudo: 'Agent atelier',
-          titre: 'titre-dieu-brise',
+          titre: new URLSearchParams(location.search).get('titre') ?? 'titre-dieu-brise',
           cadre: new URLSearchParams(location.search).get('cadre') ?? 'cadre-dieu-brise',
           xp: 3400,
           elo: 1184,

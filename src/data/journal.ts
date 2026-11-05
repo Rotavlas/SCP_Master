@@ -11,6 +11,19 @@ export interface Entree {
 
 export const JOURNAL: Entree[] = [
   {
+    date: '2026-11-06',
+    titre: 'Succès, contrats, codes et images à partager',
+    points: [
+      'Nouvelle page « Succès » : plus de cinquante succès (collection, raretés, variantes, confrontations, marché, Intendance), dont les archives complètes de chaque type de fiche. Les plus durs rapportent un titre ou un cadre de profil, jamais de crédits.',
+      'L’album et les collections des Groupes d’intérêt quittent les Archives pour cette page, avec une présentation entièrement revue : un anneau de progression par collection, et la liste des fiches qui manquent en un toucher.',
+      'Contrats de l’Intendance : chaque semaine, trois fiches précises (deux rares, une épique) rachetées contre un dossier Keter chacune.',
+      'Codes : menu du compte → « Saisir un code », pour les récompenses offertes lors d’événements.',
+      'Partager une carte crée maintenant une image (illustration, rareté, variante, numéro, adresse du jeu), depuis le bilan d’un dossier ou la fiche de n’importe quelle carte possédée.',
+      'À l’Intendance, les Mythiques en circulation : combien d’exemplaires numérotés sont déjà sortis, lesquelles sont épuisées.',
+      'Rareté : les communes et peu communes sortent deux fois moins souvent en variante ; un dossier gratuit toutes les 15 minutes au lieu de 10. Les crédits reçus dans un échange sont taxés à 10 %, comme une vente.',
+    ],
+  },
+  {
     date: '2026-11-05',
     titre: 'Les notifications partent dès qu’on quitte le jeu',
     points: [

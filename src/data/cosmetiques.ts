@@ -28,7 +28,38 @@ const GROUPES: Record<string, { nom: string; titre: string; couleur: string }> =
   'dieu-brise': { nom: 'l’Église du Dieu Brisé', titre: 'Fidèle du Mékhanite', couleur: '#a8a39a' },
 }
 
+/** Les archives complètes d'un type de fiche : un cadre de prestige à la couleur du type (succès) */
+const ARCHIVES: Record<string, { nom: string; couleur: string }> = {
+  s: { nom: 'tous les SCP', couleur: '#c0392b' },
+  f: { nom: 'toutes les FIM', couleur: '#2e7d6b' },
+  p: { nom: 'tout le personnel', couleur: '#4b5d7a' },
+  e: { nom: 'tous les départements', couleur: '#5b6b3a' },
+  l: { nom: 'tous les Sites', couleur: '#3a5f73' },
+  o: { nom: 'tous les protocoles', couleur: '#8c2f39' },
+  g: { nom: 'tous les Groupes d’intérêt', couleur: '#7a4f9a' },
+  n: { nom: 'tous les canons', couleur: '#a0522d' },
+  d: { nom: 'tous les documents', couleur: '#4f6f9a' },
+  c: { nom: 'tous les contes', couleur: '#8a6d3b' },
+}
+
 export const COSMETIQUES: Record<string, Cosmetique & { type: TypeCosmetique }> = {
+  // Réservés au créateur du jeu
+  'titre-createur': { type: 'titre', nom: 'Créateur de SCP Masters', description: 'Réservé au créateur du jeu.', couleur: '#ff3b5c' },
+  'cadre-createur': { type: 'cadre', nom: 'Signature du Créateur', description: 'Réservé au créateur du jeu.', couleur: '#ff3b5c' },
+  // Récompenses de succès
+  'titre-memoire': { type: 'titre', nom: 'Mémoire de la Fondation', description: 'Succès : 10 000 fiches différentes.', couleur: '#4a9dff' },
+  'titre-archiviste-absolu': { type: 'titre', nom: 'Archiviste absolu', description: 'Succès : tout le catalogue.', couleur: '#f4c542' },
+  'titre-gardien-mythiques': { type: 'titre', nom: 'Gardien des Mythiques', description: 'Succès : toutes les Mythiques.', couleur: '#ff3b5c' },
+  'titre-prisme': { type: 'titre', nom: 'Prisme', description: 'Succès : les 5 variantes d’une même carte.', couleur: '#ff3df0' },
+  'titre-stratege': { type: 'titre', nom: 'Stratège du Site-19', description: 'Succès : 1 500 Elo.', couleur: '#4dd2ff' },
+  'titre-negociant': { type: 'titre', nom: 'Négociant', description: 'Succès : 25 ventes aux enchères.', couleur: '#f0b43c' },
+  'titre-emissaire': { type: 'titre', nom: 'Émissaire', description: 'Succès : toutes les collections de Groupes d’intérêt.', couleur: '#7a4f9a' },
+  ...Object.fromEntries(
+    Object.entries(ARCHIVES).map(([k, a]) => [
+      `cadre-archives-${k}`,
+      { type: 'cadre' as const, nom: `Archives : ${a.nom}`, description: `Succès : ${a.nom}.`, couleur: a.couleur },
+    ]),
+  ),
   'titre-agent-terrain': { type: 'titre', nom: 'Agent de terrain', description: 'Le premier galon.', couleur: '#9aa3a8' },
   'titre-chercheur': { type: 'titre', nom: 'Chercheur associé', description: 'Accès aux laboratoires.', couleur: '#5fbf7f' },
   'titre-archiviste-chef': { type: 'titre', nom: 'Archiviste en chef', description: 'Gardien des dossiers.', couleur: '#4a9dff' },
@@ -61,6 +92,7 @@ export const TYPES_COSMETIQUES: { type: TypeCosmetique; nom: string; aide: strin
 export function styleCadre(id: string | null | undefined): { className: string; style?: Record<string, string> } {
   if (!id || !COSMETIQUES[id]) return { className: '' }
   const groupe = id.replace(/^cadre-/, '')
+  if (id.startsWith('cadre-archives-')) return { className: 'cadre-profil cadre-archives', style: { '--cadre': COSMETIQUES[id].couleur } }
   return GROUPES[groupe]
     ? { className: 'cadre-profil cadre-groupe', style: { '--cadre': COSMETIQUES[id].couleur } }
     : { className: `cadre-profil ${id}`, style: { '--cadre': COSMETIQUES[id].couleur } }

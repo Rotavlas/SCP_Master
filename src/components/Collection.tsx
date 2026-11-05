@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Album } from './Album'
 import { CLASSES, ORDRE_TYPES, RARETES, TYPES, type Base } from '../data/catalogue'
 import { VALEUR_RECYCLAGE, gainPlafonne } from '../engine/boosters'
 import { VARIANTES, type IdVariante } from '../engine/variantes'
@@ -11,7 +10,6 @@ import type { Carte as TCarte, Classe, TypeFiche } from '../types'
 import { Carte } from './Carte'
 import { BoutonConfirme } from './Confirmer'
 import { JaugeRecyclage } from './JaugeRecyclage'
-import { CollectionsGdi } from './Cosmetiques'
 
 const PAR_PAGE = 60
 
@@ -81,7 +79,17 @@ export function meilleureEquipe(base: Base, collection: Record<string, number>):
     .map((c) => c.id)
 }
 
-export function Collection({ base, ouvrirCarte, voirReglement }: { base: Base; ouvrirCarte: (id: string) => void; voirReglement: () => void }) {
+export function Collection({
+  base,
+  ouvrirCarte,
+  voirReglement,
+  voirSucces,
+}: {
+  base: Base
+  ouvrirCarte: (id: string) => void
+  voirReglement: () => void
+  voirSucces: () => void
+}) {
   const s = useSauvegarde()
   // Le plus petit numéro de chaque Mythique possédée, gravé sur sa carte
   const numeros = useNumerosMythiques()
@@ -260,8 +268,16 @@ export function Collection({ base, ouvrirCarte, voirReglement }: { base: Base; o
         </div>
       </div>
 
-      <Album />
-      <CollectionsGdi base={base} ouvrirCarte={ouvrirCarte} />
+      <button className="lien-succes" onClick={voirSucces}>
+        <span className="lien-succes-icone" aria-hidden="true">
+          ✪
+        </span>
+        <span>
+          <strong>Album, Groupes d’intérêt et succès</strong>
+          <small className="discret">Les pages à compléter, les collections et leurs récompenses sont dans le dossier de carrière.</small>
+        </span>
+        <span aria-hidden="true">→</span>
+      </button>
 
       <div className="filtres-archives">
         <div className="filtres-recherche">

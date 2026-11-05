@@ -1,11 +1,9 @@
-import { useCallback, useEffect, useState } from 'react'
-import { designation, type Base } from '../data/catalogue'
+import { useState } from 'react'
 import { COSMETIQUES, TYPES_COSMETIQUES, styleCadre, type TypeCosmetique } from '../data/cosmetiques'
-import { acheterCosmetique, majCosmetiques, porterCosmetique, useCosmetiques, type EtatCosmetiques } from '../state/cosmetiques'
-import { appeler } from '../state/enLigne'
+import { acheterCosmetique, porterCosmetique, useCosmetiques } from '../state/cosmetiques'
 import { notifier, useSauvegarde } from '../state/sauvegarde'
 import { jouer } from '../state/sons'
-import { Caviarde, useTampon } from './Anime'
+import { Caviarde } from './Anime'
 import { BoutonConfirme } from './Confirmer'
 
 /** Un aperçu de chaque cosmétique : le titre écrit, un cadre miniature, une chemise de dossier */
@@ -101,106 +99,5 @@ export function Cosmetiques() {
         )
       })}
     </section>
-  )
-}
-
-interface CollectionGdi {
-  id: string
-  titre: string
-  cartes: string[]
-  possedees: number
-  reclamee: boolean
-}
-
-/**
- * Les collections des Groupes d'intérêt (public.collections_gdi) : la carte du Groupe et tous ses documents. Complète,
- * une collection se réclame contre un titre et un cadre propres au Groupe ; jamais contre des crédits.
- */
-export function CollectionsGdi({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id: string) => void }) {
-  const s = useSauvegarde()
-  const [liste, setListe] = useState<CollectionGdi[] | null | undefined>(undefined)
-  const [envoi, setEnvoi] = useState<string | null>(null)
-  const [detail, setDetail] = useState<string | null>(null)
-  const [recente, tamponner] = useTampon()
-  const taille = Object.keys(s.collection).length
-  const relire = useCallback(() => void appeler<CollectionGdi[]>('collections_gdi').then(setListe), [])
-  useEffect(relire, [relire, taille])
-
-  async function reclamer(c: CollectionGdi) {
-    setEnvoi(c.id)
-    const r = await appeler<{ collections: CollectionGdi[]; cosmetiques: EtatCosmetiques }>('reclamer_collection', { p_id: c.id })
-    setEnvoi(null)
-    if (!r) return
-    setListe(r.collections)
-    majCosmetiques(r.cosmetiques)
-    tamponner(c.id)
-    jouer.retourner(4)
-    notifier(`${c.titre} : titre « ${COSMETIQUES[`titre-${c.id}`]?.nom} » et cadre gagnés (à porter depuis l’Intendance)`, 'succes')
-  }
-
-  if (liste === undefined) return <Caviarde lignes={2} />
-  if (!liste) return null
-  const pretes = liste.filter((c) => !c.reclamee && c.possedees >= c.cartes.length).length
-  return (
-    <details className="album collections-gdi" open={pretes > 0}>
-      <summary>
-        Collections des Groupes d’intérêt · {liste.filter((c) => c.reclamee).length}/{liste.length}
-        {pretes > 0 && <span className="compteur compteur-alerte">{pretes}</span>}
-      </summary>
-      <p className="discret">
-        Le Groupe et tous ses documents. Une collection complète rapporte un titre et un cadre de profil propres au Groupe, introuvables ailleurs.
-      </p>
-      <ul className="album-pages">
-        {liste.map((c) => {
-          const total = c.cartes.length
-          const complete = c.possedees >= total
-          const couleur = COSMETIQUES[`cadre-${c.id}`]?.couleur
-          return (
-            <li
-              key={c.id}
-              className={`album-page collection-gdi ${c.reclamee ? 'reclame' : complete ? 'complete' : ''} ${recente === c.id ? 'tamponne' : ''}`}
-              style={{ ['--groupe' as string]: couleur }}
-            >
-              <button className="album-texte btn-lien" onClick={() => setDetail(detail === c.id ? null : c.id)} aria-expanded={detail === c.id}>
-                <strong>{c.titre}</strong>
-                <small>Titre « {COSMETIQUES[`titre-${c.id}`]?.nom} » et cadre</small>
-              </button>
-              <div className="mission-jauge" aria-label={`${c.possedees} sur ${total}`}>
-                <div style={{ width: `${(c.possedees / total) * 100}%` }} />
-                <span>
-                  {c.possedees}/{total}
-                </span>
-              </div>
-              {c.reclamee ? (
-                <span className="mission-etat">✓ Réclamée</span>
-              ) : complete ? (
-                <button className="btn btn-principal" disabled={envoi === c.id} onClick={() => void reclamer(c)}>
-                  Réclamer
-                </button>
-              ) : (
-                <span className="mission-etat discret">Il en manque {total - c.possedees}</span>
-              )}
-              {detail === c.id && (
-                <ul className="collection-manquantes">
-                  {c.cartes
-                    .filter((id) => !s.collection[id])
-                    .map((id) => base.parId.get(id))
-                    .filter((x) => !!x)
-                    .slice(0, 60)
-                    .map((x) => (
-                      <li key={x.id}>
-                        <button className="btn-lien" onClick={() => ouvrirCarte(x.id)}>
-                          {designation(x)}
-                        </button>
-                      </li>
-                    ))}
-                  {complete && <li className="discret">Toutes les fiches sont réunies.</li>}
-                </ul>
-              )}
-            </li>
-          )
-        })}
-      </ul>
-    </details>
   )
 }

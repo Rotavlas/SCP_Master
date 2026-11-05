@@ -29,6 +29,7 @@ import type { Ecran, Traductions } from './types'
 import { Reglement } from './components/Reglement'
 import { BandeauxPwa } from './components/Pwa'
 import { useEnLigneReseau } from './state/pwa'
+import { PageSucces } from './components/Succes'
 
 /** Les onglets ; sur téléphone, les quatre principaux restent dans la barre du bas, les autres passent sous « Plus ». */
 const ONGLETS: { id: Ecran; nom: string; icone: string; principal?: boolean }[] = [
@@ -40,6 +41,7 @@ const ONGLETS: { id: Ecran; nom: string; icone: string; principal?: boolean }[] 
   { id: 'marche', nom: 'Marché', icone: '⇄' },
   { id: 'social', nom: 'Social', icone: '✉' },
   { id: 'classement', nom: 'Classements', icone: '♛' },
+  { id: 'succes', nom: 'Succès', icone: '✪' },
   { id: 'boutique', nom: 'Intendance', icone: '₵' },
 ]
 
@@ -334,8 +336,11 @@ export default function App() {
           />
         )}
         {ecran === 'booster' && <Booster base={base} tirage={tirage} setTirage={setTirage} aller={aller} ouvrirCarte={setCarteOuverte} />}
-        {ecran === 'collection' && <Collection base={base} ouvrirCarte={setCarteOuverte} voirReglement={() => aller('reglement')} />}
+        {ecran === 'collection' && (
+          <Collection base={base} ouvrirCarte={setCarteOuverte} voirReglement={() => aller('reglement')} voirSucces={() => aller('succes')} />
+        )}
         {ecran === 'repertoire' && <Repertoire base={base} ouvrirCarte={setCarteOuverte} />}
+        {ecran === 'succes' && <PageSucces base={base} ouvrirCarte={setCarteOuverte} />}
         {ecran === 'duel' && <Duel base={base} aller={aller} ouvrirProfil={setProfilOuvert} />}
         {ecran === 'social' && (
           <Social

@@ -41,6 +41,12 @@ export const VARIANTES: Variante[] = [
   },
 ]
 
+/** Les communes et peu communes sortent deux fois moins souvent en variante (ouvrir_booster) */
+export const FACTEUR_COMMUNES = 0.5
+
+/** Chance qu'une fiche de cette rareté sorte dans cette variante, depuis un dossier sans bonus */
+export const chanceVariante = (v: Variante, rarete: number) => (v.mythique ? v.chance : rarete <= 1 ? v.chance * FACTEUR_COMMUNES : v.chance)
+
 /** Les variantes qu'une carte peut porter : celles des Mythiques n'existent que pour elles */
 export const variantesPour = (carte: { ra: number }) => VARIANTES.filter((v) => !v.mythique || carte.ra === 5)
 

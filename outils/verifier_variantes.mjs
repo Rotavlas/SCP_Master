@@ -1,5 +1,6 @@
 // Vérifie les chances réelles des variantes : rejoue des centaines de milliers de tirages avec les vraies fonctions SQL
-// (Postgres embarqué, comme outils/tester_sql.mjs) et les compare à ce que le jeu affiche (src/engine/variantes.ts,
+// (Postgres embarqué, comme outils/tester_sql.mjs). Chances d'une fiche rare ou mieux : ouvrir_booster les divise par deux pour
+// les communes et peu communes et les compare à ce que le jeu affiche (src/engine/variantes.ts,
 // src/engine/boosters.ts). Usage : node outils/verifier_variantes.mjs
 import { PGlite } from '@electric-sql/pglite'
 import { readFileSync, readdirSync } from 'node:fs'
