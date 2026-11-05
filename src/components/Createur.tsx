@@ -2,7 +2,7 @@ import { useEffect, useSyncExternalStore } from 'react'
 import { appeler } from '../state/enLigne'
 
 /**
- * Le créateur du jeu : son sceau (un cachet de cire frappé du symbole de la Fondation), son pseudo signé (animé) partout
+ * Le créateur du jeu : son sceau (un cachet de cire frappé du logo du jeu), son pseudo signé (animé) partout
  * où il apparaît. La liste vient du serveur (public.createurs, badge « createur »), lue une fois par session.
  */
 let createurs: Set<string> = new Set()
@@ -38,14 +38,7 @@ const BORD = Array.from({ length: 36 }, (_, i) => {
   return `${(32 + Math.cos(a) * r).toFixed(1)},${(32 + Math.sin(a) * r).toFixed(1)}`
 }).join(' ')
 
-// Les trois flèches du symbole, tournées vers le centre
-const FLECHES = [0, 120, 240].map((d) => {
-  const a = ((d - 90) * Math.PI) / 180
-  const p = (r: number, dec = 0) => `${(32 + Math.cos(a + dec) * r).toFixed(1)},${(32 + Math.sin(a + dec) * r).toFixed(1)}`
-  return `${p(9.5)} ${p(19, 0.32)} ${p(19, -0.32)}`
-})
-
-/** Le sceau du créateur : cire rouge, frappe dorée du symbole de la Fondation */
+/** Le sceau du créateur : un cachet de cire rouge, frappé en or du logo du jeu (le même tracé que Logo.tsx) */
 export function SceauCreateur({ taille = 18, titre = 'Créateur de SCP Masters' }: { taille?: number; titre?: string }) {
   return (
     <svg className="sceau-createur" width={taille} height={taille} viewBox="0 0 64 64" role="img" aria-label={titre}>
@@ -63,13 +56,25 @@ export function SceauCreateur({ taille = 18, titre = 'Créateur de SCP Masters' 
         </linearGradient>
       </defs>
       <polygon points={BORD} fill="url(#cire-createur)" />
-      <circle cx="32" cy="32" r="23" fill="none" stroke="url(#or-createur)" strokeWidth="2" opacity="0.9" />
-      <circle cx="32" cy="32" r="20.5" fill="none" stroke="#6e0614" strokeWidth="1" opacity="0.6" />
-      <circle cx="32" cy="32" r="16" fill="none" stroke="url(#or-createur)" strokeWidth="3" />
-      <circle cx="32" cy="32" r="6" fill="none" stroke="url(#or-createur)" strokeWidth="2.6" />
-      {FLECHES.map((f) => (
-        <polygon key={f} points={f} fill="url(#or-createur)" />
-      ))}
+      <circle cx="32" cy="32" r="25.5" fill="none" stroke="url(#or-createur)" strokeWidth="1.6" opacity="0.85" />
+      {/* Le logo du jeu, trait pour trait (Logo.tsx), frappé en or au centre de la cire */}
+      <g transform="translate(12.5 12.5) scale(0.39)">
+        <g fill="none" stroke="url(#or-createur)">
+          <circle cx="50" cy="50" r="42" strokeWidth="7" strokeDasharray="72 16" transform="rotate(-62 50 50)" />
+          <circle cx="50" cy="50" r="15" strokeWidth="6" />
+        </g>
+        {[0, 120, 240].map((angle) => (
+          <path
+            key={angle}
+            d="M50 6 L50 22 M42 22 L50 33 L58 22 Z"
+            fill="url(#or-createur)"
+            stroke="url(#or-createur)"
+            strokeWidth="6"
+            strokeLinejoin="round"
+            transform={`rotate(${angle} 50 50)`}
+          />
+        ))}
+      </g>
     </svg>
   )
 }
