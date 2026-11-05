@@ -12,6 +12,15 @@ export interface Entree {
 export const JOURNAL: Entree[] = [
   {
     date: '2026-11-05',
+    titre: 'La variante Brèche répare son glitch',
+    points: [
+      'Les cartes en variante Brèche restaient « cassées » les trois quarts du temps (en-tête et textes masqués, couleurs inversées) : elles ne glitchent plus que par un bref sursaut, et leurs lignes de balayage défilent de nouveau sur la carte.',
+      'Les Mythiques retrouvent leur aura rouge pulsée, et le nom d’une Légendaire en Archive d’origine se lit de nouveau, à l’encre sur le papier jauni.',
+      'Vérification des chances des variantes : celles tirées par le serveur sont exactement celles affichées, pour chaque dossier, les Mythiques et la fusion.',
+    ],
+  },
+  {
+    date: '2026-11-05',
     titre: 'Registre des Mythiques, fusion, cote, collections, cosmétiques et notifications',
     points: [
       'Chaque Mythique a son registre : la fiche d’une Mythique montre tous ses exemplaires numérotés sortis, leur détenteur actuel et toute leur histoire (tiré d’un dossier par qui, racheté aux enchères à quel prix, échangé, détruit).',

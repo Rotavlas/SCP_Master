@@ -245,6 +245,7 @@ function Atelier({ base }: { base: Base }) {
   if (carteLegendaire) return <Protocole carte={carteLegendaire} onFini={() => location.reload()} />
   const mode = params.get('mode') ?? (params.has('breche') ? 'breche' : null)
   if (mode === 'alterations') return <PlancheAlterations />
+  if (mode === 'variantes') return <PlancheVariantes base={base} taille={(params.get('taille') as 'p' | 'm' | 'g') ?? 'm'} />
   if (mode === 'frappe') return <EssaiFrappe base={base} />
   if (mode === 'app') return <JeuDeDemonstration base={base} />
   if (mode === 'reglement') {
@@ -389,3 +390,38 @@ function JeuDeDemonstration({ base }: { base: Base }) {
 const conteneur = document.getElementById('racine') as HTMLElement & { racine?: ReturnType<typeof createRoot> }
 conteneur.racine ??= createRoot(conteneur)
 void chargerBase().then((base) => conteneur.racine!.render(<Atelier base={base} />))
+
+/**
+ * atelier.html?mode=variantes[&taille=p|m|g] : chaque variante sur chaque genre de carte (commune, épique, Légendaire,
+ * Mythique, conte, personnel), pour juger leur rendu côte à côte.
+ */
+function PlancheVariantes({ base, taille }: { base: Base; taille: 'p' | 'm' | 'g' }) {
+  const exemples = [
+    base.parRarete[0].find((c) => c.k === 's'),
+    base.parRarete[3].find((c) => c.k === 's'),
+    base.parRarete[2].find((c) => c.k === 'c'),
+    base.parRarete[1].find((c) => c.k === 'p'),
+    base.parRarete[4].find((c) => c.k === 's' && c.img),
+    base.parRarete[5][0],
+  ].filter((c): c is TCarte => !!c)
+  return (
+    <main className="atelier planche-variantes">
+      <h1>Variantes</h1>
+      {exemples.map((c) => (
+        <section key={c.id} className="planche-ligne">
+          <h2>
+            {c.num ?? c.nm} · rareté {c.ra}
+          </h2>
+          <div className="planche-cartes">
+            {variantesPour(c).map((v) => (
+              <figure key={v.id}>
+                <Carte carte={c} base={base} taille={taille} variante={v.id} numero={c.ra === 5 ? 7 : undefined} />
+                <figcaption>{v.nom}</figcaption>
+              </figure>
+            ))}
+          </div>
+        </section>
+      ))}
+    </main>
+  )
+}

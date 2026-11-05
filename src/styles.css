@@ -2178,19 +2178,24 @@ select:focus {
   animation: balayage 1.6s linear infinite;
 }
 
+/* Un sursaut bref (88 à 94 % du cycle, environ 0,2 s) : chaque étape remet tout à zéro, rien ne reste découpé */
 @keyframes glitch {
   0%,
   86%,
+  94%,
   100% {
     transform: none;
     filter: none;
+    clip-path: none;
   }
   88% {
     transform: translate(-3px, 1px) skewX(-4deg);
     filter: hue-rotate(90deg);
+    clip-path: none;
   }
   90% {
     transform: translate(4px, -2px);
+    filter: none;
     clip-path: inset(10% 0 55% 0);
   }
   92% {
@@ -7793,10 +7798,10 @@ select,
 }
 
 .cellule.touchee {
-  animation: secousse 0.45s ease 1;
+  animation: secousse-legere 0.45s ease 1;
 }
 
-@keyframes secousse {
+@keyframes secousse-legere {
   20%,
   60% {
     transform: translateX(-3px);
@@ -8304,7 +8309,7 @@ select,
 }
 
 .site-reco.touche {
-  animation: secousse 0.45s ease 1;
+  animation: secousse-legere 0.45s ease 1;
 }
 
 .site-reco-tete {
@@ -8740,10 +8745,10 @@ select,
 
 /* Réalité et espace : les réponses glitchent en changeant de place */
 .question-alteree.glitch .options {
-  animation: glitch 0.45s steps(4) 1;
+  animation: glitch-reponses 0.45s steps(4) 1;
 }
 
-@keyframes glitch {
+@keyframes glitch-reponses {
   25% {
     transform: translate(-4px, 1px);
     filter: hue-rotate(90deg) saturate(3);
@@ -9121,10 +9126,10 @@ body.en-partie .reco:has(.duel-fin) {
 /* ---------- Les Mythiques se voient : aura d'or dans la main, portrait dans la jauge ---------- */
 .breche-main-carte.ultime .carte,
 .reco-main-carte.ultime .carte {
-  animation: aura-mythique 2.2s ease-in-out infinite alternate;
+  animation: aura-ultime 2.2s ease-in-out infinite alternate;
 }
 
-@keyframes aura-mythique {
+@keyframes aura-ultime {
   from {
     box-shadow:
       0 0 0 2px #c9a13f,
@@ -9169,7 +9174,7 @@ body.en-partie .reco:has(.duel-fin) {
 }
 
 .jauge-manifestation.pleine .manif-portrait {
-  animation: aura-mythique 1.2s ease-in-out infinite alternate;
+  animation: aura-ultime 1.2s ease-in-out infinite alternate;
 }
 
 .jauge-manifestation.pleine .manif-texte span {
@@ -10720,10 +10725,10 @@ body.en-partie .reco:has(.duel-fin) {
   background: linear-gradient(90deg, transparent, rgba(240, 180, 60, 0.55) 20%, rgba(255, 230, 170, 0.8) 50%, rgba(240, 180, 60, 0.55) 80%, transparent);
   box-shadow: 0 0 14px 2px rgba(240, 180, 60, 0.35);
   opacity: 0;
-  animation: balayage 0.55s ease-in both;
+  animation: balayage-ecran 0.55s ease-in both;
 }
 
-@keyframes balayage {
+@keyframes balayage-ecran {
   0% {
     top: 0;
     opacity: 0.9;
@@ -12636,4 +12641,39 @@ html {
 
 .collections-gdi .album-page {
   grid-template-columns: minmax(0, 1fr) 5.5rem auto;
+}
+
+/* Atelier : planche des variantes */
+.planche-variantes {
+  padding: 16px;
+}
+
+.planche-cartes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+}
+
+.planche-cartes figure {
+  margin: 0;
+  display: grid;
+  justify-items: center;
+  gap: 0.3rem;
+}
+
+.planche-cartes figcaption {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--discret);
+}
+
+/* Archive d'origine d'une Légendaire : le bas de carte est un papier clair, ses textes passent à l'encre */
+.carte-legendaire.variante-arch .cl-nom {
+  color: #2e2010;
+}
+
+.carte-legendaire.variante-arch .cl-rang,
+.carte-legendaire.variante-arch .cl-note,
+.carte-legendaire.variante-arch .cl-stats span:nth-child(even) {
+  color: #7a4f12;
 }
