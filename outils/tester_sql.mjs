@@ -1638,4 +1638,34 @@ await test('désactiver et supprimer un code', async () => {
   assert.ok(!vide.some((c) => c.code === 'APOLLYON-POUR-TOUS'))
 })
 
+console.log('Entretien de la base')
+await test('purge quotidienne : vieux tirages et vieux duels retirés, état des duels finis effacé, le reste gardé', async () => {
+  const P = '00000000-0000-0000-0000-0000000000f1'
+  await db.exec(`insert into auth.users (id) values ('${P}')`)
+  await admin(
+    `insert into prive.tirages (joueur, type_booster, cartes, le) values
+    ($1, 'standard', '[]', now() - interval '91 days'), ($1, 'standard', '[]', now() - interval '89 days')`,
+    [P],
+  )
+  await admin(
+    `insert into prive.duels_ia (joueur, niveau, debut, fin, issue, etat) values
+    ($1, 1, now() - interval '91 days', now() - interval '91 days', 'victoire', '{"a": 1}'),
+    ($1, 1, now() - interval '2 days', now() - interval '2 days', 'defaite', '{"a": 1}'),
+    ($1, 1, now() - interval '1 hour', now() - interval '1 hour', 'victoire', '{"a": 1}'),
+    ($1, 1, now() - interval '3 days', null, null, '{"en": "cours"}')`,
+    [P],
+  )
+  const r = (await admin('select prive.purger() as r')).rows[0].r
+  assert.ok(r.tirages >= 1)
+  assert.equal((await admin('select count(*)::int as n from prive.tirages where joueur = $1', [P])).rows[0].n, 1, 'le tirage récent reste')
+  const duels = (await admin('select etat from prive.duels_ia where joueur = $1 order by debut', [P])).rows
+  assert.equal(duels.length, 3, 'le duel de plus de 90 jours est retiré')
+  assert.deepEqual(
+    duels.map((d) => d.etat),
+    [{ en: 'cours' }, null, { a: 1 }],
+    'état effacé seulement pour un duel fini depuis plus d’un jour',
+  )
+  await echoue(en(P, 'select prive.purger()'), /permission denied/)
+})
+
 console.log(`\n${reussis} tests réussis${process.exitCode ? ', des échecs' : ''}.`)
