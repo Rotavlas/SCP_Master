@@ -219,7 +219,8 @@ await test('une Mythique se recycle 2 500 ₵ et compte dans le classement des l
   assert.equal((await admin(`select prive.valeur_brulage(5, 'std') as v`)).rows[0].v, 2500)
   const avant = await valeur(A, "select (public.classement('legendaires') -> 'moi' ->> 'valeur')::int")
   assert.ok(avant >= 5, `légendaires et mythiques : ${avant}`)
-  const n = (await admin(`select count(*)::int as n from public.exemplaires where proprietaire = '${A}' and carte_id = $1`, [id])).rows[0].n
+  // Seuls les exemplaires standard se recyclent (une Mythique peut aussi sortir en Négatif ou en Épreuve d'artiste)
+  const n = (await admin(`select count(*)::int as n from public.exemplaires where proprietaire = '${A}' and carte_id = $1 and variante = 'std'`, [id])).rows[0].n
   if (n >= 2) {
     // Plafond du jour remis à zéro : 3 000 à plein tarif, 20 % au-delà
     await admin(`update public.mouvements_credits set le = le - interval '1 day' where joueur = '${A}' and motif in ('recyclage', 'brulage')`)
