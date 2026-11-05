@@ -47,15 +47,16 @@ function decrire(e: Evenement): string {
   }
 }
 
-export function Registre({ carte }: { carte: Carte }) {
-  const [ouvert, setOuvert] = useState(false)
+export function Registre({ carte, deplie = false }: { carte: Carte; deplie?: boolean }) {
+  // Dans l'onglet Registre de la fiche, le registre est déplié d'emblée
+  const [ouvert, setOuvert] = useState(deplie)
   const [liste, setListe] = useState<Exemplaire[] | null | undefined>(undefined)
   useEffect(() => {
     if (ouvert && liste === undefined) void appeler<Exemplaire[]>('registre_mythique', { p_carte: carte.id }).then(setListe)
   }, [ouvert, liste, carte.id])
 
   return (
-    <details className="registre" onToggle={(e) => setOuvert(e.currentTarget.open)}>
+    <details className="registre" open={deplie || undefined} onToggle={(e) => setOuvert(e.currentTarget.open)}>
       <summary>Registre des exemplaires</summary>
       {liste === undefined ? (
         <Caviarde lignes={3} />

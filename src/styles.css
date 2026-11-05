@@ -13202,3 +13202,360 @@ html {
 .succes-grille {
   align-items: start;
 }
+
+/* =====================================================================
+   Mise en ordre des pages (Terminal, Confrontation, Intendance, Archives, fiche de carte)
+   ===================================================================== */
+
+/* ---------- Terminal : deux colonnes sur grand écran ---------- */
+.accueil-grille {
+  display: grid;
+  gap: 0 1.1rem;
+}
+
+@media (min-width: 1100px) {
+  .accueil-grille {
+    grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .accueil-cote .raretes-resume {
+    gap: 0.45rem 1rem;
+  }
+}
+
+/* ---------- Confrontation : l'équipe en bandeau compact au-dessus des onglets ---------- */
+.equipe.equipe-compacte {
+  grid-template-columns: minmax(12rem, 16rem) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.8rem 1.2rem;
+  padding: 0.8rem 1rem;
+  margin-bottom: 1.2rem;
+}
+
+.equipe-compacte h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.equipe-compacte h2 small {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+}
+
+.equipe-compacte p {
+  margin: 0.2rem 0 0;
+  font-size: 0.8rem;
+}
+
+.equipe-compacte .equipe-emplacements {
+  gap: 0.4rem;
+}
+
+.equipe-compacte .equipe-emplacements .carte,
+.equipe-compacte .emplacement-vide {
+  width: 74px;
+}
+
+.equipe-compacte .actions {
+  flex-direction: column;
+  align-items: stretch;
+  margin: 0;
+}
+
+@media (max-width: 900px) {
+  .equipe.equipe-compacte {
+    grid-template-columns: 1fr;
+  }
+
+  .equipe-compacte .actions {
+    flex-direction: row;
+  }
+}
+
+/* ---------- Intendance ---------- */
+.boutique-tete h1 {
+  margin: 0.1rem 0 0.2rem;
+}
+
+.boutique-tete .btn-lien {
+  padding: 0;
+  font-size: 0.82rem;
+}
+
+/* ---------- Archives : en-tête, filtres rangés, étoile de favori ---------- */
+.archives-tete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.8rem 1rem;
+  margin-bottom: 1rem;
+}
+
+.archives-tete h1 {
+  margin: 0.1rem 0 0;
+  font-family: var(--mono);
+}
+
+.archives-tete h1 small {
+  font-size: 0.9rem;
+  color: var(--discret);
+  font-weight: 400;
+}
+
+.archives-tete .actions {
+  margin: 0;
+}
+
+.archives-equipe {
+  margin: 0;
+  border: 0;
+  padding: 0;
+  background: none;
+}
+
+.filtres-ligne {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.6rem;
+}
+
+.filtres-ligne .filtres-recherche {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.filtres-ligne .tri {
+  display: inline-flex;
+  gap: 0.3rem;
+}
+
+.btn-filtres .compteur {
+  margin-left: 0.4rem;
+}
+
+.panneau-filtres {
+  display: grid;
+  gap: 0.6rem;
+  margin-top: 0.6rem;
+  padding: 0.8rem 0.9rem;
+  background: var(--panneau);
+  border: 1px solid var(--bord);
+  border-radius: 10px;
+}
+
+.panneau-filtres .filtres {
+  margin: 0;
+}
+
+.case-carte {
+  position: relative;
+}
+
+/* L'ancienne pastille de favori laisse la place à l'étoile, qui se touche */
+.case-carte .pastille-favori {
+  display: none;
+}
+
+.etoile-favori {
+  position: absolute;
+  bottom: -7px;
+  right: -7px;
+  z-index: 6;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--bord);
+  background: rgba(11, 13, 14, 0.88);
+  color: var(--discret);
+  font-size: 1rem;
+  line-height: 1;
+  cursor: pointer;
+  opacity: 0;
+  transition:
+    opacity 0.15s,
+    transform 0.15s,
+    color 0.15s;
+}
+
+/* Une zone de toucher plus grande que l'étoile */
+.etoile-favori::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+}
+
+.case-carte:hover .etoile-favori,
+.etoile-favori:focus-visible,
+.etoile-favori.actif {
+  opacity: 1;
+}
+
+.etoile-favori:hover {
+  transform: scale(1.12);
+  color: var(--ambre);
+}
+
+.etoile-favori.actif {
+  background: var(--ambre);
+  border-color: var(--ambre);
+  color: #1a1307;
+}
+
+/* Sur écran tactile, pas de survol : l'étoile se voit toujours, discrète tant qu'elle est vide */
+@media (hover: none) {
+  .etoile-favori {
+    opacity: 0.85;
+  }
+}
+
+/* ---------- Fiche d'une carte : barre d'actions et onglets ---------- */
+.barre-actions-carte {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0.4rem 0 0.9rem;
+}
+
+.btn-action {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 40px;
+  padding: 0.4rem 0.8rem;
+  background: var(--panneau-2);
+  border: 1px solid var(--bord);
+  border-radius: 999px;
+  color: var(--texte);
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.btn-action > span {
+  font-size: 1rem;
+}
+
+.btn-action:hover:not(:disabled) {
+  border-color: var(--r, var(--texte));
+}
+
+.btn-action.actif {
+  border-color: var(--ambre);
+  background: rgba(240, 180, 60, 0.12);
+  color: var(--ambre);
+}
+
+.btn-action:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.onglets-fiche {
+  display: flex;
+  gap: 0.2rem;
+  margin: 0 0 0.9rem;
+  border-bottom: 1px solid var(--bord);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.onglets-fiche button {
+  flex-shrink: 0;
+  padding: 0.55rem 0.8rem;
+  background: none;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  color: var(--discret);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  cursor: pointer;
+}
+
+.onglets-fiche button.actif {
+  color: var(--texte);
+  border-bottom-color: var(--rouge);
+}
+
+.doublons-carte {
+  margin-bottom: 1rem;
+}
+
+.doublons-carte .actions {
+  margin-top: 0.4rem;
+}
+
+/* Terminal sur grand écran : dans la colonne principale, les missions du jour puis celles de la semaine, l'une sous l'autre */
+@media (min-width: 1100px) {
+  .accueil-principal .missions-groupes {
+    grid-template-columns: 1fr;
+  }
+
+  .accueil-principal .mission {
+    grid-template-columns: minmax(0, 1fr) 8rem auto;
+  }
+
+  /* La vitrine : trois cartes par rangée, plus petites */
+  .accueil-cote .rangee-cartes {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.6rem;
+  }
+
+  .accueil-cote .rangee-cartes .carte {
+    width: 100%;
+  }
+}
+
+.libelle-court {
+  display: none;
+}
+
+@media (max-width: 560px) {
+  .libelle-long {
+    display: none;
+  }
+
+  .libelle-court {
+    display: inline;
+  }
+
+  .archives-tete .actions {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+  }
+
+  .archives-tete .actions .btn {
+    width: auto;
+    flex: 1 1 auto;
+    padding: 0.45rem 0.6rem;
+    font-size: 0.8rem;
+  }
+
+  .archives-tete h1 {
+    font-size: 1.6rem;
+  }
+}
+
+@media (max-width: 560px) {
+  .equipe-compacte p {
+    display: none;
+  }
+
+  .equipe-compacte .actions .btn {
+    flex: 1 1 0;
+    width: auto;
+    padding: 0.45rem 0.5rem;
+    font-size: 0.8rem;
+  }
+}

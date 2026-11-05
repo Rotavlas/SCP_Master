@@ -173,52 +173,57 @@ export function Accueil({ base, aller, ouvrirCarte, allerClan }: Props) {
         </button>
       </div>
 
-      <Section
-        id="a-faire"
-        titre="À portée de main"
-        badge={prets ? `${prets} à réclamer` : objectifs?.length ? `${objectifs.length}` : undefined}
-        urgent={prets > 0}
-      >
-        {objectifs ? <Objectifs liste={objectifs} base={base} aller={aller} allerClan={allerClan} /> : <Caviarde lignes={2} />}
-      </Section>
+      <div className="accueil-grille">
+        <div className="accueil-principal">
+          <Section
+            id="a-faire"
+            titre="À portée de main"
+            badge={prets ? `${prets} à réclamer` : objectifs?.length ? `${objectifs.length}` : undefined}
+            urgent={prets > 0}
+          >
+            {objectifs ? <Objectifs liste={objectifs} base={base} aller={aller} allerClan={allerClan} /> : <Caviarde lignes={2} />}
+          </Section>
 
-      <Section id="quotidien" titre="Rapport et missions" badge={badgeQuotidien} urgent={!!badgeQuotidien}>
-        <Rapport />
-        <Missions sansTitre />
-      </Section>
-
-      <Section id="progression" titre="Progression" badge={badgeProgression} urgent={!!paliersPrets}>
-        <Piste />
-        <div className="raretes-resume">
-          {RARETES.map((r, i) => (
-            <div key={r.nom}>
-              <span className="puce" style={{ background: r.couleur }} />
-              {r.nom}
-              <strong>
-                {parRarete[i]}/{base.parRarete[i].length}
-              </strong>
-            </div>
-          ))}
+          <Section id="quotidien" titre="Rapport et missions" badge={badgeQuotidien} urgent={!!badgeQuotidien}>
+            <Rapport />
+            <Missions sansTitre />
+          </Section>
         </div>
-      </Section>
+        <div className="accueil-cote">
+          <Section id="progression" titre="Progression" badge={badgeProgression} urgent={!!paliersPrets}>
+            <Piste />
+            <div className="raretes-resume">
+              {RARETES.map((r, i) => (
+                <div key={r.nom}>
+                  <span className="puce" style={{ background: r.couleur }} />
+                  {r.nom}
+                  <strong>
+                    {parRarete[i]}/{base.parRarete[i].length}
+                  </strong>
+                </div>
+              ))}
+            </div>
+          </Section>
 
-      {vitrine.length > 0 && (
-        <Section id="vitrine" titre="Vos dossiers les plus précieux">
-          <div className="rangee-cartes">
-            {vitrine.map((c) => (
-              <Carte
-                key={c.id}
-                carte={c}
-                base={base}
-                taille="p"
-                variante={varianteAffichee(s, c.id)}
-                numero={numeros?.[c.id]?.[0]}
-                onClick={() => ouvrirCarte(c.id)}
-              />
-            ))}
-          </div>
-        </Section>
-      )}
+          {vitrine.length > 0 && (
+            <Section id="vitrine" titre="Vos dossiers les plus précieux">
+              <div className="rangee-cartes">
+                {vitrine.map((c) => (
+                  <Carte
+                    key={c.id}
+                    carte={c}
+                    base={base}
+                    taille="p"
+                    variante={varianteAffichee(s, c.id)}
+                    numero={numeros?.[c.id]?.[0]}
+                    onClick={() => ouvrirCarte(c.id)}
+                  />
+                ))}
+              </div>
+            </Section>
+          )}
+        </div>
+      </div>
 
       <Section id="regles" titre="Comment jouer" ouverteParDefaut={false}>
         <div className="regles">

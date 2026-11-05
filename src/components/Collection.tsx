@@ -10,6 +10,7 @@ import type { Carte as TCarte, Classe, TypeFiche } from '../types'
 import { Carte } from './Carte'
 import { BoutonConfirme } from './Confirmer'
 import { JaugeRecyclage } from './JaugeRecyclage'
+import { Section } from './Section'
 
 const PAR_PAGE = 60
 
@@ -98,7 +99,8 @@ export function Collection({
   const [f, setF] = useState<Filtres>(lireFiltres)
   const { possession, types, raretes, classe, serie, variante, tri, inverse } = f
   const [recherche, setRecherche] = useState('')
-  const [plus, setPlus] = useState(classe !== 'toutes' || serie !== 'toutes' || variante !== 'toutes')
+  // Le panneau des filtres s'ouvre de lui-même si un filtre secondaire est actif
+  const [plus, setPlus] = useState(f.types.size + f.raretes.size > 0 || classe !== 'toutes' || serie !== 'toutes' || variante !== 'toutes')
   useEffect(() => {
     try {
       localStorage.setItem(CLE_FILTRES, JSON.stringify({ ...f, types: [...f.types], raretes: [...f.raretes] }))
@@ -161,6 +163,12 @@ export function Collection({
     return { parType, parRarete }
   }, [base, garde])
 
+  // Favori en un toucher, depuis la grille
+  const favoris = useMemo(() => new Set(s.favoris), [s.favoris])
+  const basculerFavori = (id: string) => modifier((x) => ({ ...x, favoris: x.favoris.includes(id) ? x.favoris.filter((f) => f !== id) : [...x.favoris, id] }))
+  // Les filtres rangés derrière le bouton « Filtres » (types, raretés, classe, série, variante)
+  const actifsSecondaires = types.size + raretes.size + (classe !== 'toutes' ? 1 : 0) + (serie !== 'toutes' ? 1 : 0) + (variante !== 'toutes' ? 1 : 0)
+
   const changer = (partiel: Partial<Filtres>) => {
     setF((x) => ({ ...x, ...partiel }))
     setPage(0)
@@ -221,80 +229,115 @@ export function Collection({
 
   return (
     <section className="collection">
-      <div className="equipe">
+      <div className="archives-tete">
         <div>
-          <h2>Équipe de confrontation</h2>
-          <p className="discret">5 cartes à emmener en duel. Ouvrez une carte pour l'ajouter ou la retirer.</p>
-        </div>
-        <div className="equipe-emplacements">
-          {Array.from({ length: TAILLE_DECK }, (_, i) =>
-            equipe[i] ? (
-              <Carte
-                key={equipe[i].id}
-                carte={equipe[i]}
-                base={base}
-                taille="p"
-                variante={varianteAffichee(s, equipe[i].id)}
-                numero={numeros?.[equipe[i].id]?.[0]}
-                inclinable={false}
-                onClick={() => ouvrirCarte(equipe[i].id)}
-              />
-            ) : (
-              <div key={i} className="emplacement-vide">
-                Vide
-              </div>
-            ),
-          )}
+          <p className="dossier-entete">Archives de la Fondation</p>
+          <h1>
+            {Object.keys(s.collection).length.toLocaleString('fr-FR')} <small>/ {base.cartes.length.toLocaleString('fr-FR')} dossiers</small>
+          </h1>
         </div>
         <div className="actions">
-          <button className="btn" onClick={() => modifier((x) => ({ ...x, deck: meilleureEquipe(base, x.collection) }))}>
-            Composer automatiquement
+          <button className="btn" onClick={voirSucces}>
+            ✪ <span className="libelle-long">Succès et collections</span>
+            <span className="libelle-court">Succès</span>
           </button>
-          {valeurDoublons > 0 && (
-            <BoutonConfirme
-              question={`Recycler tous les doublons contre ${valeurDoublons} ₵ ? Un exemplaire standard de chaque carte et toutes les variantes rares sont gardés.`}
-              confirmer="Recycler"
-              onConfirme={() => void recyclerTout()}
-            >
-              Recycler tous les doublons (+{valeurDoublons} ₵)
-            </BoutonConfirme>
+          {s.nouvelles.length > 0 && (
+            <button className="btn" onClick={() => modifier((x) => ({ ...x, nouvelles: [] }))}>
+              <span className="libelle-long">Tout marquer comme lu</span>
+              <span className="libelle-court">Tout lu</span> ({s.nouvelles.length})
+            </button>
           )}
-        </div>
-        <div className="archives-plafond">
-          <JaugeRecyclage />
-          <button className="btn btn-lien" onClick={voirReglement}>
-            Barème complet dans la circulaire 05-ECO
+          <button className={`btn ${selection ? 'btn-principal' : ''}`} aria-pressed={!!selection} onClick={() => setSelection(selection ? null : new Set())}>
+            {selection ? 'Terminer' : 'Sélection'}
+            <span className="libelle-long">{selection ? ' la sélection' : ' multiple'}</span>
           </button>
         </div>
       </div>
 
-      <button className="lien-succes" onClick={voirSucces}>
-        <span className="lien-succes-icone" aria-hidden="true">
-          ✪
-        </span>
-        <span>
-          <strong>Album, Groupes d’intérêt et succès</strong>
-          <small className="discret">Les pages à compléter, les collections et leurs récompenses sont dans le dossier de carrière.</small>
-        </span>
-        <span aria-hidden="true">→</span>
-      </button>
+      <Section id="archives-equipe" titre="Équipe et doublons" badge={`équipe ${equipe.length}/${TAILLE_DECK}`} ouverteParDefaut={false}>
+        <div className="equipe archives-equipe">
+          <div className="equipe-emplacements">
+            {Array.from({ length: TAILLE_DECK }, (_, i) =>
+              equipe[i] ? (
+                <Carte
+                  key={equipe[i].id}
+                  carte={equipe[i]}
+                  base={base}
+                  taille="p"
+                  variante={varianteAffichee(s, equipe[i].id)}
+                  numero={numeros?.[equipe[i].id]?.[0]}
+                  inclinable={false}
+                  onClick={() => ouvrirCarte(equipe[i].id)}
+                />
+              ) : (
+                <div key={i} className="emplacement-vide">
+                  Vide
+                </div>
+              ),
+            )}
+          </div>
+          <div className="actions">
+            <button className="btn" onClick={() => modifier((x) => ({ ...x, deck: meilleureEquipe(base, x.collection) }))}>
+              Composer automatiquement
+            </button>
+            {valeurDoublons > 0 && (
+              <BoutonConfirme
+                question={`Recycler tous les doublons contre ${valeurDoublons} ₵ ? Un exemplaire standard de chaque carte et toutes les variantes rares sont gardés.`}
+                confirmer="Recycler"
+                onConfirme={() => void recyclerTout()}
+              >
+                Recycler tous les doublons (+{valeurDoublons} ₵)
+              </BoutonConfirme>
+            )}
+          </div>
+          <div className="archives-plafond">
+            <JaugeRecyclage />
+            <button className="btn btn-lien" onClick={voirReglement}>
+              Barème complet dans la circulaire 05-ECO
+            </button>
+          </div>
+        </div>
+      </Section>
 
       <div className="filtres-archives">
-        <div className="filtres-recherche">
-          <input
-            type="search"
-            placeholder="Numéro, surnom ou tag…"
-            value={recherche}
-            onChange={(e) => {
-              setRecherche(e.target.value)
-              setPage(0)
-            }}
-          />
-          {recherche && (
-            <button className="btn-vider" onClick={() => setRecherche('')} aria-label="Vider la recherche">
-              ✕
+        <div className="filtres-ligne">
+          <div className="filtres-recherche">
+            <input
+              type="search"
+              placeholder="Numéro, surnom ou tag…"
+              value={recherche}
+              onChange={(e) => {
+                setRecherche(e.target.value)
+                setPage(0)
+              }}
+            />
+            {recherche && (
+              <button className="btn-vider" onClick={() => setRecherche('')} aria-label="Vider la recherche">
+                ✕
+              </button>
+            )}
+          </div>
+
+          <span className="tri">
+            <select value={tri} onChange={(e) => changer({ tri: e.target.value as Tri })} aria-label="Trier par">
+              <option value="numero">Tri : numéro</option>
+              <option value="rarete">Tri : rareté</option>
+              <option value="popularite">Tri : popularité</option>
+              <option value="menace">Tri : menace</option>
+              <option value="confinement">Tri : confinement</option>
+            </select>
+            <button
+              className="btn btn-sens"
+              onClick={() => changer({ inverse: !inverse })}
+              aria-label={inverse ? 'Ordre inversé' : 'Ordre normal'}
+              title="Inverser l'ordre"
+            >
+              {inverse ? '↑' : '↓'}
             </button>
-          )}
+          </span>
+          <button className={`btn btn-filtres ${plus ? 'btn-actif' : ''}`} aria-expanded={plus} onClick={() => setPlus(!plus)}>
+            Filtres{actifsSecondaires > 0 && <span className="compteur">{actifsSecondaires}</span>}
+          </button>
         </div>
 
         <div className="pastilles pastilles-defilantes" role="radiogroup" aria-label="Quelles cartes">
@@ -313,116 +356,83 @@ export function Collection({
           ))}
         </div>
 
-        <div className="pastilles" aria-label="Raretés (plusieurs possibles)">
-          {RARETES.map((r, i) => (
-            <button
-              key={r.nom}
-              aria-pressed={raretes.has(i)}
-              className={`pastille-filtre pastille-rarete ${raretes.has(i) ? 'active' : ''}`}
-              style={{ ['--r' as string]: r.couleur }}
-              disabled={!comptes.parRarete[i] && !raretes.has(i)}
-              onClick={() => changer({ raretes: basculerDans(raretes, i) })}
-            >
-              <i aria-hidden="true" />
-              {r.nom}
-              <small>{comptes.parRarete[i].toLocaleString('fr-FR')}</small>
-            </button>
-          ))}
-        </div>
-
-        <div className="pastilles" aria-label="Types (plusieurs possibles)">
-          {ORDRE_TYPES.map((k) => (
-            <button
-              key={k}
-              aria-pressed={types.has(k)}
-              className={`pastille-filtre pastille-rarete ${types.has(k) ? 'active' : ''}`}
-              style={{ ['--r' as string]: TYPES[k].couleur }}
-              disabled={!comptes.parType[k] && !types.has(k)}
-              onClick={() => changer({ types: basculerDans(types, k) })}
-            >
-              <i aria-hidden="true" />
-              {TYPES[k].pluriel}
-              <small>{(comptes.parType[k] ?? 0).toLocaleString('fr-FR')}</small>
-            </button>
-          ))}
-        </div>
-
-        <div className="filtres-bas">
-          <button className="btn btn-lien" aria-expanded={plus} onClick={() => setPlus(!plus)}>
-            {plus ? '▾' : '▸'} Plus de filtres
-          </button>
-          <span className="tri">
-            <select value={tri} onChange={(e) => changer({ tri: e.target.value as Tri })} aria-label="Trier par">
-              <option value="numero">Tri : numéro</option>
-              <option value="rarete">Tri : rareté</option>
-              <option value="popularite">Tri : popularité</option>
-              <option value="menace">Tri : menace</option>
-              <option value="confinement">Tri : confinement</option>
-            </select>
-            <button
-              className="btn btn-sens"
-              onClick={() => changer({ inverse: !inverse })}
-              aria-label={inverse ? 'Ordre inversé' : 'Ordre normal'}
-              title="Inverser l'ordre"
-            >
-              {inverse ? '↑' : '↓'}
-            </button>
-          </span>
-          {actifs > 0 && (
-            <button className="btn btn-lien" onClick={() => changer({ ...FILTRES_DEFAUT, tri, inverse })}>
-              Réinitialiser les filtres ({actifs})
-            </button>
-          )}
-        </div>
-
         {plus && (
-          <div className="filtres">
-            <select value={classe} onChange={(e) => changer({ classe: e.target.value as Classe | 'toutes' })} aria-label="Classe">
-              <option value="toutes">Toutes classes</option>
-              {Object.entries(CLASSES)
-                .filter(([k]) => base.cartes.some((c) => c.c === k))
-                .map(([k, v]) => (
-                  <option key={k} value={k}>
+          <div className="panneau-filtres">
+            <div className="pastilles" aria-label="Raretés (plusieurs possibles)">
+              {RARETES.map((r, i) => (
+                <button
+                  key={r.nom}
+                  aria-pressed={raretes.has(i)}
+                  className={`pastille-filtre pastille-rarete ${raretes.has(i) ? 'active' : ''}`}
+                  style={{ ['--r' as string]: r.couleur }}
+                  disabled={!comptes.parRarete[i] && !raretes.has(i)}
+                  onClick={() => changer({ raretes: basculerDans(raretes, i) })}
+                >
+                  <i aria-hidden="true" />
+                  {r.nom}
+                  <small>{comptes.parRarete[i].toLocaleString('fr-FR')}</small>
+                </button>
+              ))}
+            </div>
+
+            <div className="pastilles" aria-label="Types (plusieurs possibles)">
+              {ORDRE_TYPES.map((k) => (
+                <button
+                  key={k}
+                  aria-pressed={types.has(k)}
+                  className={`pastille-filtre pastille-rarete ${types.has(k) ? 'active' : ''}`}
+                  style={{ ['--r' as string]: TYPES[k].couleur }}
+                  disabled={!comptes.parType[k] && !types.has(k)}
+                  onClick={() => changer({ types: basculerDans(types, k) })}
+                >
+                  <i aria-hidden="true" />
+                  {TYPES[k].pluriel}
+                  <small>{(comptes.parType[k] ?? 0).toLocaleString('fr-FR')}</small>
+                </button>
+              ))}
+            </div>
+
+            <div className="filtres">
+              <select value={classe} onChange={(e) => changer({ classe: e.target.value as Classe | 'toutes' })} aria-label="Classe">
+                <option value="toutes">Toutes classes</option>
+                {Object.entries(CLASSES)
+                  .filter(([k]) => base.cartes.some((c) => c.c === k))
+                  .map(([k, v]) => (
+                    <option key={k} value={k}>
+                      {v.nom}
+                    </option>
+                  ))}
+              </select>
+              <select value={serie} onChange={(e) => changer({ serie: e.target.value === 'toutes' ? 'toutes' : Number(e.target.value) })} aria-label="Série">
+                <option value="toutes">Toutes séries</option>
+                {Array.from({ length: 11 }, (_, i) => (
+                  <option key={i} value={i}>
+                    {i === 0 ? 'SCP-001' : `Série ${i} (${i === 1 ? '001' : (i - 1) * 1000}–${i * 1000 - 1})`}
+                  </option>
+                ))}
+              </select>
+              <select value={variante} onChange={(e) => changer({ variante: e.target.value as IdVariante | 'toutes' })} aria-label="Variante possédée">
+                <option value="toutes">Toutes variantes</option>
+                {VARIANTES.filter((v) => v.id !== 'std').map((v) => (
+                  <option key={v.id} value={v.id}>
                     {v.nom}
                   </option>
                 ))}
-            </select>
-            <select value={serie} onChange={(e) => changer({ serie: e.target.value === 'toutes' ? 'toutes' : Number(e.target.value) })} aria-label="Série">
-              <option value="toutes">Toutes séries</option>
-              {Array.from({ length: 11 }, (_, i) => (
-                <option key={i} value={i}>
-                  {i === 0 ? 'SCP-001' : `Série ${i} (${i === 1 ? '001' : (i - 1) * 1000}–${i * 1000 - 1})`}
-                </option>
-              ))}
-            </select>
-            <select value={variante} onChange={(e) => changer({ variante: e.target.value as IdVariante | 'toutes' })} aria-label="Variante possédée">
-              <option value="toutes">Toutes variantes</option>
-              {VARIANTES.filter((v) => v.id !== 'std').map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.nom}
-                </option>
-              ))}
-            </select>
+              </select>
+            </div>
+            {actifs > 0 && (
+              <button className="btn btn-lien" onClick={() => changer({ ...FILTRES_DEFAUT, tri, inverse })}>
+                Réinitialiser les filtres ({actifs})
+              </button>
+            )}
           </div>
         )}
       </div>
 
-      <div className="resultat-ligne">
-        <p className="discret resultat">
-          {filtrees.length.toLocaleString('fr-FR')} dossier{filtrees.length > 1 ? 's' : ''}
-          {possession === 'possedees' && filtrees.length === 0 && ' — ouvrez un booster pour commencer votre collection.'}
-        </p>
-        <div className="actions">
-          {s.nouvelles.length > 0 && (
-            <button className="btn" onClick={() => modifier((x) => ({ ...x, nouvelles: [] }))}>
-              Tout marquer comme lu ({s.nouvelles.length})
-            </button>
-          )}
-          <button className={`btn ${selection ? 'btn-principal' : ''}`} aria-pressed={!!selection} onClick={() => setSelection(selection ? null : new Set())}>
-            {selection ? 'Terminer la sélection' : 'Sélection multiple'}
-          </button>
-        </div>
-      </div>
+      <p className="discret resultat">
+        {filtrees.length.toLocaleString('fr-FR')} dossier{filtrees.length > 1 ? 's' : ''}
+        {possession === 'possedees' && filtrees.length === 0 && ' — ouvrez un booster pour commencer votre collection.'}
+      </p>
 
       {selection && (
         <div className="barre-selection" role="toolbar" aria-label="Actions sur la sélection">
@@ -478,7 +488,7 @@ export function Collection({
 
       <div className={`grille ${selection ? 'en-selection' : ''}`}>
         {visibles.map((c) => (
-          <div key={c.id} className={selection && selection.has(c.id) ? 'case-selection cochee' : selection ? 'case-selection' : undefined}>
+          <div key={c.id} className={`case-carte ${selection ? 'case-selection' : ''} ${selection?.has(c.id) ? 'cochee' : ''}`}>
             <Carte
               carte={c}
               base={base}
@@ -487,11 +497,21 @@ export function Collection({
               quantite={s.collection[c.id]}
               variante={s.collection[c.id] ? varianteAffichee(s, c.id) : undefined}
               nouvelle={s.nouvelles.includes(c.id)}
-              favori={s.favoris.includes(c.id)}
               souhait={s.souhaits.includes(c.id)}
               numero={numeros?.[c.id]?.[0]}
               onClick={() => (selection ? basculer(c.id) : ouvrirCarte(c.id))}
             />
+            {!!s.collection[c.id] && !selection && (
+              <button
+                className={`etoile-favori ${favoris.has(c.id) ? 'actif' : ''}`}
+                aria-pressed={favoris.has(c.id)}
+                aria-label={favoris.has(c.id) ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                title={favoris.has(c.id) ? 'Retirer des favoris' : 'Ajouter aux favoris'}
+                onClick={() => basculerFavori(c.id)}
+              >
+                {favoris.has(c.id) ? '★' : '☆'}
+              </button>
+            )}
           </div>
         ))}
       </div>

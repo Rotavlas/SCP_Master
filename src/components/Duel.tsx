@@ -64,6 +64,22 @@ function lireMode(): Mode {
  * Le hall des confrontations : l'équipe, les duels entre joueurs, et les trois modes contre l'IA (Reconfinement,
  * Brèche de confinement, Duel éclair), arbitrés par le serveur.
  */
+type OngletDuel = 'agents' | 'ia' | 'epreuve'
+const ONGLETS_DUEL: { id: OngletDuel; nom: string }[] = [
+  { id: 'agents', nom: 'Entre agents' },
+  { id: 'ia', nom: 'Contre l’IA' },
+  { id: 'epreuve', nom: 'Épreuve' },
+]
+const CLE_ONGLET_DUEL = 'scp-masters:onglet-confrontation'
+const lireOngletDuel = (): OngletDuel => {
+  try {
+    const o = localStorage.getItem(CLE_ONGLET_DUEL)
+    return ONGLETS_DUEL.some((x) => x.id === o) ? (o as OngletDuel) : 'agents'
+  } catch {
+    return 'agents'
+  }
+}
+
 export function Duel({ base, aller, ouvrirProfil }: { base: Base; aller: (e: Ecran) => void; ouvrirProfil: (pseudo: string) => void }) {
   const s = useSauvegarde()
   // Partie en cours contre cet adversaire, dans le mode choisi (retenu sur l'appareil)
@@ -92,6 +108,15 @@ export function Duel({ base, aller, ouvrirProfil }: { base: Base; aller: (e: Ecr
   const niveau = accreditation(s.xp).niveau
 
   const modeChoisi = MODES.find((m) => m.id === mode)!
+  const [onglet, setOnglet] = useState<OngletDuel>(lireOngletDuel)
+  function choisirOnglet(o: OngletDuel) {
+    setOnglet(o)
+    try {
+      localStorage.setItem(CLE_ONGLET_DUEL, o)
+    } catch {
+      // Navigation privée : l'onglet par défaut reviendra
+    }
+  }
 
   function choisirMode(m: Mode) {
     setMode(m)
@@ -120,13 +145,29 @@ export function Duel({ base, aller, ouvrirProfil }: { base: Base; aller: (e: Ecr
 
   return (
     <section className="duel-lobby">
-      <div className="equipe">
+      <div className="marche-entete">
         <div>
-          <h2>Votre équipe</h2>
-          <p className="discret">
-            Vos 5 cartes forment votre main. Mêlez anomalies (SCP, entités, GdI…) et soutiens (FIM, personnel, Sites, Protocoles), et glissez-y une Mythique si
-            vous en avez une. Connaître ses dossiers reste l'arme principale.
-          </p>
+          <p className="dossier-entete">Salle de confrontation · Site-19</p>
+          <h1>Confrontation</h1>
+        </div>
+        <nav className="onglets-marche" role="tablist">
+          {ONGLETS_DUEL.map((o) => (
+            <button key={o.id} role="tab" aria-selected={onglet === o.id} className={onglet === o.id ? 'actif' : ''} onClick={() => choisirOnglet(o.id)}>
+              {o.nom}
+            </button>
+          ))}
+        </nav>
+      </div>
+
+      <div className="equipe equipe-compacte">
+        <div>
+          <h2>
+            Votre équipe{' '}
+            <small className="discret">
+              {equipe.length}/{TAILLE_DECK}
+            </small>
+          </h2>
+          <p className="discret">Anomalies et soutiens, et une Mythique si vous en avez une.</p>
         </div>
         <div className="equipe-emplacements">
           {Array.from({ length: TAILLE_DECK }, (_, i) =>
@@ -145,100 +186,107 @@ export function Duel({ base, aller, ouvrirProfil }: { base: Base; aller: (e: Ecr
             onClick={() => modifier((x) => ({ ...x, deck: meilleureEquipe(base, x.collection) }))}
             disabled={!Object.keys(s.collection).length}
           >
-            Composer automatiquement
+            Composer <span className="libelle-long">automatiquement</span>
+            <span className="libelle-court">auto</span>
           </button>
           <button className="btn" onClick={() => aller('collection')}>
-            Modifier dans les archives
+            Modifier <span className="libelle-long">dans les archives</span>
           </button>
         </div>
       </div>
 
-      <HallJcj pret={equipe.length === TAILLE_DECK} ouvrir={ouvrirJcj} ouvrirProfil={ouvrirProfil} surTableau={(t) => setRestantsIA(t.iaRestants)} />
+      <div hidden={onglet !== 'agents'}>
+        <HallJcj pret={equipe.length === TAILLE_DECK} ouvrir={ouvrirJcj} ouvrirProfil={ouvrirProfil} surTableau={(t) => setRestantsIA(t.iaRestants)} />
+      </div>
 
-      <EpreuveHall lancer={() => setEpreuve(true)} ouvrirProfil={ouvrirProfil} />
+      {onglet === 'epreuve' && <EpreuveHall lancer={() => setEpreuve(true)} ouvrirProfil={ouvrirProfil} />}
 
-      <div className="titre-entrainement">
-        <h2>Contre l'IA</h2>
-        <button className="btn" onClick={() => setTuto({ ensuite: null })}>
-          Comment jouer ?
-        </button>
-      </div>
-      <div className="modes-ia" role="radiogroup" aria-label="Mode de jeu">
-        {MODES.map((m) => (
-          <button
-            key={m.id}
-            role="radio"
-            aria-checked={mode === m.id}
-            className={`mode-ia mode-${m.id} ${mode === m.id ? 'actif' : ''}`}
-            onClick={() => choisirMode(m.id)}
-          >
-            <strong>{m.nom}</strong>
-            <span>{m.pitch}</span>
-          </button>
-        ))}
-      </div>
-      {tuto &&
-        (() => {
-          const fermer = () => {
-            if (tuto.ensuite) setAdversaire(tuto.ensuite)
-            setTuto(null)
-          }
-          if (mode === 'breche') return <TutoBreche onFermer={fermer} />
-          return <Tuto etapes={mode === 'reco' ? ETAPES_RECO : ETAPES_ECLAIR} cle={modeChoisi.tuto} onFermer={fermer} />
-        })()}
-      {/* Les duels récompensés du jour : cinq voyants qui s'éteignent un à un */}
-      <div
-        className={`compteur-ia ${restantsIA === 0 ? 'epuise' : ''}`}
-        aria-label={`${restantsIA ?? DUELS_IA_RECOMPENSES} duels récompensés restants sur ${DUELS_IA_RECOMPENSES}`}
-      >
-        <div className="compteur-ia-voyants" aria-hidden="true">
-          {Array.from({ length: DUELS_IA_RECOMPENSES }, (_, i) => (
-            <span key={i} className={i < (restantsIA ?? DUELS_IA_RECOMPENSES) ? 'allume' : ''} />
-          ))}
-        </div>
-        <div>
-          <strong>
-            {restantsIA === 0
-              ? 'Plus de duel récompensé pour aujourd’hui'
-              : `${restantsIA ?? DUELS_IA_RECOMPENSES} duel${(restantsIA ?? DUELS_IA_RECOMPENSES) > 1 ? 's' : ''} récompensé${(restantsIA ?? DUELS_IA_RECOMPENSES) > 1 ? 's' : ''} sur ${DUELS_IA_RECOMPENSES}`}
-          </strong>
-          <span className="discret">
-            {restantsIA === 0
-              ? 'Vous pouvez encore vous entraîner, sans crédits ni XP. Chaque duel se libère 24 h après avoir été joué.'
-              : 'Crédits et XP pour les victoires, sur 24 heures glissantes. Les vrais gains se jouent entre agents.'}
-          </span>
-        </div>
-      </div>
-      {equipe.length < TAILLE_DECK && (
-        <p className="alerte">
-          Il vous faut {TAILLE_DECK} cartes dans l'équipe pour lancer une confrontation
-          {Object.keys(s.collection).length < TAILLE_DECK ? " : ouvrez d'abord quelques boosters." : '.'}
-        </p>
-      )}
-      <div className="adversaires">
-        {ADVERSAIRES.map((a) => {
-          const verrouille = a.accreditation > niveau
-          return (
-            <button
-              key={a.niveau}
-              className={`adversaire ${verrouille ? 'verrouille' : ''}`}
-              disabled={verrouille || equipe.length < TAILLE_DECK}
-              onClick={() => affronter(a)}
-            >
-              <span className="adversaire-niveau">
-                Menace {'▮'.repeat(a.niveau)}
-                {'▯'.repeat(5 - a.niveau)}
-              </span>
-              <strong>{a.nom}</strong>
-              <span className="discret">{a.titre}</span>
-              <span className="adversaire-gain">
-                {verrouille ? `Accréditation niveau ${a.accreditation} requise` : `Victoire : +${a.gain} ₵ · +${a.xp} XP`}
-              </span>
-              {s.meilleurAdversaire >= a.niveau && <span className="tampon-battu">Neutralisé</span>}
+      {onglet === 'ia' && (
+        <>
+          <div className="titre-entrainement">
+            <p className="dossier-entete">Mode de jeu</p>
+            <button className="btn" onClick={() => setTuto({ ensuite: null })}>
+              Comment jouer ?
             </button>
-          )
-        })}
-      </div>
+          </div>
+          <div className="modes-ia" role="radiogroup" aria-label="Mode de jeu">
+            {MODES.map((m) => (
+              <button
+                key={m.id}
+                role="radio"
+                aria-checked={mode === m.id}
+                className={`mode-ia mode-${m.id} ${mode === m.id ? 'actif' : ''}`}
+                onClick={() => choisirMode(m.id)}
+              >
+                <strong>{m.nom}</strong>
+                <span>{m.pitch}</span>
+              </button>
+            ))}
+          </div>
+          {tuto &&
+            (() => {
+              const fermer = () => {
+                if (tuto.ensuite) setAdversaire(tuto.ensuite)
+                setTuto(null)
+              }
+              if (mode === 'breche') return <TutoBreche onFermer={fermer} />
+              return <Tuto etapes={mode === 'reco' ? ETAPES_RECO : ETAPES_ECLAIR} cle={modeChoisi.tuto} onFermer={fermer} />
+            })()}
+          {/* Les duels récompensés du jour : cinq voyants qui s'éteignent un à un */}
+          <div
+            className={`compteur-ia ${restantsIA === 0 ? 'epuise' : ''}`}
+            aria-label={`${restantsIA ?? DUELS_IA_RECOMPENSES} duels récompensés restants sur ${DUELS_IA_RECOMPENSES}`}
+          >
+            <div className="compteur-ia-voyants" aria-hidden="true">
+              {Array.from({ length: DUELS_IA_RECOMPENSES }, (_, i) => (
+                <span key={i} className={i < (restantsIA ?? DUELS_IA_RECOMPENSES) ? 'allume' : ''} />
+              ))}
+            </div>
+            <div>
+              <strong>
+                {restantsIA === 0
+                  ? 'Plus de duel récompensé pour aujourd’hui'
+                  : `${restantsIA ?? DUELS_IA_RECOMPENSES} duel${(restantsIA ?? DUELS_IA_RECOMPENSES) > 1 ? 's' : ''} récompensé${(restantsIA ?? DUELS_IA_RECOMPENSES) > 1 ? 's' : ''} sur ${DUELS_IA_RECOMPENSES}`}
+              </strong>
+              <span className="discret">
+                {restantsIA === 0
+                  ? 'Vous pouvez encore vous entraîner, sans crédits ni XP. Chaque duel se libère 24 h après avoir été joué.'
+                  : 'Crédits et XP pour les victoires, sur 24 heures glissantes. Les vrais gains se jouent entre agents.'}
+              </span>
+            </div>
+          </div>
+          {equipe.length < TAILLE_DECK && (
+            <p className="alerte">
+              Il vous faut {TAILLE_DECK} cartes dans l'équipe pour lancer une confrontation
+              {Object.keys(s.collection).length < TAILLE_DECK ? " : ouvrez d'abord quelques boosters." : '.'}
+            </p>
+          )}
+          <div className="adversaires">
+            {ADVERSAIRES.map((a) => {
+              const verrouille = a.accreditation > niveau
+              return (
+                <button
+                  key={a.niveau}
+                  className={`adversaire ${verrouille ? 'verrouille' : ''}`}
+                  disabled={verrouille || equipe.length < TAILLE_DECK}
+                  onClick={() => affronter(a)}
+                >
+                  <span className="adversaire-niveau">
+                    Menace {'▮'.repeat(a.niveau)}
+                    {'▯'.repeat(5 - a.niveau)}
+                  </span>
+                  <strong>{a.nom}</strong>
+                  <span className="discret">{a.titre}</span>
+                  <span className="adversaire-gain">
+                    {verrouille ? `Accréditation niveau ${a.accreditation} requise` : `Victoire : +${a.gain} ₵ · +${a.xp} XP`}
+                  </span>
+                  {s.meilleurAdversaire >= a.niveau && <span className="tampon-battu">Neutralisé</span>}
+                </button>
+              )
+            })}
+          </div>
+        </>
+      )}
     </section>
   )
 }

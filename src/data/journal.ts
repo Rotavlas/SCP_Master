@@ -12,6 +12,17 @@ export interface Entree {
 export const JOURNAL: Entree[] = [
   {
     date: '2026-11-06',
+    titre: 'Des pages mieux rangées',
+    points: [
+      'Terminal : sur grand écran, deux colonnes, le quotidien à gauche (objectifs, Rapport, missions), la progression à droite (piste, raretés, vitrine).',
+      'Confrontation et Intendance passent en onglets : « Entre agents », « Contre l’IA », « Épreuve » d’un côté ; « Dossiers », « Contrats et Mythiques », « Cosmétiques », « Crédits et compte » de l’autre. L’onglet ouvert est retenu.',
+      'Archives : un en-tête avec les actions, l’équipe repliée, les filtres de rareté, de type, de classe et de série rangés derrière un bouton « Filtres ».',
+      'Favoris en un toucher : une étoile sur chaque carte des Archives, sans ouvrir la fiche.',
+      'La fiche d’une carte : les actions (favori, équipe, partager, cinématique) juste sous le nom, et le contenu en onglets : dossier, marché et doublons, registre des Mythiques.',
+    ],
+  },
+  {
+    date: '2026-11-06',
     titre: 'Succès, contrats, codes et images à partager',
     points: [
       'Nouvelle page « Succès » : plus de cinquante succès (collection, raretés, variantes, confrontations, marché, Intendance), dont les archives complètes de chaque type de fiche. Les plus durs rapportent un titre ou un cadre de profil, jamais de crédits.',

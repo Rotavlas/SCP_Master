@@ -17,6 +17,13 @@ import { useGlisserPourFermer } from './feuille'
 import { Fusion, Registre } from './Registre'
 import { imageDeCarte, partagerImage } from './imageCarte'
 
+type OngletFiche = 'dossier' | 'marche' | 'registre'
+const ONGLETS_FICHE: { id: OngletFiche; nom: string }[] = [
+  { id: 'dossier', nom: 'Dossier' },
+  { id: 'marche', nom: 'Marché' },
+  { id: 'registre', nom: 'Registre' },
+]
+
 export function CarteDetail({
   carte: source,
   base,
@@ -65,6 +72,12 @@ export function CarteDetail({
     if (r === 'telechargee') notifier('Image enregistrée : partagez-la où vous voulez', 'succes')
   }
 
+  // La fiche se lit par onglets : le dossier, le marché (et les doublons), le registre d'une Mythique
+  const [onglet, setOnglet] = useState<OngletFiche>('dossier')
+  function basculerFavori() {
+    modifier((x) => ({ ...x, favoris: favori ? x.favoris.filter((id) => id !== carte.id) : [...x.favoris, carte.id] }))
+  }
+
   function basculerDeck() {
     modifier((x) => {
       if (x.deck.includes(carte.id)) return { ...x, deck: x.deck.filter((id) => id !== carte.id) }
@@ -110,7 +123,7 @@ export function CarteDetail({
         <span className="discret">sur {edition?.total ?? 50}</span>
       </span>,
     ])
-  if (carte.k === 's') fiche.push(['Série', `${carte.s ? `Série ${carte.s}` : 'SCP-001'} · ${carte.y}`])
+  if (carte.k === 's') fiche.push(['Série', `${carte.s ? `Série ${carte.s}` : 'SCP-001'}${carte.y ? ` · ${carte.y}` : ''}`])
   else if (carte.y) fiche.push(['Publication', String(carte.y)])
 
   return (
@@ -157,98 +170,134 @@ export function CarteDetail({
           <h2>
             {carte.num ?? ''} <span>{quantite ? carte.nm : '████████'}</span>
           </h2>
-          <dl className="fiche">
-            {fiche.map(([titre, valeur]) => (
-              <div key={titre}>
-                <dt>{titre}</dt>
-                <dd>{valeur}</dd>
-              </div>
-            ))}
-          </dl>
+          {/* Les actions de la carte, toujours sous la main */}
           {quantite > 0 ? (
-            <>
-              {carte.q && (
-                <section>
-                  <h4>{carte.k === 'o' ? 'Consignes' : 'Procédures de confinement spéciales'}</h4>
-                  <p lang={carte.vf || carte.auto ? 'fr' : 'en'}>{carte.q}</p>
-                </section>
-              )}
-              {carte.x && (
-                <section>
-                  <h4>{carte.k === 's' ? 'Description' : carte.k === 'c' || carte.k === 'd' ? 'Incipit' : 'Dossier'}</h4>
-                  <p lang={carte.vf || carte.auto ? 'fr' : 'en'}>{carte.x}</p>
-                </section>
-              )}
-              {carte.lie && carte.lie.length > 0 && (
-                <p className="tags">
-                  <span className="tags-titre">{carte.k === 'o' ? 'Concerne' : 'A participé au confinement de'}</span>
-                  {carte.lie.map((t) => (
-                    <span key={t}>{t}</span>
-                  ))}
-                </p>
-              )}
-              {carte.t && carte.t.length > 0 && (
-                <p className="tags">
-                  {carte.t.map((t) => (
-                    <span key={t}>{t}</span>
-                  ))}
-                </p>
-              )}
-              <div className="actions">
-                <button className={`btn ${dansDeck ? 'btn-actif' : ''}`} onClick={basculerDeck} disabled={!dansDeck && s.deck.length >= TAILLE_DECK}>
-                  {dansDeck ? "Retirer de l'équipe" : s.deck.length >= TAILLE_DECK ? 'Équipe complète' : `Ajouter à l'équipe (${s.deck.length}/${TAILLE_DECK})`}
+            <div className="barre-actions-carte" role="toolbar" aria-label="Actions">
+              <button className={`btn-action ${favori ? 'actif' : ''}`} aria-pressed={favori} onClick={basculerFavori}>
+                <span aria-hidden="true">{favori ? '★' : '☆'}</span> Favori
+              </button>
+              <button
+                className={`btn-action ${dansDeck ? 'actif' : ''}`}
+                aria-pressed={dansDeck}
+                onClick={basculerDeck}
+                disabled={!dansDeck && s.deck.length >= TAILLE_DECK}
+                title={!dansDeck && s.deck.length >= TAILLE_DECK ? 'Équipe complète' : undefined}
+              >
+                <span aria-hidden="true">⚔</span> {dansDeck ? 'Dans l’équipe' : `Équipe ${s.deck.length}/${TAILLE_DECK}`}
+              </button>
+              <button className="btn-action" disabled={partage} onClick={() => void partagerCarte()}>
+                <span aria-hidden="true">↗</span> Partager
+              </button>
+              {carte.ra >= 4 && (
+                <button className="btn-action" style={{ ['--r' as string]: RARETES[carte.ra].couleur }} onClick={() => setCinematique(true)}>
+                  <span aria-hidden="true">▶</span> Cinématique
                 </button>
-                <button
-                  className="btn"
-                  onClick={() => modifier((x) => ({ ...x, favoris: favori ? x.favoris.filter((id) => id !== carte.id) : [...x.favoris, carte.id] }))}
-                >
-                  {favori ? '★ Favori' : '☆ Favori'}
-                </button>
-                {doublons > 0 && (
-                  <button
-                    className="btn"
-                    onClick={() => void recycler(carte.id)}
-                    title="Les doublons standard reçoivent des amnésiques et sont convertis en crédits. Les variantes rares sont conservées."
-                  >
-                    Recycler {doublons} doublon{doublons > 1 ? 's' : ''} (+{gainPlafonne(doublons * VALEUR_RECYCLAGE[carte.ra], restantRecyclage ?? Infinity)}{' '}
-                    ₵)
-                  </button>
-                )}
-                <Fusion carte={carte} doublons={doublons} />
-                <button className="btn btn-partager" disabled={partage} onClick={() => void partagerCarte()}>
-                  Partager
-                </button>
-                {doublons > 0 && <JaugeRecyclage compacte />}
-                {carte.ra >= 4 && (
-                  <button className="btn btn-cinematique" style={{ ['--r' as string]: RARETES[carte.ra].couleur }} onClick={() => setCinematique(true)}>
-                    ▶ Revoir la cinématique
-                  </button>
-                )}
-              </div>
-              {cinematique && <Protocole carte={source} onFini={() => setCinematique(false)} />}
-            </>
+              )}
+            </div>
           ) : (
+            <div className="barre-actions-carte" role="toolbar" aria-label="Actions">
+              <button
+                className={`btn-action ${souhait ? 'actif' : ''}`}
+                aria-pressed={souhait}
+                onClick={() => modifier((x) => ({ ...x, souhaits: souhait ? x.souhaits.filter((id) => id !== carte.id) : [...x.souhaits, carte.id] }))}
+              >
+                <span aria-hidden="true">{souhait ? '♥' : '♡'}</span> {souhait ? 'Souhaitée' : 'Ajouter aux souhaits'}
+              </button>
+            </div>
+          )}
+          {cinematique && <Protocole carte={source} onFini={() => setCinematique(false)} />}
+
+          <nav className="onglets-fiche" role="tablist">
+            {ONGLETS_FICHE.filter((o) => o.id !== 'registre' || carte.ra === 5).map((o) => (
+              <button key={o.id} role="tab" aria-selected={onglet === o.id} className={onglet === o.id ? 'actif' : ''} onClick={() => setOnglet(o.id)}>
+                {o.id === 'marche' && quantite > 0 ? 'Marché et doublons' : o.nom}
+              </button>
+            ))}
+          </nav>
+
+          {onglet === 'dossier' && (
             <>
-              <p className="expurge">Accès refusé. Obtenez ce dossier dans un booster pour lire son contenu.</p>
-              <p className="discret">
-                Obtenable dans :{' '}
-                {boostersPour(carte)
-                  .map((b) => b.nom)
-                  .join(', ')}
-                .
-              </p>
-              <div className="actions">
-                <button
-                  className={`btn ${souhait ? 'btn-actif' : ''}`}
-                  onClick={() => modifier((x) => ({ ...x, souhaits: souhait ? x.souhaits.filter((id) => id !== carte.id) : [...x.souhaits, carte.id] }))}
-                >
-                  {souhait ? '♥ Dans la liste de souhaits' : '♡ Ajouter à la liste de souhaits'}
-                </button>
-              </div>
+              <dl className="fiche">
+                {fiche.map(([titre, valeur]) => (
+                  <div key={titre}>
+                    <dt>{titre}</dt>
+                    <dd>{valeur}</dd>
+                  </div>
+                ))}
+              </dl>
+              {quantite > 0 ? (
+                <>
+                  {carte.q && (
+                    <section>
+                      <h4>{carte.k === 'o' ? 'Consignes' : 'Procédures de confinement spéciales'}</h4>
+                      <p lang={carte.vf || carte.auto ? 'fr' : 'en'}>{carte.q}</p>
+                    </section>
+                  )}
+                  {carte.x && (
+                    <section>
+                      <h4>{carte.k === 's' ? 'Description' : carte.k === 'c' || carte.k === 'd' ? 'Incipit' : 'Dossier'}</h4>
+                      <p lang={carte.vf || carte.auto ? 'fr' : 'en'}>{carte.x}</p>
+                    </section>
+                  )}
+                  {carte.lie && carte.lie.length > 0 && (
+                    <p className="tags">
+                      <span className="tags-titre">{carte.k === 'o' ? 'Concerne' : 'A participé au confinement de'}</span>
+                      {carte.lie.map((t) => (
+                        <span key={t}>{t}</span>
+                      ))}
+                    </p>
+                  )}
+                  {carte.t && carte.t.length > 0 && (
+                    <p className="tags">
+                      {carte.t.map((t) => (
+                        <span key={t}>{t}</span>
+                      ))}
+                    </p>
+                  )}
+                </>
+              ) : (
+                <>
+                  <p className="expurge">Accès refusé. Obtenez ce dossier dans un booster pour lire son contenu.</p>
+                  <p className="discret">
+                    Obtenable dans :{' '}
+                    {boostersPour(carte)
+                      .map((b) => b.nom)
+                      .join(', ')}
+                    .
+                  </p>
+                </>
+              )}
             </>
           )}
-          {carte.ra === 5 && <Registre key={carte.id} carte={carte} />}
-          <MarcheCarte key={carte.id} carte={carte} variante={variante} voirMarche={() => voirMarche(carte)} />
+
+          {onglet === 'marche' && (
+            <>
+              {quantite > 0 && carte.ra < 5 && (
+                <section className="doublons-carte">
+                  <h4>Doublons</h4>
+                  {doublons > 0 ? (
+                    <div className="actions">
+                      <button
+                        className="btn"
+                        onClick={() => void recycler(carte.id)}
+                        title="Les doublons standard reçoivent des amnésiques et sont convertis en crédits. Les variantes rares sont conservées."
+                      >
+                        Recycler {doublons} doublon{doublons > 1 ? 's' : ''} (+
+                        {gainPlafonne(doublons * VALEUR_RECYCLAGE[carte.ra], restantRecyclage ?? Infinity)} ₵)
+                      </button>
+                      <Fusion carte={carte} doublons={doublons} />
+                      <JaugeRecyclage compacte />
+                    </div>
+                  ) : (
+                    <p className="discret">Aucun doublon : un exemplaire standard est toujours gardé. Avec 5 doublons, la fusion donne une variante.</p>
+                  )}
+                </section>
+              )}
+              <MarcheCarte key={carte.id} carte={carte} variante={variante} voirMarche={() => voirMarche(carte)} />
+            </>
+          )}
+
+          {onglet === 'registre' && carte.ra === 5 && <Registre key={carte.id} carte={carte} deplie />}
           <p className="attribution">
             <a href={lienWiki(carte)} target="_blank" rel="noreferrer">
               Lire sur le wiki SCP ↗
