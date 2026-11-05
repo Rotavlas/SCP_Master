@@ -204,6 +204,31 @@ const DEMO_HALL: Record<string, () => unknown> = {
         }
       : null,
   // Succès, contrats, Mythiques en circulation, créateur (?mode=app)
+  codes_admin: () =>
+    enHall
+      ? [
+          {
+            code: 'SITE19',
+            description: 'Code de lancement',
+            recompense: { credits: 300, offerts: { apollyon: 1 } },
+            utilisationsMax: 100,
+            expireLe: new Date(Date.now() + 5 * 86_400_000).toISOString(),
+            creeLe: new Date().toISOString(),
+            utilisations: 37,
+            actif: true,
+          },
+          {
+            code: 'CONFINEMENT',
+            description: 'Stream du 15 novembre',
+            recompense: { cosmetiques: ['couv-quadrille'], cartes: [{ c: 'scp-173', v: 'holo', n: 1 }] },
+            utilisationsMax: null,
+            expireLe: new Date(Date.now() - 86_400_000).toISOString(),
+            creeLe: new Date().toISOString(),
+            utilisations: 112,
+            actif: false,
+          },
+        ]
+      : null,
   createurs: () => (enHall ? ['Agent atelier'] : null),
   editions_mythiques: () =>
     enHall

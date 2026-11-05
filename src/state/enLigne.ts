@@ -99,6 +99,8 @@ export interface ProfilServeur {
   langue: Langue
   souvenir_importe: boolean
   keter_offerts?: number
+  /** Dossiers offerts par un code, par type : {"apollyon": 1, "o5": 2} */
+  dossiers_offerts?: Record<string, number>
 }
 
 interface EtatServeur {
@@ -117,6 +119,7 @@ export function appliquerProfil(s: Sauvegarde, p: ProfilServeur): Sauvegarde {
     xp: p.xp,
     boosters: p.boosters,
     keterOfferts: p.keter_offerts ?? 0,
+    dossiersOfferts: p.dossiers_offerts ?? {},
     dernierBooster: Date.parse(p.dernier_booster),
     meilleurAdversaire: p.meilleur_adversaire,
     stats: { ...s.stats, ...p.stats },

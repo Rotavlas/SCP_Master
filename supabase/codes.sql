@@ -1,10 +1,15 @@
--- Codes à saisir par les joueurs (menu du compte → « Saisir un code »). À lancer dans le SQL Editor de Supabase.
+-- Codes à saisir par les joueurs (menu du compte → « Saisir un code »).
+-- Le plus simple : depuis le jeu, menu du compte → « Gérer les codes » (réservé au créateur), qui fait tout ce qui suit.
+-- À la main, dans le SQL Editor de Supabase :
 -- Un code : lettres majuscules, chiffres et tirets (3 à 32). Chaque agent ne peut l'utiliser qu'une fois.
 -- Récompense (chaque clé est facultative) :
 --   credits    : crédits ajoutés
 --   dossiers   : dossiers gratuits ajoutés à la réserve (10 au plus en réserve)
---   keter      : dossiers Keter offerts
---   cosmetique : un cosmétique de prive.cosmetiques (titre, cadre, couverture), par son identifiant
+--   xp         : expérience ajoutée
+--   offerts    : dossiers offerts par type, ex. {"apollyon": 1, "o5": 2, "keter": 1, "scp": 3}
+--   cosmetiques: cosmétiques de prive.cosmetiques (titres, cadres, couvertures), ex. ["couv-marbre"]
+--   cartes     : cartes précises, ex. [{"c": "scp-173", "v": "holo", "n": 1}] (une Mythique prend un numéro de son édition)
+--   (anciennes clés encore acceptées : keter, cosmetique)
 -- utilisations_max : nombre total d'agents qui peuvent l'utiliser (vide : illimité)
 -- expire_le        : date de fin (vide : jamais)
 

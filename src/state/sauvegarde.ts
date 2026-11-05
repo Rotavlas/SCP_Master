@@ -29,6 +29,8 @@ export interface Sauvegarde {
   boosters: number
   /** dossiers Keter offerts (Rapport quotidien, piste d'accréditation), ouverts depuis la réserve */
   keterOfferts: number
+  /** dossiers offerts par un code, par type de dossier (Apollyon, O5…), ouverts depuis la réserve */
+  dossiersOfferts: Record<string, number>
   /** horodatage du dernier booster gratuit crédité */
   dernierBooster: number
   stats: { duels: number; victoires: number; boostersOuverts: number; bonnesReponses: number; questions: number }
@@ -57,6 +59,7 @@ function neuve(): Sauvegarde {
     xp: 0,
     boosters: 0,
     keterOfferts: 0,
+    dossiersOfferts: {},
     dernierBooster: Date.now(),
     stats: { duels: 0, victoires: 0, boostersOuverts: 0, bonnesReponses: 0, questions: 0 },
     meilleurAdversaire: 0,

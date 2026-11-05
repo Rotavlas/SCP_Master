@@ -1532,4 +1532,66 @@ await test('créateur : titre et cadre réservés, pseudo signé', async () => {
   await echoue(en(P2, "select public.acheter_cosmetique('cadre-createur')"), /ne s'achète pas/)
 })
 
+console.log('Dossiers offerts de tout type, gestion des codes par le créateur')
+const K1 = '00000000-0000-0000-0000-0000000000e1'
+const K2 = '00000000-0000-0000-0000-0000000000e2'
+await db.exec(`insert into auth.users (id) values ('${K1}'), ('${K2}')`)
+await admin(`update public.profils set pseudo = 'Createur Test', credits = 0 where id = '${K1}'`)
+await admin(`update public.profils set pseudo = 'Joueur Code', credits = 0, boosters = 0, keter_offerts = 0 where id = '${K2}'`)
+await admin(`insert into prive.badges_speciaux (joueur, badge) values ($1, 'createur') on conflict do nothing`, [K1])
+
+await test('gestion des codes : réservée au créateur, récompenses vérifiées', async () => {
+  await echoue(en(K2, 'select public.codes_admin()'), /Réservé au créateur/)
+  await echoue(en(K2, "select public.creer_code('PIRATE', '{\"credits\": 1}', null, null, null)"), /Réservé au créateur/)
+  await echoue(en(K1, "select public.creer_code('X', '{\"credits\": 1}', null, null, null)"), /3 à 32/)
+  await echoue(en(K1, "select public.creer_code('VIDE', '{}', null, null, null)"), /ne donne rien/)
+  await echoue(en(K1, "select public.creer_code('MAUVAIS', '{\"diamants\": 5}', null, null, null)"), /inconnue/)
+  await echoue(en(K1, "select public.creer_code('MAUVAIS', '{\"offerts\": {\"inexistant\": 1}}', null, null, null)"), /Dossier offert invalide/)
+  await echoue(en(K1, "select public.creer_code('MAUVAIS', '{\"cartes\": [{\"c\": \"scp-117\", \"v\": \"negatif\"}]}', null, null, null)"), /Variante impossible/)
+  const liste = await valeur(
+    K1,
+    `select public.creer_code('apollyon-pour-tous', $1, 'Test complet', 5, now() + interval '1 day')`,
+    [JSON.stringify({ credits: 250, xp: 40, offerts: { apollyon: 2, o5: 1, keter: 1 }, cosmetiques: ['couv-marbre'], cartes: [{ c: 'scp-117', v: 'holo', n: 2 }, { c: 'dr-clef-s-proposal' }] })],
+  )
+  assert.equal(liste[0].code, 'APOLLYON-POUR-TOUS')
+  assert.equal(liste[0].actif, true)
+})
+
+await test('un code donne tout : crédits, XP, dossiers offerts de tout type, cosmétiques, cartes numérotées', async () => {
+  const xp = (await admin('select xp from public.profils where id = $1', [K2])).rows[0].xp
+  const r = await valeur(K2, "select public.utiliser_code('apollyon-pour-tous')")
+  assert.equal(r.profil.dossiers_offerts.apollyon, 2)
+  assert.equal(r.profil.dossiers_offerts.o5, 1)
+  assert.equal(r.profil.keter_offerts, 1)
+  assert.equal(Number(r.profil.credits), 250)
+  assert.equal(r.profil.xp, xp + 40)
+  const cartes = (await admin('select carte_id, variante, numero_serie, origine from public.exemplaires where proprietaire = $1 order by carte_id', [K2])).rows
+  assert.equal(cartes.filter((c) => c.carte_id === 'scp-117' && c.variante === 'holo').length, 2)
+  const mythique = cartes.find((c) => c.carte_id === 'dr-clef-s-proposal')
+  assert.ok(mythique.numero_serie >= 1 && mythique.numero_serie <= 50, 'numéro de l’édition limitée')
+  assert.equal((await admin("select count(*)::int as n from prive.cosmetiques_possedes where joueur = $1 and cosmetique = 'couv-marbre'", [K2])).rows[0].n, 1)
+})
+
+await test('ouvrir les dossiers offerts : Apollyon, O5, Keter ; rien sans réserve', async () => {
+  const a = await valeur(K2, "select public.ouvrir_booster('apollyon', true)")
+  assert.equal(a.cartes.length, 5)
+  assert.equal(a.profil.dossiers_offerts.apollyon, 1)
+  assert.equal(Number(a.profil.credits), 250, 'gratuit')
+  await valeur(K2, "select public.ouvrir_booster('o5', true)")
+  await echoue(en(K2, "select public.ouvrir_booster('o5', true)"), /pas gratuitement/)
+  const k = await valeur(K2, "select public.ouvrir_booster('keter', true)")
+  assert.equal(k.profil.keter_offerts, 0)
+  await echoue(en(K2, "select public.ouvrir_booster('keter', true)"), /Keter offert/)
+  // Ouvrir un dossier offert ne compte pas dans la limite d'achat du jour
+  await echoue(en(K2, "select public.ouvrir_booster('scp', true)"), /pas gratuitement/)
+})
+
+await test('désactiver et supprimer un code', async () => {
+  const l = await valeur(K1, "select public.desactiver_code('apollyon-pour-tous')")
+  assert.equal(l[0].actif, false)
+  assert.equal((await valeur(K1, "select public.utiliser_code('APOLLYON-POUR-TOUS')")).erreur, 'Code inconnu ou expiré')
+  const vide = await valeur(K1, "select public.supprimer_code('APOLLYON-POUR-TOUS')")
+  assert.ok(!vide.some((c) => c.code === 'APOLLYON-POUR-TOUS'))
+})
+
 console.log(`\n${reussis} tests réussis${process.exitCode ? ', des échecs' : ''}.`)

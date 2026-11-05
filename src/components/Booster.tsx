@@ -130,10 +130,10 @@ export function Booster({ base, tirage, setTirage, aller, ouvrirCarte }: Props) 
   }
 
   // Un dossier Keter offert (Rapport quotidien, piste d'accréditation) s'ouvre aussi depuis la réserve
-  async function ouvrirKeterOffert() {
+  async function ouvrirOffert(id: string) {
     const t = await tirer(
       base,
-      BOOSTERS.find((b) => b.id === 'keter')!,
+      BOOSTERS.find((b) => b.id === id)!,
       true,
     )
     if (t) setTirage(t)
@@ -153,11 +153,22 @@ export function Booster({ base, tirage, setTirage, aller, ouvrirCarte }: Props) 
         <p className="booster-stock">
           <strong>{s.boosters}</strong> dossier{s.boosters > 1 ? 's' : ''} en stock · <CompteARebours />
         </p>
-        {s.keterOfferts > 0 && (
-          <button className="btn btn-principal btn-keter-offert" onClick={() => void ouvrirKeterOffert()}>
-            Ouvrir le dossier Keter offert{s.keterOfferts > 1 ? ` (${s.keterOfferts})` : ''}
+        {s.keterOfferts + (s.dossiersOfferts?.keter ?? 0) > 0 && (
+          <button className="btn btn-principal btn-keter-offert" onClick={() => void ouvrirOffert('keter')}>
+            Ouvrir le dossier Keter offert{s.keterOfferts + (s.dossiersOfferts?.keter ?? 0) > 1 ? ` (${s.keterOfferts + (s.dossiersOfferts?.keter ?? 0)})` : ''}
           </button>
         )}
+        {/* Les dossiers offerts par un code, de tout type */}
+        {BOOSTERS.filter((b) => b.id !== 'keter' && b.id !== 'standard' && (s.dossiersOfferts?.[b.id] ?? 0) > 0).map((b) => (
+          <button
+            key={b.id}
+            className="btn btn-principal btn-dossier-offert"
+            style={{ ['--paquet' as string]: b.couleur }}
+            onClick={() => void ouvrirOffert(b.id)}
+          >
+            Ouvrir : {b.nom} offert{(s.dossiersOfferts[b.id] ?? 0) > 1 ? ` (${s.dossiersOfferts[b.id]})` : ''}
+          </button>
+        ))}
         <button className="btn" onClick={() => aller('boutique')}>
           Dossiers spécialisés à l'intendance
         </button>

@@ -319,7 +319,7 @@ export default function App() {
               }}
             />
           )}
-          <BoutonCompte ouvrirProfil={setProfilOuvert} />
+          <BoutonCompte ouvrirProfil={setProfilOuvert} base={base} />
         </header>
       )}
 

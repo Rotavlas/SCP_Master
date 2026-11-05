@@ -11,12 +11,14 @@ import {
   type ProfilServeur,
 } from '../state/enLigne'
 import { modifier, notifier, useSauvegarde } from '../state/sauvegarde'
-import { COSMETIQUES } from '../data/cosmetiques'
 import { majCosmetiques, type EtatCosmetiques } from '../state/cosmetiques'
 import { useBadgesDe } from '../state/social'
 import { BadgesAffiches } from './Badges'
 import { Logo } from './Logo'
 import { InstallerApplication, NotificationsAppareil } from './Pwa'
+import { estCreateur, useCreateurs } from './Createur'
+import { GestionCodes, decrireRecompense, type Recompense } from './GestionCodes'
+import type { Base } from '../data/catalogue'
 
 const NOMS_FOURNISSEURS = { discord: 'Discord', google: 'Google', github: 'GitHub' } as const
 
@@ -33,11 +35,14 @@ export function LogoDiscord({ taille = 18 }: { taille?: number }) {
  * Bouton du bandeau : « ton profil », avec déconnexion. L'adresse e-mail du compte (celle de Discord,
  * par exemple) n'est jamais affichée : seul le pseudo public apparaît.
  */
-export function BoutonCompte({ ouvrirProfil }: { ouvrirProfil: (pseudo: string) => void }) {
+export function BoutonCompte({ ouvrirProfil, base }: { ouvrirProfil: (pseudo: string) => void; base: Base | null }) {
   const compte = useCompte()
   const s = useSauvegarde()
   const badges = useBadgesDe(s.agent || null)
   const [menu, setMenu] = useState(false)
+  // Le créateur gère les codes depuis ce menu
+  const createur = estCreateur(useCreateurs(), s.agent)
+  const [gestion, setGestion] = useState(false)
   if (compte.statut !== 'connecte') return null
   return (
     <div className="compte-menu">
@@ -66,7 +71,19 @@ export function BoutonCompte({ ouvrirProfil }: { ouvrirProfil: (pseudo: string) 
           )}
           <InstallerApplication />
           <NotificationsAppareil />
-          <SaisirCode />
+          <SaisirCode base={base} />
+          {createur && (
+            <button
+              className="btn"
+              role="menuitem"
+              onClick={() => {
+                setMenu(false)
+                setGestion(true)
+              }}
+            >
+              ✦ Gérer les codes
+            </button>
+          )}
           <button
             className="btn"
             role="menuitem"
@@ -79,6 +96,7 @@ export function BoutonCompte({ ouvrirProfil }: { ouvrirProfil: (pseudo: string) 
           </button>
         </div>
       )}
+      {gestion && <GestionCodes base={base} onFermer={() => setGestion(false)} />}
     </div>
   )
 }
@@ -187,7 +205,7 @@ export function Portail({ nombreCartes }: { nombreCartes: number }) {
 }
 
 /** Dans le menu du compte : saisir un code (récompense offerte lors d'un événement, d'un stream…) */
-function SaisirCode() {
+function SaisirCode({ base }: { base: Base | null }) {
   const [ouvert, setOuvert] = useState(false)
   const [code, setCode] = useState('')
   const [envoi, setEnvoi] = useState(false)
@@ -212,14 +230,8 @@ function SaisirCode() {
         if (r.erreur) return notifier(r.erreur)
         if (r.profil) modifier((x) => appliquerProfil(x, r.profil!))
         const g = r.recompense ?? {}
-        const morceaux = [
-          g.credits ? `+${Number(g.credits).toLocaleString('fr-FR')} ₵` : '',
-          g.dossiers ? `+${g.dossiers} dossier${Number(g.dossiers) > 1 ? 's' : ''}` : '',
-          g.keter ? `+${g.keter} dossier${Number(g.keter) > 1 ? 's' : ''} Keter` : '',
-          typeof g.cosmetique === 'string' ? `« ${COSMETIQUES[g.cosmetique]?.nom ?? g.cosmetique} »` : '',
-        ].filter(Boolean)
-        notifier(`Code accepté${r.description ? ` (${r.description})` : ''} : ${morceaux.join(', ') || 'récompense reçue'}`, 'succes')
-        if (typeof g.cosmetique === 'string') void appeler<EtatCosmetiques>('cosmetiques').then(majCosmetiques)
+        notifier(`Code accepté${r.description ? ` (${r.description})` : ''} : ${decrireRecompense(g as Recompense, base)}`, 'succes')
+        if (g.cosmetique || (g.cosmetiques as string[] | undefined)?.length) void appeler<EtatCosmetiques>('cosmetiques').then(majCosmetiques)
         setCode('')
         setOuvert(false)
       }}

@@ -12,6 +12,14 @@ export interface Entree {
 export const JOURNAL: Entree[] = [
   {
     date: '2026-11-06',
+    titre: 'Le marché vous dit ce qui vous manque',
+    points: [
+      'Chaque vente aux enchères indique si la carte est « Nouvelle pour vous » ou déjà possédée (combien d’exemplaires, et si la variante en vente vous manque). Un filtre « Cartes que je n’ai pas » ne garde que les nouvelles.',
+      'Les codes peuvent offrir n’importe quel dossier, Apollyon compris : ils s’ouvrent depuis l’écran des dossiers, comme le Keter offert. Un code peut aussi donner de l’XP, plusieurs cosmétiques ou des cartes précises.',
+    ],
+  },
+  {
+    date: '2026-11-06',
     titre: 'Des pages mieux rangées',
     points: [
       'En combat sur téléphone, une question prend toute la place : plus de petit cadre à faire défiler. Pendant la question, la main, votre carte et les jauges de Manifestation s’effacent, la carte adverse passe en vignette à côté de son effet, et la question vient d’elle-même à l’écran.',

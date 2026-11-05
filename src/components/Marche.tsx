@@ -21,7 +21,7 @@ import {
   type Mise,
   type Offre,
 } from '../state/marche'
-import { useSauvegarde } from '../state/sauvegarde'
+import { exemplairesStandard, useSauvegarde } from '../state/sauvegarde'
 import type { Carte as TCarte } from '../types'
 import { Carte } from './Carte'
 import { BoutonConfirme } from './Confirmer'
@@ -144,6 +144,8 @@ function Encheres({
   const [rarete, setRarete] = useState<number | 'toutes'>('toutes')
   const [variante, setVariante] = useState<IdVariante | 'toutes'>('toutes')
   const [enTete, setEnTete] = useState(false)
+  const [manquantes, setManquantes] = useState(false)
+  const s = useSauvegarde()
   const [tri, setTri] = useState<Tri>('fin')
 
   const liste = useMemo(() => {
@@ -157,6 +159,7 @@ function Encheres({
         if (rarete !== 'toutes' && carte.ra !== rarete) return false
         if (variante !== 'toutes' && e.variante !== variante) return false
         if (enTete && !e.enTete) return false
+        if (manquantes && s.collection[carte.id]) return false
         return !r || carte.id === r || `${carte.num ?? ''} ${carte.nm} ${e.vendeur}`.toLowerCase().includes(r)
       })
       .sort((a, b) =>
@@ -166,7 +169,7 @@ function Encheres({
             ? b.carte.ra - a.carte.ra || Date.parse(a.e.fin) - Date.parse(b.e.fin)
             : Date.parse(a.e.fin) - Date.parse(b.e.fin),
       )
-  }, [etat, base, recherche, rarete, variante, enTete, tri])
+  }, [etat, base, recherche, rarete, variante, enTete, manquantes, tri, s.collection])
 
   if (!etat) return <p className="discret">Connexion au bureau des transferts…</p>
 
@@ -198,6 +201,9 @@ function Encheres({
         <label className="case">
           <input type="checkbox" checked={enTete} onChange={(e) => setEnTete(e.target.checked)} /> Où je mène
         </label>
+        <label className="case">
+          <input type="checkbox" checked={manquantes} onChange={(e) => setManquantes(e.target.checked)} /> Cartes que je n’ai pas
+        </label>
       </div>
       <p className="discret direct">
         <span className="point-direct" aria-hidden="true" /> En direct · {etat.ouvertes.length} vente{etat.ouvertes.length > 1 ? 's' : ''} en cours. Mise
@@ -213,6 +219,33 @@ function Encheres({
         </div>
       )}
     </>
+  )
+}
+
+/**
+ * Possède-t-on déjà cette carte, et dans cette variante ? Sur chaque vente : « Nouvelle pour vous », ou le nombre
+ * d'exemplaires possédés et si la variante en vente manque encore.
+ */
+function Possession({ carte, variante }: { carte: TCarte; variante: IdVariante }) {
+  const s = useSauvegarde()
+  const total = s.collection[carte.id] ?? 0
+  if (!total)
+    return (
+      <p className="possession nouvelle">
+        <span aria-hidden="true">★</span> Nouvelle pour vous
+      </p>
+    )
+  const dansVariante = variante === 'std' ? exemplairesStandard(s, carte.id) : (s.variantes[carte.id]?.[variante] ?? 0)
+  return (
+    <p className="possession possedee">
+      <span aria-hidden="true">✓</span> Possédée ×{total}
+      {variante !== 'std' &&
+        (dansVariante ? (
+          <span className="discret"> · dont {dansVariante} dans cette variante</span>
+        ) : (
+          <span className="variante-manquante"> · variante qui vous manque</span>
+        ))}
+    </p>
   )
 }
 
@@ -257,6 +290,7 @@ function LigneEnchere({
           {designation(carte)}
           {carte.num && <span>{carte.nm}</span>}
         </h3>
+        <Possession carte={carte} variante={e.variante} />
         <p className="discret">
           <span style={{ color: PAR_ID[e.variante].couleur }}>{PAR_ID[e.variante].nom}</span>
           {e.serie !== null && ` · n° ${e.serie}`} · vendu par {e.aMoi ? 'vous' : e.vendeur}
