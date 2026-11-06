@@ -482,6 +482,13 @@ export function Collection({
           >
             Marquer comme lus
           </button>
+          <button
+            className="btn"
+            disabled={!choisies.length}
+            onClick={() => modifier((x) => ({ ...x, nouvelles: [...new Set([...x.nouvelles, ...choisies.filter((id) => x.collection[id])])] }))}
+          >
+            Marquer comme non lus
+          </button>
           <BoutonConfirme
             disabled={!choisies.length || occupe || gainDoublons === 0}
             question={`Brûler les doublons standard de ${choisies.length} dossier${choisies.length > 1 ? 's' : ''} ? Un exemplaire standard de chaque et les variantes sont gardés.`}

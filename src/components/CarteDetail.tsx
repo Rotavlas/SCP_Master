@@ -49,6 +49,7 @@ export function CarteDetail({
   const carte = useCarteAffichee(useTextes(source).carte)
   const quantite = s.collection[carte.id] ?? 0
   const favori = s.favoris.includes(carte.id)
+  const nonLue = s.nouvelles.includes(carte.id)
   const souhait = s.souhaits.includes(carte.id)
   const dansDeck = s.deck.includes(carte.id)
   const doublons = doublonsRecyclables(s, carte.id)
@@ -218,6 +219,14 @@ export function CarteDetail({
                   <span aria-hidden="true">▶</span> Cinématique
                 </button>
               )}
+              {/* La remettre en « nouvelle » : elle reprend son tampon dans les archives, pour y revenir plus tard */}
+              <button
+                className={`btn-action ${nonLue ? 'actif' : ''}`}
+                aria-pressed={nonLue}
+                onClick={() => modifier((x) => ({ ...x, nouvelles: nonLue ? x.nouvelles.filter((id) => id !== carte.id) : [...x.nouvelles, carte.id] }))}
+              >
+                <span aria-hidden="true">{nonLue ? '●' : '○'}</span> {nonLue ? 'Non lue' : 'Marquer non lue'}
+              </button>
             </div>
           ) : (
             <div className="barre-actions-carte" role="toolbar" aria-label="Actions">

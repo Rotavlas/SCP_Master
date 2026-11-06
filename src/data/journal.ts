@@ -12,6 +12,15 @@ export interface Entree {
 export const JOURNAL: Entree[] = [
   {
     date: '2026-11-06',
+    titre: 'Cinq pôles au lieu de dix onglets',
+    points: [
+      'La navigation tient en cinq pôles : Terminal, Dossiers (ouverture et Intendance), Archives (collection et Répertoire), Combats (Confrontation et Classements), Communauté (Marché et Social). Sur téléphone, ce sont les cinq boutons du bas : plus de menu « Plus ».',
+      'Les sous-onglets du pôle apparaissent sous l’en-tête, et chaque pôle se souvient de la dernière page ouverte. Le dossier personnel, les réglages, l’aide et le journal passent par le menu du compte.',
+      'Une carte peut être remise en « non lue » depuis sa fiche (ou plusieurs à la fois en sélection dans les Archives) : elle retrouve son tampon « Nouveau » pour y revenir plus tard.',
+    ],
+  },
+  {
+    date: '2026-11-06',
     titre: 'Dossier personnel, réglages et aide',
     points: [
       'Dossier personnel (menu du compte ou onglet « Dossier ») : votre profil tel que les autres le voient, votre carrière, vos états de service, vos succès, vos collections et votre performance, sur une seule page.',
