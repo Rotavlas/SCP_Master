@@ -51,6 +51,53 @@ const ONGLETS: { id: Ecran; nom: string; icone: string; principal?: boolean }[] 
   { id: 'boutique', nom: 'Intendance', icone: '₵' },
 ]
 
+/**
+ * Esquisse de la navigation en cinq pôles (T1), à valider : seulement en local, avec ?poles dans l'adresse.
+ * Chaque pôle regroupe des écrans existants ; ses sous-onglets apparaissent sous l'en-tête. Le reste (dossier
+ * personnel, réglages, journal, aide) passe par le menu du compte.
+ */
+const POLES: { id: string; nom: string; icone: string; ecrans: { id: Ecran; nom: string }[] }[] = [
+  { id: 'terminal', nom: 'Terminal', icone: '⌂', ecrans: [{ id: 'accueil', nom: 'Terminal' }] },
+  {
+    id: 'dossiers',
+    nom: 'Dossiers',
+    icone: '✂',
+    ecrans: [
+      { id: 'booster', nom: 'Ouvrir des dossiers' },
+      { id: 'boutique', nom: 'Intendance' },
+    ],
+  },
+  {
+    id: 'archives',
+    nom: 'Archives',
+    icone: '▤',
+    ecrans: [
+      { id: 'collection', nom: 'Ma collection' },
+      { id: 'repertoire', nom: 'Répertoire' },
+    ],
+  },
+  {
+    id: 'combats',
+    nom: 'Combats',
+    icone: '⚔',
+    ecrans: [
+      { id: 'duel', nom: 'Confrontation' },
+      { id: 'classement', nom: 'Classements' },
+    ],
+  },
+  {
+    id: 'communaute',
+    nom: 'Communauté',
+    icone: '⇄',
+    ecrans: [
+      { id: 'marche', nom: 'Marché' },
+      { id: 'social', nom: 'Social' },
+    ],
+  },
+]
+const MODE_POLES = import.meta.env.DEV && typeof location !== 'undefined' && new URLSearchParams(location.search).has('poles')
+const poleDe = (e: Ecran) => POLES.find((p) => p.ecrans.some((x) => x.id === e))
+
 export default function App() {
   const [baseVO, setBaseVO] = useState<Base | null>(null)
   const [traductions, setTraductions] = useState<Traductions | null>(null)
@@ -135,8 +182,11 @@ export default function App() {
 
   const base = useMemo(() => (baseVO && s.langue === 'vf' && traductions ? baseVO.avecTraductions(traductions) : baseVO), [baseVO, s.langue, traductions])
 
+  const derniersDesPoles = useRef<Record<string, Ecran>>({})
   const aller = useCallback((e: Ecran) => {
     setEcran(e)
+    const pole = poleDe(e)
+    if (pole) derniersDesPoles.current[pole.id] = e
     noterVisite(e)
     empilerEcran(e)
     window.scrollTo({ top: 0 })
@@ -266,47 +316,73 @@ export default function App() {
               SCP<b>Masters</b>
             </span>
           </button>
-          <nav className="onglets" ref={barreOnglets}>
-            {ONGLETS.map((o) => (
+          <nav className={`onglets ${MODE_POLES ? 'onglets-poles' : ''}`} ref={barreOnglets}>
+            {MODE_POLES &&
+              POLES.map((p) => {
+                const actif = poleDe(ecran)?.id === p.id
+                const alerte = p.id === 'communaute' ? s.offresRecues + nonLus : 0
+                return (
+                  <button
+                    key={p.id}
+                    className={actif ? 'actif' : ''}
+                    onClick={() => {
+                      setRechercheMarche('')
+                      setOngletMarche('encheres')
+                      aller(actif ? p.ecrans[0].id : (derniersDesPoles.current[p.id] ?? p.ecrans[0].id))
+                    }}
+                  >
+                    <span className="onglet-icone" aria-hidden="true">
+                      {p.icone}
+                    </span>
+                    <span className="onglet-nom">{p.nom}</span>
+                    {p.id === 'dossiers' && s.boosters > 0 && <span className="compteur">{s.boosters}</span>}
+                    {alerte > 0 && <span className="compteur compteur-alerte">{alerte}</span>}
+                  </button>
+                )
+              })}
+            {!MODE_POLES &&
+              ONGLETS.map((o) => (
+                <button
+                  key={o.id}
+                  className={`${ecran === o.id ? 'actif' : ''} ${o.principal ? '' : 'secondaire'}`}
+                  onClick={() => {
+                    setRechercheMarche('')
+                    setOngletMarche('encheres')
+                    setMenuPlus(false)
+                    aller(o.id)
+                  }}
+                >
+                  <span className="onglet-icone" aria-hidden="true">
+                    {o.icone}
+                  </span>
+                  <span className="onglet-nom">{o.nom}</span>
+                  {o.id === 'booster' && s.boosters > 0 && <span className="compteur">{s.boosters}</span>}
+                  {o.id === 'marche' && s.offresRecues > 0 && (
+                    <span className="compteur compteur-alerte" title="Offres d'échange reçues">
+                      {s.offresRecues}
+                    </span>
+                  )}
+                  {o.id === 'social' && nonLus > 0 && (
+                    <span className="compteur compteur-alerte" title="Messages non lus">
+                      {nonLus}
+                    </span>
+                  )}
+                </button>
+              ))}
+            {/* Téléphone : les onglets secondaires, dans un menu */}
+            {!MODE_POLES && (
               <button
-                key={o.id}
-                className={`${ecran === o.id ? 'actif' : ''} ${o.principal ? '' : 'secondaire'}`}
-                onClick={() => {
-                  setRechercheMarche('')
-                  setOngletMarche('encheres')
-                  setMenuPlus(false)
-                  aller(o.id)
-                }}
+                className={`onglet-plus ${menuPlus || ONGLETS.some((o) => !o.principal && o.id === ecran) ? 'actif' : ''}`}
+                onClick={() => setMenuPlus(!menuPlus)}
+                aria-expanded={menuPlus}
               >
                 <span className="onglet-icone" aria-hidden="true">
-                  {o.icone}
+                  ☰
                 </span>
-                <span className="onglet-nom">{o.nom}</span>
-                {o.id === 'booster' && s.boosters > 0 && <span className="compteur">{s.boosters}</span>}
-                {o.id === 'marche' && s.offresRecues > 0 && (
-                  <span className="compteur compteur-alerte" title="Offres d'échange reçues">
-                    {s.offresRecues}
-                  </span>
-                )}
-                {o.id === 'social' && nonLus > 0 && (
-                  <span className="compteur compteur-alerte" title="Messages non lus">
-                    {nonLus}
-                  </span>
-                )}
+                <span className="onglet-nom">Plus</span>
+                {s.offresRecues + nonLus > 0 && <span className="compteur compteur-alerte">{s.offresRecues + nonLus}</span>}
               </button>
-            ))}
-            {/* Téléphone : les onglets secondaires, dans un menu */}
-            <button
-              className={`onglet-plus ${menuPlus || ONGLETS.some((o) => !o.principal && o.id === ecran) ? 'actif' : ''}`}
-              onClick={() => setMenuPlus(!menuPlus)}
-              aria-expanded={menuPlus}
-            >
-              <span className="onglet-icone" aria-hidden="true">
-                ☰
-              </span>
-              <span className="onglet-nom">Plus</span>
-              {s.offresRecues + nonLus > 0 && <span className="compteur compteur-alerte">{s.offresRecues + nonLus}</span>}
-            </button>
+            )}
           </nav>
           {menuPlus && (
             <div className="menu-plus-fond" onClick={() => setMenuPlus(false)}>
@@ -362,6 +438,30 @@ export default function App() {
           <BoutonCompte base={base} aller={aller} />
         </header>
       )}
+
+      {/* Esquisse T1 : les sous-onglets du pôle, sous l'en-tête */}
+      {MODE_POLES &&
+        (() => {
+          const pole = poleDe(ecran)
+          if (!pole || pole.ecrans.length < 2) return null
+          return (
+            <nav className="sous-onglets-pole" aria-label={pole.nom}>
+              {pole.ecrans.map((x) => (
+                <button
+                  key={x.id}
+                  className={ecran === x.id ? 'actif' : ''}
+                  onClick={() => {
+                    setRechercheMarche('')
+                    setOngletMarche('encheres')
+                    aller(x.id)
+                  }}
+                >
+                  {x.nom}
+                </button>
+              ))}
+            </nav>
+          )
+        })()}
 
       <main className="contenu" key={ecran}>
         {ecran === 'accueil' && (

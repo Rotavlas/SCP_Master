@@ -15288,3 +15288,62 @@ html.vt-fiche .modale.detail {
     --w: 120px;
   }
 }
+
+/* ---------- Esquisse T1 : cinq pôles (en local, ?poles) ---------- */
+.onglets-poles button .onglet-icone {
+  display: inline-block;
+  margin-right: 0.35rem;
+  font-size: 1rem;
+}
+
+.sous-onglets-pole {
+  position: relative;
+  z-index: 15;
+  display: flex;
+  justify-content: center;
+  gap: 0.3rem;
+  padding: 0.45rem 16px;
+  background: rgba(11, 13, 14, 0.94);
+  border-bottom: 1px solid var(--bord);
+  backdrop-filter: blur(8px);
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.sous-onglets-pole button {
+  flex-shrink: 0;
+  padding: 0.4rem 0.9rem;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: none;
+  color: var(--discret);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition:
+    color 0.15s,
+    border-color 0.15s,
+    background 0.15s;
+}
+
+.sous-onglets-pole button:hover {
+  color: var(--texte);
+}
+
+.sous-onglets-pole button.actif {
+  color: var(--texte);
+  border-color: rgba(240, 180, 60, 0.6);
+  background: rgba(240, 180, 60, 0.1);
+}
+
+@media (max-width: 760px) {
+  .onglets-poles button .onglet-icone {
+    margin-right: 0;
+  }
+
+  .sous-onglets-pole {
+    justify-content: flex-start;
+  }
+}
