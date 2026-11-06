@@ -41,7 +41,7 @@ export function Classement({ base, ouvrirProfil }: { base: Base; ouvrirProfil: (
           <p className="dossier-entete">Registre du personnel · tous sites</p>
           <h1>Classements</h1>
         </div>
-        <nav className="onglets-marche" role="tablist">
+        <nav className="onglets-page" role="tablist">
           {TABLEAUX.map((x) => (
             <button key={x.id} role="tab" aria-selected={tableau === x.id} className={tableau === x.id ? 'actif' : ''} onClick={() => setTableau(x.id)}>
               {x.nom}

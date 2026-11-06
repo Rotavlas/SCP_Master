@@ -93,7 +93,13 @@ export interface Disponible {
 
 export const chargerMarche = () => appeler<EtatMarche>('marche')
 
-export async function mettreAuxEncheres(carte: string, variante: IdVariante, prix: number, dureeMinutes: number, achatImmediat: number | null): Promise<boolean> {
+export async function mettreAuxEncheres(
+  carte: string,
+  variante: IdVariante,
+  prix: number,
+  dureeMinutes: number,
+  achatImmediat: number | null,
+): Promise<boolean> {
   const r = await appeler<{ id: string }>('mettre_aux_encheres', {
     p_carte: carte,
     p_variante: variante,
@@ -173,7 +179,8 @@ export async function brulerLot(cartes: string[], mode: ModeBrulage): Promise<nu
   const r = await appeler<{ gain: number; detruits: number; profil: ProfilServeur }>('bruler_lot', { p_cartes: cartes, p_mode: mode })
   if (!r) return null
   await rechargerEtat()
-  if (r.detruits) notifier(`${r.detruits} exemplaire${r.detruits > 1 ? 's' : ''} incinéré${r.detruits > 1 ? 's' : ''} : +${r.gain.toLocaleString('fr-FR')} ₵`, 'succes')
+  if (r.detruits)
+    notifier(`${r.detruits} exemplaire${r.detruits > 1 ? 's' : ''} incinéré${r.detruits > 1 ? 's' : ''} : +${r.gain.toLocaleString('fr-FR')} ₵`, 'succes')
   else notifier('Aucun exemplaire standard libre à brûler dans la sélection')
   return r.gain
 }

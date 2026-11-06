@@ -41,7 +41,13 @@ export function CoursGraphique({ points, titre }: { points: [string, number][]; 
     <figure className="cours-graphique">
       <figcaption className="dossier-entete">{titre}</figcaption>
       <div className="cours-zone">
-        <svg viewBox={`0 0 ${L} ${H}`} role="img" aria-label={`${titre} : ${points.length} ventes, de ${credits(pMin)} à ${credits(pMax)}`} onPointerMove={suivre} onPointerLeave={() => setSurvol(null)}>
+        <svg
+          viewBox={`0 0 ${L} ${H}`}
+          role="img"
+          aria-label={`${titre} : ${points.length} ventes, de ${credits(pMin)} à ${credits(pMax)}`}
+          onPointerMove={suivre}
+          onPointerLeave={() => setSurvol(null)}
+        >
           {[pMax, pMin].map((p) => (
             <g key={p} className="cours-repere">
               <line x1={MARGE.gauche} x2={L - MARGE.droite} y1={y(p)} y2={y(p)} />

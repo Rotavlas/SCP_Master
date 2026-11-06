@@ -15,6 +15,9 @@ import { Section } from './Section'
 import { Caviarde, NombreAnime, peuDAnimations } from './Anime'
 import { useNumerosMythiques } from '../state/enLigne'
 import { InvitationInstallation, InvitationNotifications } from './Pwa'
+import { Aide } from './Aide'
+import { ADVERSAIRES } from '../engine/duel'
+import { PremiersPas } from './PremiersPas'
 
 interface Props {
   base: Base
@@ -130,13 +133,24 @@ export function Accueil({ base, aller, ouvrirCarte, allerClan }: Props) {
               {' '}
               · {s.xp}/{acc.suivant.xp} XP
             </span>
-          )}
+          )}{' '}
+          <Aide sujet="accreditation" />
         </p>
         <div className="jauge" aria-label="Progression vers l'accréditation suivante">
           <div style={{ width: `${progression * 100}%` }} />
         </div>
+        {acc.suivant && (
+          <p className="accreditation-suite discret">
+            Niveau {acc.suivant.niveau} :{' '}
+            {(() => {
+              const a = ADVERSAIRES.find((x) => x.accreditation === acc.suivant!.niveau)
+              return a ? `un nouvel adversaire contre l’IA, ${a.nom}` : 'le titre « Thaumiel »'
+            })()}
+          </p>
+        )}
       </div>
 
+      <PremiersPas aller={aller} />
       <InvitationInstallation />
       <InvitationNotifications />
 

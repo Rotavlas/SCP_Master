@@ -12,6 +12,18 @@ export interface Entree {
 export const JOURNAL: Entree[] = [
   {
     date: '2026-11-06',
+    titre: 'Dossier personnel, réglages et aide',
+    points: [
+      'Dossier personnel (menu du compte ou onglet « Dossier ») : votre profil tel que les autres le voient, votre carrière, vos états de service, vos succès, vos collections et votre performance, sur une seule page.',
+      'Page Réglages : volume général et volume des ambiances, vibrations, taille du texte, langue, et les notifications type par type. Ce que vous coupez n’arrive plus sur l’appareil ; la réserve de dossiers coupée ne s’annonce plus du tout.',
+      'Un « ? » à côté des notions (synergies, variantes, accréditation, Épreuve, raid, guerre, contrats…) ouvre leur explication, et le Règlement commence par un glossaire complet.',
+      'La piste d’accréditation devient vos « États de service ». Le Terminal annonce ce qu’ouvre le prochain niveau, et le niveau 5 donne le titre « Thaumiel ».',
+      'Les nouvelles recrues ont leurs premiers pas au Terminal : cinq étapes qui se cochent d’elles-mêmes, sans récompense.',
+      'Tous les onglets des pages ont le même style, et la page d’accueil des visiteurs présente enfin le jeu.',
+    ],
+  },
+  {
+    date: '2026-11-06',
     titre: 'Seize synergies, et plus de confort',
     points: [
       'Nouvelles synergies : une FIM, un Site, un Département, un membre du personnel, un Groupe d’intérêt ou un canon lié à l’un de vos SCP ; deux fiches de Groupes d’intérêt ; trois fiches mémétiques, spatio-temporelles ou animales ; deux fiches de fin du monde ; deux SCP aux numéros qui se suivent ; trois fiches publiées la même année.',

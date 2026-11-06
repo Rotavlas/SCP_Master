@@ -8,6 +8,7 @@ import { QuestionAlteree } from './QuestionAlteree'
 import { Caviarde } from './Anime'
 import { partager } from '../state/pwa'
 import { notifier } from '../state/sauvegarde'
+import { Aide } from './Aide'
 
 /**
  * L'Épreuve de la semaine : dix questions, les mêmes pour tous les agents, une seule tentative. Le serveur tire les
@@ -62,7 +63,7 @@ export function EpreuveHall({ lancer, ouvrirProfil }: { lancer: () => void; ouvr
     <div className="epreuve-hall">
       <div className="epreuve-intro">
         <p className="dossier-entete">
-          Épreuve de la semaine · fin dans {jours} jour{jours > 1 ? 's' : ''}
+          Épreuve de la semaine · fin dans {jours} jour{jours > 1 ? 's' : ''} <Aide sujet="epreuve" />
         </p>
         <h2>Dix questions, les mêmes pour tous</h2>
         <p className="discret">

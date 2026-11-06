@@ -227,6 +227,38 @@ const DEMO_HALL: Record<string, () => unknown> = {
         }
       : null,
   ajouter_statistiques: () => null,
+  mes_notifications_coupees: () => (enHall ? ['dossiers_prets'] : null),
+  couper_notifications: () => null,
+  reclamer_titre_thaumiel: () => true,
+  signalements_admin: () =>
+    enHall
+      ? [
+          {
+            message: 1,
+            nombre: 3,
+            dernier: new Date(Date.now() - 3_600_000).toISOString(),
+            texte: 'Message de démonstration signalé',
+            auteur: 'Agent Trouble',
+            raisons: ['insulte', 'spam'],
+            signaleurs: ['Dr Clef', 'Bright'],
+            visible: true,
+            salon: 'general',
+          },
+        ]
+      : null,
+  moderer_signalement: () => (enHall ? [] : null),
+  tableau_createur: () =>
+    enHall
+      ? {
+          joueurs: { agents: 128, actifs_jour: 23, actifs_semaine: 61, actifs_mois: 97, en_ligne: 4, nouveaux_semaine: 12, appareils: 18, clans: 7 },
+          jour: { duels_ia: 214, duels_jcj: 19, dossiers: 380, messages: 96, signalements: 1 },
+          base: '41 MB',
+          economie: [
+            { jour: '2026-11-06', crees: 48200, detruits: 51900, net: -3700, actifs: 23, nouveaux: 2, dossiers: 380, mythiques: 0 },
+            { jour: '2026-11-05', crees: 52100, detruits: 47400, net: 4700, actifs: 27, nouveaux: 3, dossiers: 402, mythiques: 1 },
+          ],
+        }
+      : null,
   // Succès, contrats, Mythiques en circulation, créateur (?mode=app)
   codes_admin: () =>
     enHall

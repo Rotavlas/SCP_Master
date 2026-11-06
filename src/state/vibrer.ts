@@ -15,9 +15,28 @@ export const VIBRATIONS = {
   tampon: 25,
 } as const
 
+const CLE = 'scp-masters:vibrations'
+
+/** Les vibrations sont-elles voulues (page Réglages) ? Oui par défaut */
+export function vibrationsActives(): boolean {
+  try {
+    return localStorage.getItem(CLE) !== '0'
+  } catch {
+    return true
+  }
+}
+
+export function activerVibrations(oui: boolean) {
+  try {
+    localStorage.setItem(CLE, oui ? '1' : '0')
+  } catch {
+    // Navigation privée : réglage valable pour cette visite
+  }
+}
+
 export function vibrer(motif: number | readonly number[]) {
   const n = navigator as Navigator & { userActivation?: { hasBeenActive: boolean } }
-  if (!n.vibrate || n.userActivation?.hasBeenActive === false) return
+  if (!n.vibrate || n.userActivation?.hasBeenActive === false || !vibrationsActives()) return
   if (matchMedia('(prefers-reduced-motion: reduce)').matches) return
   try {
     n.vibrate(typeof motif === 'number' ? motif : [...motif])

@@ -63,7 +63,7 @@ export function Social({ base, ouvrirProfil, onglet, setOnglet, conversation, se
           <p className="dossier-entete">Réseau du personnel · communications internes</p>
           <h1>Social</h1>
         </div>
-        <nav className="onglets-marche" role="tablist">
+        <nav className="onglets-page" role="tablist">
           {(
             [
               ['amis', 'Amis', 0],

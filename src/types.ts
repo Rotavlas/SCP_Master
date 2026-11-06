@@ -1,14 +1,4 @@
-export type Classe =
-  | 'safe'
-  | 'euclid'
-  | 'keter'
-  | 'thaumiel'
-  | 'apollyon'
-  | 'neutralized'
-  | 'explained'
-  | 'decommissioned'
-  | 'pending'
-  | 'esoteric-class'
+export type Classe = 'safe' | 'euclid' | 'keter' | 'thaumiel' | 'apollyon' | 'neutralized' | 'explained' | 'decommissioned' | 'pending' | 'esoteric-class'
 
 /** 0 commune · 1 peu commune · 2 rare · 3 épique · 4 légendaire · 5 mythique (choisie à la main) */
 export type Rarete = 0 | 1 | 2 | 3 | 4 | 5
@@ -69,6 +59,19 @@ export interface Catalogue {
 
 export type Traductions = Record<string, Partial<Pick<Carte, 'nm' | 'x' | 'q'>>>
 
-export type Ecran = 'accueil' | 'booster' | 'collection' | 'repertoire' | 'duel' | 'marche' | 'social' | 'classement' | 'boutique' | 'journal' | 'reglement' | 'succes'
+export type Ecran =
+  | 'accueil'
+  | 'booster'
+  | 'collection'
+  | 'repertoire'
+  | 'duel'
+  | 'marche'
+  | 'social'
+  | 'classement'
+  | 'boutique'
+  | 'journal'
+  | 'reglement'
+  | 'succes'
+  | 'reglages'
 
 export type Langue = 'vo' | 'vf'

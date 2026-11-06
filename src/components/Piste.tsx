@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { appeler, appliquerProfil, type ProfilServeur } from '../state/enLigne'
-import { modifier, notifier, useSauvegarde } from '../state/sauvegarde'
+import { accreditation, modifier, notifier, useSauvegarde } from '../state/sauvegarde'
 import { jouer } from '../state/sons'
 import { Caviarde } from './Anime'
+import { Aide } from './Aide'
 
 /**
- * La piste d'accréditation : trente paliers d'XP, chacun avec sa récompense (crédits, un dossier tous les trois
+ * Les états de service (ancienne « piste d'accréditation ») : trente paliers d'XP, chacun avec sa récompense (crédits, un dossier tous les trois
  * paliers, un dossier Keter tous les dix). Les paliers atteints se réclament d'un coup (public.reclamer_piste).
  */
 interface Palier {
@@ -24,6 +25,37 @@ interface VuePiste {
 }
 
 const recompense = (p: Palier) => [`${p.credits} ₵`, p.dossiers && `${p.dossiers} dossier`, p.keter && 'dossier Keter'].filter(Boolean).join(' + ')
+
+/** Niveau 5 d'accréditation : le titre « Thaumiel » se reçoit ici (une fois reçu, le bouton disparaît) */
+function TitreThaumiel() {
+  const s = useSauvegarde()
+  const cle = `scp-masters:titre-thaumiel:${s.agent}`
+  const [recu, setRecu] = useState(() => {
+    try {
+      return localStorage.getItem(cle) === '1'
+    } catch {
+      return false
+    }
+  })
+  if (recu || accreditation(s.xp).niveau < 5) return null
+  return (
+    <button
+      className="btn btn-principal"
+      onClick={async () => {
+        if (!(await appeler<boolean>('reclamer_titre_thaumiel'))) return
+        try {
+          localStorage.setItem(cle, '1')
+        } catch {
+          // Sans importance : le titre est à vous, le bouton reviendra seulement
+        }
+        setRecu(true)
+        notifier('Titre « Thaumiel » reçu : portez-le depuis l’Intendance, onglet Cosmétiques', 'rare')
+      }}
+    >
+      Recevoir le titre « Thaumiel »
+    </button>
+  )
+}
 
 export function Piste() {
   const s = useSauvegarde()
@@ -61,7 +93,9 @@ export function Piste() {
     <div className="piste" id="piste">
       <div className="rapport-entete">
         <div>
-          <p className="dossier-entete">Piste d’accréditation</p>
+          <p className="dossier-entete">
+            États de service <Aide sujet="etats" />
+          </p>
           <h3>
             Palier {p.atteint}/{p.paliers.length}
           </h3>
@@ -94,8 +128,9 @@ export function Piste() {
           </p>
         </>
       ) : (
-        <p className="discret">Piste achevée : toutes les récompenses sont à vous.</p>
+        <p className="discret">États de service complets : toutes les récompenses sont à vous.</p>
       )}
+      <TitreThaumiel />
     </div>
   )
 }

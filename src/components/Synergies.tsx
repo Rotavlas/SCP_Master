@@ -1,5 +1,6 @@
 import { EFFETS, SECONDES_PAR_SYNERGIE, SYNERGIES_MAX, synergies, synergiesActives } from '../engine/synergies'
 import type { Carte } from '../types'
+import { Aide } from './Aide'
 
 /**
  * Les synergies de l'équipe, sous ses emplacements : les ordinaires donnent deux secondes de plus pour répondre contre
@@ -11,6 +12,9 @@ export function Synergies({ equipe }: { equipe: Carte[] }) {
   const actives = new Set(synergiesActives(equipe).map((s) => s.id))
   return (
     <div className="synergies" aria-label="Synergies de l’équipe">
+      <p className="synergies-titre">
+        Synergies <Aide sujet="synergies" />
+      </p>
       {liste.length === 0 ? (
         <p className="discret">
           Aucune synergie. Quelques pistes : une FIM, un Site ou un Département lié à l’un de vos SCP ; trois SCP d’une même série, d’une même classe ou d’un

@@ -87,7 +87,7 @@ export function Marche({
           <p className="dossier-entete">Bureau des transferts · Site-19</p>
           <h1>Marché</h1>
         </div>
-        <nav className="onglets-marche" role="tablist">
+        <nav className="onglets-page" role="tablist">
           {(
             [
               ['encheres', 'Enchères en direct', etat?.ouvertes.length],

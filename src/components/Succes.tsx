@@ -3,17 +3,19 @@ import { RARETES, designation, type Base } from '../data/catalogue'
 import { COSMETIQUES } from '../data/cosmetiques'
 import { majCosmetiques, type EtatCosmetiques } from '../state/cosmetiques'
 import { appeler, appliquerProfil, type ProfilServeur } from '../state/enLigne'
-import { modifier, notifier, useSauvegarde } from '../state/sauvegarde'
+import { accreditation, modifier, notifier, useSauvegarde } from '../state/sauvegarde'
 import { jouer } from '../state/sons'
 import type { Carte } from '../types'
 import { Caviarde, Indisponible, Vide, useTampon } from './Anime'
 import { FAMILLES, useStatistiques } from '../state/statistiques'
+import { FicheAgent } from './Profil'
+import { Piste } from './Piste'
 
 /**
  * Le dossier de carrière : les succès (public.succes), et les collections à compléter (pages de l'album et Groupes
  * d'intérêt). Les succès rapportent au plus un titre ou un cadre ; l'album, des crédits ; les Groupes, un titre et un cadre.
  */
-type Onglet = 'succes' | 'collections' | 'performance'
+type Onglet = 'profil' | 'succes' | 'collections' | 'performance'
 
 interface Succes {
   id: string
@@ -83,18 +85,23 @@ function Anneau({ valeur, total, couleur, taille = 64 }: { valeur: number; total
   )
 }
 
-export function PageSucces({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id: string) => void }) {
-  const [onglet, setOnglet] = useState<Onglet>('succes')
+/**
+ * Le dossier personnel : son profil (tel que les autres le voient), sa carrière et ses états de service, ses succès,
+ * ses collections, sa performance. Tout ce qui le concerne, sur une seule page.
+ */
+export function PageSucces({ base, ouvrirCarte, ongletInitial = 'profil' }: { base: Base; ouvrirCarte: (id: string) => void; ongletInitial?: Onglet }) {
+  const [onglet, setOnglet] = useState<Onglet>(ongletInitial)
   return (
     <section className="page-succes">
       <div className="marche-entete">
         <div>
-          <p className="dossier-entete">Dossier de carrière · Ressources humaines</p>
-          <h1>Succès et collections</h1>
+          <p className="dossier-entete">Ressources humaines · Dossier de carrière</p>
+          <h1>Dossier personnel</h1>
         </div>
-        <nav className="onglets-marche" role="tablist">
+        <nav className="onglets-page" role="tablist">
           {(
             [
+              ['profil', 'Profil'],
               ['succes', 'Succès'],
               ['collections', 'Collections'],
               ['performance', 'Performance'],
@@ -106,8 +113,51 @@ export function PageSucces({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id
           ))}
         </nav>
       </div>
-      {onglet === 'succes' ? <ListeSucces /> : onglet === 'collections' ? <Collections base={base} ouvrirCarte={ouvrirCarte} /> : <Performance />}
+      {onglet === 'profil' && <MonProfil base={base} ouvrirCarte={ouvrirCarte} />}
+      {onglet === 'succes' && <ListeSucces />}
+      {onglet === 'collections' && <Collections base={base} ouvrirCarte={ouvrirCarte} />}
+      {onglet === 'performance' && <Performance />}
     </section>
+  )
+}
+
+// ---------- Profil ----------
+
+/** Son propre profil (vitrine, Elo, clan, derniers duels), sa carrière et ses états de service */
+function MonProfil({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id: string) => void }) {
+  const s = useSauvegarde()
+  const st = s.stats as typeof s.stats & { guerres?: number }
+  const acc = accreditation(s.xp)
+  const chiffres: [string, string][] = [
+    ['Accréditation', `${acc.nom.split(' — ')[0]} · ${s.xp.toLocaleString('fr-FR')} XP`],
+    ['Duels contre l’IA', `${st.victoires.toLocaleString('fr-FR')} victoires sur ${st.duels.toLocaleString('fr-FR')}`],
+    ['Bonnes réponses', st.questions ? `${st.bonnesReponses.toLocaleString('fr-FR')} sur ${st.questions.toLocaleString('fr-FR')}` : '—'],
+    ['Dossiers ouverts', st.boostersOuverts.toLocaleString('fr-FR')],
+    ['Fiches différentes', Object.keys(s.collection).length.toLocaleString('fr-FR')],
+    ['Guerres de clans gagnées', String(st.guerres ?? 0)],
+  ]
+  return (
+    <div className="mon-profil">
+      <div className="mon-profil-fiche">
+        <FicheAgent pseudo={s.agent} base={base} ouvrirCarte={ouvrirCarte} ecrire={() => undefined} />
+      </div>
+      <div className="mon-profil-carriere">
+        <div className="encart">
+          <h3>Carrière</h3>
+          <dl className="fiche">
+            {chiffres.map(([k, v]) => (
+              <div key={k}>
+                <dt>{k}</dt>
+                <dd>{v}</dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+        <div className="encart">
+          <Piste />
+        </div>
+      </div>
+    </div>
   )
 }
 

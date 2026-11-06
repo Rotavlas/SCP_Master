@@ -3,6 +3,7 @@ import { appeler, appliquerProfil, type ProfilServeur } from '../state/enLigne'
 import { modifier, notifier } from '../state/sauvegarde'
 import { jouer } from '../state/sons'
 import { Caviarde } from './Anime'
+import { Aide } from './Aide'
 
 /**
  * La guerre de clans : chaque semaine, le clan affronte un autre clan tiré au sort. Victoire contre l'IA 1 point,
@@ -53,7 +54,7 @@ export function GuerreClan() {
   return (
     <div className="guerre-clan">
       <p className="dossier-entete">
-        Guerre de clans · fin dans {jours} jour{jours > 1 ? 's' : ''}
+        <Aide sujet="guerre" /> Guerre de clans · fin dans {jours} jour{jours > 1 ? 's' : ''}
         {g.victoires > 0 && ` · ${g.victoires} victoire${g.victoires > 1 ? 's' : ''} à votre dossier`}
       </p>
       {!c ? (

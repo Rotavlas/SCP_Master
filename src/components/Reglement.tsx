@@ -7,6 +7,7 @@ import { FACTEUR_COMMUNES, VARIANTES } from '../engine/variantes'
 import { appeler } from '../state/enLigne'
 import { useSauvegarde } from '../state/sauvegarde'
 import { JaugeRecyclage } from './JaugeRecyclage'
+import { Glossaire } from './Aide'
 
 /**
  * La circulaire de l'Intendance : toutes les règles de l'économie du jeu, sur une seule page (prix, limites,
@@ -108,6 +109,11 @@ export function Reglement() {
           Approuvé
         </span>
       </header>
+
+      <section className="reglement-glossaire" aria-label="Glossaire">
+        <h2>Glossaire</h2>
+        <Glossaire />
+      </section>
 
       <section className="reglement-quotas" aria-label="Vos quotas du jour">
         <h2>Vos quotas du jour</h2>

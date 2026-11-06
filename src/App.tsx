@@ -31,6 +31,8 @@ import { Reglement } from './components/Reglement'
 import { BandeauxPwa } from './components/Pwa'
 import { useEnLigneReseau } from './state/pwa'
 import { PageSucces } from './components/Succes'
+import { Reglages } from './components/Reglages'
+import { noterVisite } from './components/PremiersPas'
 import { CeremonieAccreditation } from './components/Accreditation'
 import { changerFiche } from './state/transitions'
 import { demarrerHistorique, empilerEcran, useFermerAuRetour, useRetourEcran } from './state/historique'
@@ -45,7 +47,7 @@ const ONGLETS: { id: Ecran; nom: string; icone: string; principal?: boolean }[] 
   { id: 'marche', nom: 'Marché', icone: '⇄' },
   { id: 'social', nom: 'Social', icone: '✉' },
   { id: 'classement', nom: 'Classements', icone: '♛' },
-  { id: 'succes', nom: 'Succès', icone: '✪' },
+  { id: 'succes', nom: 'Dossier', icone: '✪' },
   { id: 'boutique', nom: 'Intendance', icone: '₵' },
 ]
 
@@ -135,6 +137,7 @@ export default function App() {
 
   const aller = useCallback((e: Ecran) => {
     setEcran(e)
+    noterVisite(e)
     empilerEcran(e)
     window.scrollTo({ top: 0 })
   }, [])
@@ -241,7 +244,7 @@ export default function App() {
     return (
       <div className="app">
         <main className="contenu">
-          <Portail nombreCartes={base.cartes.length} />
+          <Portail nombreCartes={base.cartes.length} base={base} />
         </main>
         <Pied genere={base.genere} />
         <Analytics route="/connexion" path="/connexion" />
@@ -356,7 +359,7 @@ export default function App() {
               }}
             />
           )}
-          <BoutonCompte ouvrirProfil={setProfilOuvert} base={base} />
+          <BoutonCompte base={base} aller={aller} />
         </header>
       )}
 
@@ -401,6 +404,7 @@ export default function App() {
         )}
         {ecran === 'journal' && <Journal />}
         {ecran === 'reglement' && <Reglement />}
+        {ecran === 'reglages' && <Reglages />}
         {ecran === 'boutique' && (
           <Boutique
             base={base}

@@ -152,7 +152,7 @@ export function Duel({ base, aller, ouvrirProfil }: { base: Base; aller: (e: Ecr
           <p className="dossier-entete">Salle de confrontation · Site-19</p>
           <h1>Confrontation</h1>
         </div>
-        <nav className="onglets-marche" role="tablist">
+        <nav className="onglets-page" role="tablist">
           {ONGLETS_DUEL.map((o) => (
             <button key={o.id} role="tab" aria-selected={onglet === o.id} className={onglet === o.id ? 'actif' : ''} onClick={() => choisirOnglet(o.id)}>
               {o.nom}

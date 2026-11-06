@@ -3,6 +3,7 @@ import { appeler, appliquerProfil, type ProfilServeur } from '../state/enLigne'
 import { modifier, notifier } from '../state/sauvegarde'
 import { jouer } from '../state/sons'
 import { Caviarde, useTampon } from './Anime'
+import { Aide } from './Aide'
 
 /**
  * Le Rapport quotidien : une récompense par jour sur un cycle de sept, le septième un dossier Keter. Un jour manqué
@@ -55,7 +56,9 @@ export function Rapport() {
     <div className="rapport" id="rapport">
       <div className="rapport-entete">
         <div>
-          <p className="dossier-entete">Rapport quotidien</p>
+          <p className="dossier-entete">
+            Rapport quotidien <Aide sujet="rapport" />
+          </p>
           <h3>{r.serie > 0 ? `Série de ${r.serie} jour${r.serie > 1 ? 's' : ''}` : 'Nouvelle série'}</h3>
         </div>
         {r.fait ? (

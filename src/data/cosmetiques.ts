@@ -53,6 +53,7 @@ export const COSMETIQUES: Record<string, Cosmetique & { type: TypeCosmetique }> 
   'titre-prisme': { type: 'titre', nom: 'Prisme', description: 'Succès : les 5 variantes d’une même carte.', couleur: '#ff3df0' },
   'titre-stratege': { type: 'titre', nom: 'Stratège du Site-19', description: 'Succès : 1 500 Elo.', couleur: '#4dd2ff' },
   'titre-negociant': { type: 'titre', nom: 'Négociant', description: 'Succès : 25 ventes aux enchères.', couleur: '#f0b43c' },
+  'titre-thaumiel': { type: 'titre', nom: 'Thaumiel', description: 'Niveau 5 d’accréditation : 5 000 XP.', couleur: '#f4c542' },
   'titre-guerre': {
     type: 'titre',
     nom: 'Vétéran des guerres de clans',

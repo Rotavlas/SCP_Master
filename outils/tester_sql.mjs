@@ -1768,4 +1768,75 @@ await test('guerre de clans : appariement à la première consultation, points d
   await echoue(en(G3, 'select public.reclamer_guerre()'), /au moins un point/)
 })
 
+await test('réglages : notifications coupées type par type (plus d’appareil ; la réserve de dossiers disparaît tout à fait)', async () => {
+  const N = '00000000-0000-0000-0000-0000000000f7'
+  await db.exec(`insert into auth.users (id) values ('${N}')`)
+  await admin("update public.profils set pseudo = 'Agent Reglages', boosters = 3, dernier_booster = now(), dossiers_annonces = 0 where id = $1", [N])
+  await admin(
+    "insert into prive.abonnements_push (endpoint, joueur, p256dh, auth) values ('https://fcm.googleapis.com/fcm/send/reglages', $1, $2, 'aaaaaaaaaaaaaaaaaaaaaa')",
+    [N, 'B' + 'x'.repeat(86)],
+  )
+  assert.deepEqual(await valeur(N, "select public.couper_notifications(array['surencheri', 'dossiers_prets', 'nimporte'])"), ['dossiers_prets', 'surencheri'])
+  assert.deepEqual(await valeur(N, 'select public.mes_notifications_coupees()'), ['dossiers_prets', 'surencheri'])
+  await admin('delete from prive.push_file')
+  await admin(`select prive.notifier($1, 'surencheri', '{}')`, [N])
+  await admin(`select prive.notifier($1, 'echange_recu', '{}')`, [N])
+  const file = (await admin('select type from prive.push_file where joueur = $1', [N])).rows.map((r) => r.type)
+  assert.deepEqual(file, ['echange_recu'], 'la surenchère coupée ne part pas sur l’appareil')
+  assert.equal(
+    (await admin("select count(*)::int as n from public.notifications where joueur = $1 and type = 'surencheri'", [N])).rows[0].n,
+    1,
+    'la cloche la garde',
+  )
+  await admin("update public.profils set dernier_booster = now() - interval '2 hours' where id = $1", [N])
+  await admin('select prive.annoncer_dossiers()')
+  assert.equal(
+    (await admin("select count(*)::int as n from public.notifications where joueur = $1 and type = 'dossiers_prets'", [N])).rows[0].n,
+    0,
+    'réserve coupée : rien',
+  )
+  await admin('delete from prive.push_file')
+})
+
+await test('titre Thaumiel au niveau 5 seulement', async () => {
+  const N = '00000000-0000-0000-0000-0000000000f7'
+  await admin('update public.profils set xp = 4999 where id = $1', [N])
+  await echoue(en(N, 'select public.reclamer_titre_thaumiel()'), /niveau 5/)
+  await admin('update public.profils set xp = 5000 where id = $1', [N])
+  assert.equal(await valeur(N, 'select public.reclamer_titre_thaumiel()'), true)
+  assert.equal(await valeur(N, 'select public.reclamer_titre_thaumiel()'), true, 'sans erreur la deuxième fois')
+  assert.equal((await admin("select count(*)::int as n from prive.cosmetiques_possedes where joueur = $1 and cosmetique = 'titre-thaumiel'", [N])).rows[0].n, 1)
+})
+
+await test('console du créateur : signalements, modération, tableau ; refusée aux autres agents', async () => {
+  const [C, A2, S2] = ['00000000-0000-0000-0000-0000000000f8', '00000000-0000-0000-0000-0000000000f9', '00000000-0000-0000-0000-0000000000fa']
+  for (const [j, n] of [
+    [C, 'Le Createur'],
+    [A2, 'Auteur Fautif'],
+    [S2, 'Agent Vigilant'],
+  ]) {
+    await db.exec(`insert into auth.users (id) values ('${j}')`)
+    await admin('update public.profils set pseudo = $2 where id = $1', [j, n])
+  }
+  await admin("insert into prive.badges_speciaux (joueur, badge) values ($1, 'createur') on conflict do nothing", [C])
+  await admin('delete from prive.signalements')
+  const id = (
+    await admin("insert into public.messages (salon, auteur, pseudo, texte) values ('general', $1, 'Auteur Fautif', 'Un message grossier') returning id", [A2])
+  ).rows[0].id
+  await admin("insert into prive.signalements (signaleur, message, auteur, texte, raison) values ($1, $2, $3, 'Un message grossier', 'insulte')", [S2, id, A2])
+  await echoue(en(S2, 'select public.signalements_admin()'), /créateur/)
+  await echoue(en(S2, 'select public.tableau_createur(7)'), /créateur/)
+  const l = await valeur(C, 'select public.signalements_admin()')
+  assert.equal(l.length, 1)
+  assert.equal(l[0].auteur, 'Auteur Fautif')
+  assert.deepEqual(l[0].signaleurs, ['Agent Vigilant'])
+  assert.equal(l[0].visible, true)
+  await echoue(en(S2, "select public.moderer_signalement($1, 'supprimer')", [id]), /créateur/)
+  assert.deepEqual(await valeur(C, "select public.moderer_signalement($1, 'supprimer')", [id]), [])
+  assert.equal((await admin('select count(*)::int as n from public.messages where id = $1', [id])).rows[0].n, 0, 'message supprimé')
+  const t = await valeur(C, 'select public.tableau_createur(7)')
+  assert.ok(t.joueurs.agents >= 3)
+  assert.ok(Array.isArray(t.economie))
+})
+
 console.log(`\n${reussis} tests réussis${process.exitCode ? ', des échecs' : ''}.`)

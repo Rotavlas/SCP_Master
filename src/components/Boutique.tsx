@@ -58,7 +58,7 @@ export function Boutique({ base, ouvrir, voirReglement }: { base: Base; ouvrir: 
             Circulaire 05-ECO : toutes les règles de l’économie
           </button>
         </div>
-        <nav className="onglets-marche" role="tablist">
+        <nav className="onglets-page" role="tablist">
           {ONGLETS_INTENDANCE.map((o) => (
             <button key={o.id} role="tab" aria-selected={onglet === o.id} className={onglet === o.id ? 'actif' : ''} onClick={() => choisir(o.id)}>
               {o.nom}

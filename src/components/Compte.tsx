@@ -19,6 +19,8 @@ import { InstallerApplication, NotificationsAppareil } from './Pwa'
 import { estCreateur, useCreateurs } from './Createur'
 import { GestionCodes, decrireRecompense, type Recompense } from './GestionCodes'
 import type { Base } from '../data/catalogue'
+import { ConsoleCreateur } from './ConsoleCreateur'
+import { Carte } from './Carte'
 
 const NOMS_FOURNISSEURS = { discord: 'Discord', google: 'Google', github: 'GitHub' } as const
 
@@ -35,7 +37,7 @@ export function LogoDiscord({ taille = 18 }: { taille?: number }) {
  * Bouton du bandeau : « ton profil », avec déconnexion. L'adresse e-mail du compte (celle de Discord,
  * par exemple) n'est jamais affichée : seul le pseudo public apparaît.
  */
-export function BoutonCompte({ ouvrirProfil, base }: { ouvrirProfil: (pseudo: string) => void; base: Base | null }) {
+export function BoutonCompte({ base, aller }: { base: Base | null; aller: (e: 'succes' | 'reglages' | 'reglement') => void }) {
   const compte = useCompte()
   const s = useSauvegarde()
   const badges = useBadgesDe(s.agent || null)
@@ -43,6 +45,7 @@ export function BoutonCompte({ ouvrirProfil, base }: { ouvrirProfil: (pseudo: st
   // Le créateur gère les codes depuis ce menu
   const createur = estCreateur(useCreateurs(), s.agent)
   const [gestion, setGestion] = useState(false)
+  const [consoleOuverte, setConsole] = useState(false)
   if (compte.statut !== 'connecte') return null
   return (
     <div className="compte-menu">
@@ -63,15 +66,47 @@ export function BoutonCompte({ ouvrirProfil, base }: { ouvrirProfil: (pseudo: st
               role="menuitem"
               onClick={() => {
                 setMenu(false)
-                ouvrirProfil(s.agent)
+                aller('succes')
               }}
             >
-              Ton profil et tes badges
+              Ton dossier personnel
             </button>
           )}
           <InstallerApplication />
           <NotificationsAppareil />
           <SaisirCode base={base} />
+          <button
+            className="btn"
+            role="menuitem"
+            onClick={() => {
+              setMenu(false)
+              aller('reglages')
+            }}
+          >
+            Réglages
+          </button>
+          <button
+            className="btn"
+            role="menuitem"
+            onClick={() => {
+              setMenu(false)
+              aller('reglement')
+            }}
+          >
+            Aide et règlement
+          </button>
+          {createur && (
+            <button
+              className="btn"
+              role="menuitem"
+              onClick={() => {
+                setMenu(false)
+                setConsole(true)
+              }}
+            >
+              ✦ Console du créateur
+            </button>
+          )}
           {createur && (
             <button
               className="btn"
@@ -97,12 +132,39 @@ export function BoutonCompte({ ouvrirProfil, base }: { ouvrirProfil: (pseudo: st
         </div>
       )}
       {gestion && <GestionCodes base={base} onFermer={() => setGestion(false)} />}
+      {consoleOuverte && <ConsoleCreateur onFermer={() => setConsole(false)} />}
     </div>
   )
 }
 
 /** Page d'accueil des visiteurs : le jeu se joue uniquement connecté. */
-export function Portail({ nombreCartes }: { nombreCartes: number }) {
+/** Quelques fiches célèbres, montrées aux visiteurs */
+const VITRINE_PUBLIQUE = ['scp-173', 'scp-096', 'scp-682', 'scp-049', 'scp-999']
+
+const ATOUTS: { titre: string; texte: string; icone: string }[] = [
+  {
+    icone: '▤',
+    titre: 'Collectionnez',
+    texte: 'Chaque page du wiki SCP devient une carte, de la commune à la Mythique tirée à 50 exemplaires numérotés. Cinq variantes rares à traquer.',
+  },
+  {
+    icone: '⚔',
+    titre: 'Affrontez',
+    texte: 'Des duels de connaissances contre l’IA (trois modes), des combats classés entre agents et une Épreuve chaque semaine, la même pour tous.',
+  },
+  {
+    icone: '⇄',
+    titre: 'Échangez',
+    texte: 'Un marché aux enchères, des échanges entre agents, une cote pour chaque carte : la rareté a un prix.',
+  },
+  {
+    icone: '✪',
+    titre: 'Progressez',
+    texte: 'Clans, raids et guerres de clans, synergies d’équipe, accréditations, succès et titres : votre dossier personnel se remplit.',
+  },
+]
+
+export function Portail({ nombreCartes, base }: { nombreCartes: number; base?: Base }) {
   const [email, setEmail] = useState('')
   const [envoye, setEnvoye] = useState(false)
   const [code, setCode] = useState('')
@@ -200,6 +262,39 @@ export function Portail({ nombreCartes }: { nombreCartes: number }) {
           Votre collection est enregistrée sur le serveur et vous suit sur tous vos appareils. <a href="/confidentialite.html">Données personnelles</a>
         </p>
       </div>
+
+      {/* Ce qui attend le visiteur, une fois identifié */}
+      {base && (
+        <div className="portail-vitrine" aria-label="Quelques fiches">
+          {VITRINE_PUBLIQUE.map((id) => base.parId.get(id))
+            .filter((c): c is NonNullable<typeof c> => !!c)
+            .map((c, i) => (
+              <div key={c.id} className="portail-carte" style={{ ['--i' as string]: i - 2 }}>
+                <Carte carte={c} base={base} taille="m" />
+              </div>
+            ))}
+        </div>
+      )}
+      <ul className="portail-atouts">
+        {ATOUTS.map((a) => (
+          <li key={a.titre}>
+            <span className="portail-atout-icone" aria-hidden="true">
+              {a.icone}
+            </span>
+            <strong>{a.titre}</strong>
+            <p>{a.texte}</p>
+          </li>
+        ))}
+      </ul>
+      <p className="portail-fin">
+        Jeu de fan gratuit, sans publicité, jouable sur téléphone (installable comme une application) et sur ordinateur.{' '}
+        <button
+          className="btn btn-principal"
+          onClick={() => document.querySelector('.portail-connexion')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}
+        >
+          Ouvrir mon dossier
+        </button>
+      </p>
     </section>
   )
 }

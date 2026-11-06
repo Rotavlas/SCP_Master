@@ -5,6 +5,7 @@ import { modifier, notifier } from '../state/sauvegarde'
 import { jouer } from '../state/sons'
 import { Carte } from './Carte'
 import { Caviarde } from './Anime'
+import { Aide } from './Aide'
 
 /**
  * Le raid de clan : chaque semaine, une anomalie Keter à reconfiner ensemble. Les duels et l'Épreuve des membres
@@ -65,7 +66,9 @@ export function Raid({ base }: { base: Base }) {
     <div className={`raid ${c.vaincue ? 'vaincue' : ''}`}>
       <div className="raid-cible">{cible && <Carte carte={cible} base={base} taille="p" inclinable={false} />}</div>
       <div className="raid-corps">
-        <p className="dossier-entete">Raid de la semaine · {c.vaincue ? 'anomalie reconfinée' : `fin dans ${jours} jour${jours > 1 ? 's' : ''}`}</p>
+        <p className="dossier-entete">
+          <Aide sujet="raid" /> Raid de la semaine · {c.vaincue ? 'anomalie reconfinée' : `fin dans ${jours} jour${jours > 1 ? 's' : ''}`}
+        </p>
         <h3>{cible ? `${cible.num ?? ''} ${cible.nm}`.trim() : c.cible}</h3>
         <div className="raid-jauge" aria-label={`${reste} points de confinement restants sur ${c.pv}`}>
           <div style={{ width: `${(reste / c.pv) * 100}%` }} />

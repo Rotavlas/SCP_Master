@@ -7,6 +7,7 @@ import { jouer } from '../state/sons'
 import { Caviarde, Indisponible, useTampon } from './Anime'
 import { Carte } from './Carte'
 import { BoutonConfirme } from './Confirmer'
+import { Aide } from './Aide'
 
 /**
  * Les contrats de l'Intendance (public.contrats) : chaque semaine, trois fiches précises (deux rares, une épique),
@@ -43,7 +44,7 @@ export function Contrats({ base }: { base: Base }) {
   return (
     <section className="contrats">
       <p className="dossier-entete">
-        Contrats de l’Intendance · renouvelés dans {jours} jour{jours > 1 ? 's' : ''}
+        Contrats de l’Intendance · renouvelés dans {jours} jour{jours > 1 ? 's' : ''} <Aide sujet="contrats" />
       </p>
       <p className="discret">
         L’Intendance rachète chaque semaine ces trois fiches, une fois chacune : l’exemplaire remis est détruit, un dossier Keter vous est offert.

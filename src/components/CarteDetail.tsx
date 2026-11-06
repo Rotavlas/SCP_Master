@@ -12,24 +12,16 @@ import type { Carte as TCarte } from '../types'
 import { Protocole } from './Booster'
 import { Carte } from './Carte'
 import { Retournable } from './Retournable'
+import { TAILLES_TEXTE, garderTailleTexte, lireTailleTexte } from '../state/lecture'
 import { MarcheCarte } from './MarcheCarte'
 import { JaugeRecyclage } from './JaugeRecyclage'
 import { useGlisserPourFermer } from './feuille'
 import { Fusion, Registre } from './Registre'
 import { imageDeCarte, partagerImage } from './imageCarte'
+import { Aide } from './Aide'
 
 type OngletFiche = 'dossier' | 'marche' | 'registre'
 
-const TAILLES_TEXTE = [0.9, 1, 1.15, 1.3, 1.5]
-const CLE_TAILLE_TEXTE = 'scp-masters:taille-texte'
-function lireTailleTexte(): number {
-  try {
-    const n = Number(localStorage.getItem(CLE_TAILLE_TEXTE))
-    return TAILLES_TEXTE.includes(n) ? n : 1
-  } catch {
-    return 1
-  }
-}
 const ONGLETS_FICHE: { id: OngletFiche; nom: string }[] = [
   { id: 'dossier', nom: 'Dossier' },
   { id: 'marche', nom: 'Marché' },
@@ -91,11 +83,7 @@ export function CarteDetail({
   function changerTaille(pas: number) {
     const i = Math.max(0, Math.min(TAILLES_TEXTE.length - 1, TAILLES_TEXTE.indexOf(tailleTexte) + pas))
     setTailleTexte(TAILLES_TEXTE[i])
-    try {
-      localStorage.setItem(CLE_TAILLE_TEXTE, String(TAILLES_TEXTE[i]))
-    } catch {
-      // Navigation privée : la taille reviendra à la normale
-    }
+    garderTailleTexte(TAILLES_TEXTE[i])
   }
   function basculerFavori() {
     modifier((x) => ({ ...x, favoris: favori ? x.favoris.filter((id) => id !== carte.id) : [...x.favoris, carte.id] }))
@@ -172,6 +160,7 @@ export function CarteDetail({
           />
           {quantite > 0 && (
             <div className="selecteur-variantes" role="radiogroup" aria-label="Variante affichée">
+              <Aide sujet="variantes" />
               {variantesPour(carte).map((v) => {
                 const n = v.id === 'std' ? exemplairesStandard(s, carte.id) : (possedees[v.id] ?? 0)
                 return (
@@ -243,7 +232,7 @@ export function CarteDetail({
           )}
           {cinematique && <Protocole carte={source} onFini={() => setCinematique(false)} />}
 
-          <nav className="onglets-fiche" role="tablist">
+          <nav className="onglets-page onglets-fiche" role="tablist">
             {ONGLETS_FICHE.filter((o) => o.id !== 'registre' || carte.ra === 5).map((o) => (
               <button key={o.id} role="tab" aria-selected={onglet === o.id} className={onglet === o.id ? 'actif' : ''} onClick={() => setOnglet(o.id)}>
                 {o.id === 'marche' && quantite > 0 ? 'Marché et doublons' : o.nom}

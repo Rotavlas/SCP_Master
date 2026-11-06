@@ -14,6 +14,19 @@ import { useSyncExternalStore } from 'react'
 
 const CLE = 'scp-son'
 const VOLUME = 0.7
+// Les réglages (page Réglages) : volume général et volume des ambiances, de 0 à 1, gardés sur l'appareil
+const CLE_VOLUME = 'scp-son-volume'
+const CLE_AMBIANCES = 'scp-son-ambiances'
+const lireVolume = (cle: string) => {
+  try {
+    const v = Number(localStorage.getItem(cle) ?? '1')
+    return Number.isFinite(v) ? Math.min(1, Math.max(0, v)) : 1
+  } catch {
+    return 1
+  }
+}
+let volumeGeneral = lireVolume(CLE_VOLUME)
+let volumeAmbiances = lireVolume(CLE_AMBIANCES)
 let actif = (() => {
   try {
     return localStorage.getItem(CLE) !== '0'
@@ -41,7 +54,7 @@ function audio(): AudioContext | null {
     comp.ratio.value = 3.5
     comp.connect(c.destination)
     maitre = c.createGain()
-    maitre.gain.value = VOLUME
+    maitre.gain.value = VOLUME * volumeGeneral
     maitre.connect(comp)
     // La salle : une réponse impulsionnelle stéréo de 2,8 s, du bruit qui s'éteint et s'assourdit
     const salle = c.createConvolver()
@@ -86,8 +99,26 @@ export function basculerSon() {
   } catch {
     // Préférence non mémorisée (navigation privée) : elle vaut pour cette visite
   }
-  if (maitre && ctx) maitre.gain.setTargetAtTime(actif ? VOLUME : 0, ctx.currentTime, 0.05)
+  if (maitre && ctx) maitre.gain.setTargetAtTime(actif ? VOLUME * volumeGeneral : 0, ctx.currentTime, 0.05)
   if (actif) audio()
+  abonnes.forEach((f) => f())
+}
+
+/** Les volumes des réglages : général (tous les sons) et ambiances (fonds sonores des scènes et des combats) */
+export function volumes(): { general: number; ambiances: number } {
+  return { general: volumeGeneral, ambiances: volumeAmbiances }
+}
+
+export function regler(general: number, ambiances: number) {
+  volumeGeneral = Math.min(1, Math.max(0, general))
+  volumeAmbiances = Math.min(1, Math.max(0, ambiances))
+  try {
+    localStorage.setItem(CLE_VOLUME, String(volumeGeneral))
+    localStorage.setItem(CLE_AMBIANCES, String(volumeAmbiances))
+  } catch {
+    // Navigation privée : réglage valable pour cette visite
+  }
+  if (maitre && ctx && actif) maitre.gain.setTargetAtTime(VOLUME * volumeGeneral, ctx.currentTime, 0.05)
   abonnes.forEach((f) => f())
 }
 
@@ -1940,12 +1971,12 @@ export function ambiance(nom: string): Ambiance {
     [salle, reverb],
   ] as const) {
     g.gain.setValueAtTime(0.0001, c.currentTime)
-    g.gain.exponentialRampToValueAtTime(1, c.currentTime + (ENTREE[nom] ?? 1.5))
+    g.gain.exponentialRampToValueAtTime(Math.max(0.0001, volumeAmbiances), c.currentTime + (ENTREE[nom] ?? 1.5))
     g.connect(vers)
   }
   // La salle s'entend aussi un peu directement
   const direct = c.createGain()
-  direct.gain.value = 0.35
+  direct.gain.value = 0.35 * volumeAmbiances
   salle.connect(direct).connect(maitre)
   const b: Construction = { sources: [], minuteries: [] }
   def(c, sortie, salle, b)

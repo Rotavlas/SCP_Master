@@ -87,7 +87,7 @@ export function CeremonieAccreditation() {
         <p className="ceremonie-deblocage">
           {adversaire
             ? `Nouvel adversaire contre l’IA : ${adversaire.nom}, ${adversaire.titre}.`
-            : 'Le plus haut niveau d’accréditation de la Fondation. Plus aucun dossier ne vous est fermé.'}
+            : 'Le plus haut niveau d’accréditation de la Fondation. Le titre « Thaumiel » vous attend dans vos États de service.'}
         </p>
         <button className="btn btn-principal" onClick={() => setFete(null)} autoFocus>
           Prendre ses fonctions

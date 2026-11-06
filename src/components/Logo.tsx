@@ -8,7 +8,15 @@ export function Logo({ taille = 32, className }: { taille?: number; className?: 
         <circle cx="50" cy="50" r="15" strokeWidth="6" />
       </g>
       {fleches.map((angle) => (
-        <path key={angle} d="M50 6 L50 22 M42 22 L50 33 L58 22 Z" fill="currentColor" stroke="currentColor" strokeWidth="6" strokeLinejoin="round" transform={`rotate(${angle} 50 50)`} />
+        <path
+          key={angle}
+          d="M50 6 L50 22 M42 22 L50 33 L58 22 Z"
+          fill="currentColor"
+          stroke="currentColor"
+          strokeWidth="6"
+          strokeLinejoin="round"
+          transform={`rotate(${angle} 50 50)`}
+        />
       ))}
     </svg>
   )
