@@ -382,7 +382,7 @@ export function SiteReco({
   evenements?: Evenement[]
   manifestation?: Manifestation
 }) {
-  const part = Math.max(0, camp.integrite) / INTEGRITE_SITE
+  const part = Math.min(1, Math.max(0, camp.integrite) / INTEGRITE_SITE)
   const mythique = manifestation?.carte ? base.parId.get(manifestation.carte) : undefined
   // Les coups et les soins du tour, en chiffres qui s'envolent de la jauge
   const pertes = evenements.filter((e) => (e.type === 'breche' || e.type === 'poison' || e.type === 'reconfinement') && (e.valeur ?? 0) > 0)

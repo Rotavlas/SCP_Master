@@ -30,7 +30,7 @@ import {
 } from '../src/engine/reconfinement'
 import { appliquerEcho } from '../src/engine/effets'
 import { questionReconfinement } from '../src/engine/quiz'
-import { bonusTemps } from '../src/engine/synergies'
+import { effetsEquipe } from '../src/engine/synergies'
 import type { Carte, Langue } from '../src/types'
 import { Erreur, GRACE, base, rpc, texte, type Environnement } from './commun'
 
@@ -55,6 +55,9 @@ export interface EtatReco {
   revele: boolean
   /** Secondes de plus pour répondre, données par les synergies de l'équipe */
   bonus?: number
+  /** Synergies d'exception de l'équipe : une mauvaise réponse retirée à la première question, l'IA qui hésite */
+  retrait?: boolean
+  hesitation?: number
   coup?: string
   coupIA?: string
   /** Le reconfinement que le joueur doit réussir, avec la bonne réponse */
@@ -99,6 +102,7 @@ async function debuter(env: Environnement, idJoueur: string, corps: Record<strin
   const prep = await rpc<{ id: string; equipe: string[]; langue: Langue }>(env, 'duel_preparer', { p_joueur: idJoueur, p_niveau: adversaire.niveau })
   const b = await base(env, prep.langue)
   if (prep.equipe.some((id) => !b.parId.has(id))) throw new Erreur(409, 'Nouvelles fiches disponibles : rechargez la page')
+  const effets = effetsEquipe(prep.equipe.map((id) => b.parId.get(id)!))
   const etat: EtatReco = {
     mode: 'reco',
     niveau: adversaire.niveau,
@@ -107,13 +111,15 @@ async function debuter(env: Environnement, idJoueur: string, corps: Record<strin
     main: prep.equipe,
     mainIA: deckAdversaire(b, adversaire).map((c) => c.id),
     tour: 1,
-    joueur: campReco(),
+    joueur: { ...campReco(), integrite: campReco().integrite + effets.integrite },
     ia: campReco(),
     bonnes: 0,
     questions: 0,
     phase: 'choix',
     revele: false,
-    bonus: bonusTemps(prep.equipe.map((id) => b.parId.get(id)!)),
+    bonus: effets.temps,
+    retrait: effets.retrait,
+    hesitation: effets.hesitation,
   }
   await ecrire(env, prep.id, idJoueur, 0, etat)
   return { id: prep.id, ...vuePublique(etat, b) }
@@ -152,7 +158,9 @@ async function jouer(env: Environnement, idJoueur: string, corps: Record<string,
       const q = questionReconfinement(b, carte)
       const malus = (recoIA.alteree ? 0.15 : 0) - recoIA.retirees * 0.1
       const r = reponseAdversaire({ ...adversaire, precision: Math.max(0.15, adversaire.precision - malus) }, q)
-      reponseIA = { juste: r.choix === q.bonne && r.temps <= recoIA.duree, temps: Math.min(r.temps, recoIA.duree) }
+      // Clé de voûte (SCP-001 dans l'équipe) : l'IA hésite
+      const t = r.temps + (etat.hesitation ?? 0)
+      reponseIA = { juste: r.choix === q.bonne && t <= recoIA.duree, temps: Math.min(t, recoIA.duree) }
     }
   }
 
@@ -164,7 +172,8 @@ async function jouer(env: Environnement, idJoueur: string, corps: Record<string,
     const reco = preparerReconfinement(carteIA, etat.joueur, carte)
     if (!reco.auto) {
       const q = questionReconfinement(b, carteIA)
-      const retirees = aRetirer(q.options, q.bonne, reco.retirees)
+      // Contre-feu : une mauvaise réponse de plus retirée à la première question
+      const retirees = aRetirer(q.options, q.bonne, reco.retirees + (etat.retrait && etat.questions === 0 ? 1 : 0))
       // SCP-939 imite : une des fausses réponses copie presque la bonne
       const options = reco.alteree && reco.effet.alteration === 'echo' ? appliquerEcho(q.options, q.bonne, retirees) : q.options
       const duree = reco.duree + (etat.bonus ?? 0)

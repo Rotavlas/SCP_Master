@@ -19,6 +19,17 @@ import { Fusion, Registre } from './Registre'
 import { imageDeCarte, partagerImage } from './imageCarte'
 
 type OngletFiche = 'dossier' | 'marche' | 'registre'
+
+const TAILLES_TEXTE = [0.9, 1, 1.15, 1.3, 1.5]
+const CLE_TAILLE_TEXTE = 'scp-masters:taille-texte'
+function lireTailleTexte(): number {
+  try {
+    const n = Number(localStorage.getItem(CLE_TAILLE_TEXTE))
+    return TAILLES_TEXTE.includes(n) ? n : 1
+  } catch {
+    return 1
+  }
+}
 const ONGLETS_FICHE: { id: OngletFiche; nom: string }[] = [
   { id: 'dossier', nom: 'Dossier' },
   { id: 'marche', nom: 'Marché' },
@@ -75,6 +86,17 @@ export function CarteDetail({
 
   // La fiche se lit par onglets : le dossier, le marché (et les doublons), le registre d'une Mythique
   const [onglet, setOnglet] = useState<OngletFiche>('dossier')
+  // La taille du texte du dossier, retenue sur l'appareil
+  const [tailleTexte, setTailleTexte] = useState(lireTailleTexte)
+  function changerTaille(pas: number) {
+    const i = Math.max(0, Math.min(TAILLES_TEXTE.length - 1, TAILLES_TEXTE.indexOf(tailleTexte) + pas))
+    setTailleTexte(TAILLES_TEXTE[i])
+    try {
+      localStorage.setItem(CLE_TAILLE_TEXTE, String(TAILLES_TEXTE[i]))
+    } catch {
+      // Navigation privée : la taille reviendra à la normale
+    }
+  }
   function basculerFavori() {
     modifier((x) => ({ ...x, favoris: favori ? x.favoris.filter((id) => id !== carte.id) : [...x.favoris, carte.id] }))
   }
@@ -227,10 +249,20 @@ export function CarteDetail({
                 {o.id === 'marche' && quantite > 0 ? 'Marché et doublons' : o.nom}
               </button>
             ))}
+            {onglet === 'dossier' && (
+              <span className="taille-texte" role="group" aria-label="Taille du texte du dossier">
+                <button onClick={() => changerTaille(-1)} disabled={tailleTexte === TAILLES_TEXTE[0]} aria-label="Texte plus petit">
+                  A−
+                </button>
+                <button onClick={() => changerTaille(1)} disabled={tailleTexte === TAILLES_TEXTE[TAILLES_TEXTE.length - 1]} aria-label="Texte plus grand">
+                  A+
+                </button>
+              </span>
+            )}
           </nav>
 
           {onglet === 'dossier' && (
-            <>
+            <div className="texte-dossier" style={{ ['--taille-texte' as string]: tailleTexte }}>
               <dl className="fiche">
                 {fiche.map(([titre, valeur]) => (
                   <div key={titre}>
@@ -281,7 +313,7 @@ export function CarteDetail({
                   </p>
                 </>
               )}
-            </>
+            </div>
           )}
 
           {onglet === 'marche' && (

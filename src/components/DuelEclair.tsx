@@ -255,7 +255,7 @@ export function DuelEclair({ base, adversaire, onQuitter }: { base: Base; advers
 }
 
 function Integrite({ nom, pv, adverse }: { nom: string; pv: number; adverse?: boolean }) {
-  const part = Math.max(0, pv) / INTEGRITE_MAX
+  const part = Math.min(1, Math.max(0, pv) / INTEGRITE_MAX)
   return (
     <div className={`integrite ${adverse ? 'adverse' : ''}`}>
       <span>

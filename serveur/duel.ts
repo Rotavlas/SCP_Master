@@ -9,7 +9,7 @@
 import { ADVERSAIRES, DUREE_QUESTION, INTEGRITE_MAX, MANCHES, deckAdversaire, degats, reponseAdversaire } from '../src/engine/duel'
 import { DUREE_TEMPORELLE, appliquerEcho, effetDe } from '../src/engine/effets'
 import { genererQuestion } from '../src/engine/quiz'
-import { bonusTemps } from '../src/engine/synergies'
+import { effetsEquipe } from '../src/engine/synergies'
 import type { Langue } from '../src/types'
 import { Erreur, GRACE, base, joueur, rpc, texte, type Environnement } from './commun'
 import { ACTIONS_BRECHE, traiterBreche } from './breche'
@@ -50,6 +50,9 @@ export interface Etat {
   duree?: number
   /** Secondes de plus pour répondre, données par les synergies de l'équipe (src/engine/synergies.ts) */
   bonus?: number
+  /** Synergies d'exception de l'équipe : une mauvaise réponse retirée à la première question, l'IA qui hésite */
+  retrait?: boolean
+  hesitation?: number
   /** Contamination : dégâts subis à chaque manche par le joueur, par l'IA */
   poison?: number
   poisonIA?: number
@@ -77,17 +80,20 @@ async function debuter(env: Environnement, idJoueur: string, corps: Record<strin
   const prep = await rpc<{ id: string; equipe: string[]; langue: Langue }>(env, 'duel_preparer', { p_joueur: idJoueur, p_niveau: adversaire.niveau })
   const b = await base(env, prep.langue)
   if (prep.equipe.some((id) => !b.parId.has(id))) throw new Erreur(409, 'Nouvelles fiches disponibles : rechargez la page')
+  const effets = effetsEquipe(prep.equipe.map((id) => b.parId.get(id)!))
   const etat: Etat = {
     niveau: adversaire.niveau,
     langue: prep.langue,
     main: prep.equipe,
     mainIA: deckAdversaire(b, adversaire).map((c) => c.id),
     manche: 1,
-    pv: INTEGRITE_MAX,
+    pv: INTEGRITE_MAX + effets.integrite,
     pvIA: INTEGRITE_MAX,
     bonnes: 0,
     phase: 'choix',
-    bonus: bonusTemps(prep.equipe.map((id) => b.parId.get(id)!)),
+    bonus: effets.temps,
+    retrait: effets.retrait,
+    hesitation: effets.hesitation,
   }
   await ecrire(env, prep.id, idJoueur, 0, etat)
   return { id: prep.id, main: etat.main, cartesIA: etat.mainIA.length, manche: 1, pv: etat.pv, pvIA: etat.pvIA }
@@ -121,7 +127,17 @@ async function jouer(env: Environnement, idJoueur: string, corps: Record<string,
   const dureeIA = effet.alteration === 'temporel' ? DUREE_TEMPORELLE : DUREE_QUESTION
   const brute = reponseAdversaire({ ...adversaire, precision: adversaire.precision - (effet.alteration ? 0.15 : 0) }, q)
   // Trop lente pour une question raccourcie : l'IA n'a pas répondu à temps
-  const reponseIA = brute.temps > dureeIA ? { choix: -1, temps: dureeIA } : brute
+  // Clé de voûte (SCP-001 dans l'équipe) : l'IA hésite
+  const hesitee = { ...brute, temps: brute.temps + (etat.hesitation ?? 0) }
+  const reponseIA = hesitee.temps > dureeIA ? { choix: -1, temps: dureeIA } : hesitee
+  // Contre-feu : à la première question, une mauvaise réponse disparaît (jamais celle que l'IA a choisie)
+  if (etat.retrait && manche === 1 && q.options.length > 3) {
+    const candidates = q.options.map((_, i) => i).filter((i) => i !== q.bonne && i !== reponseIA.choix)
+    const retiree = candidates[Math.floor(Math.random() * candidates.length)]
+    q.options = q.options.filter((_, i) => i !== retiree)
+    if (q.bonne > retiree) q.bonne--
+    if (reponseIA.choix > retiree) reponseIA.choix--
+  }
   const suivant: Etat = {
     ...etat,
     manche,

@@ -14749,3 +14749,95 @@ html.vt-fiche .modale.detail {
     opacity: 1;
   }
 }
+
+/* =====================================================================================================================
+   Lot synergies et confort du 6 novembre 2026 (3)
+   ===================================================================================================================== */
+
+/* ---------- Synergies d'exception : leur effet propre, en or ---------- */
+.synergies li.exception {
+  border-color: rgba(244, 197, 66, 0.7);
+  background: linear-gradient(135deg, rgba(244, 197, 66, 0.16), rgba(244, 197, 66, 0.04));
+}
+
+.synergies li.exception strong,
+.synergies li.exception em {
+  color: #f4c542;
+}
+
+/* ---------- Les illustrations arrivent floues puis se précisent ---------- */
+.carte img {
+  transition:
+    filter 0.5s ease-out,
+    transform 0.5s ease-out;
+}
+
+.carte img:not(.chargee) {
+  filter: blur(12px) saturate(0.6) brightness(0.8);
+  transform: scale(1.06);
+}
+
+/* ---------- Le trait de l'onglet actif glisse d'un onglet à l'autre ---------- */
+.onglets::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: var(--trait-l, 0);
+  height: 2px;
+  background: var(--rouge);
+  transform: translateX(var(--trait-x, 0));
+  transition:
+    transform 0.32s cubic-bezier(0.3, 0.9, 0.3, 1),
+    width 0.32s cubic-bezier(0.3, 0.9, 0.3, 1);
+  pointer-events: none;
+}
+
+.onglets button.actif {
+  border-bottom-color: transparent;
+}
+
+@media (min-width: 761px) {
+  .onglets {
+    position: relative;
+  }
+}
+
+@media (max-width: 760px) {
+  .onglets::after {
+    top: 0;
+    bottom: auto;
+  }
+
+  .onglets button.actif {
+    border-top-color: transparent;
+  }
+}
+
+/* ---------- La taille du texte du dossier ---------- */
+.onglets-fiche .taille-texte {
+  display: inline-flex;
+  gap: 0.2rem;
+  margin-left: auto;
+  align-self: center;
+  flex-shrink: 0;
+}
+
+.onglets-fiche .taille-texte button {
+  padding: 0.25rem 0.55rem;
+  border: 1px solid var(--bord);
+  border-radius: 6px;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  text-transform: none;
+}
+
+.onglets-fiche .taille-texte button:disabled {
+  opacity: 0.35;
+}
+
+/* Les extraits du dossier (procédures, description) : ce sont eux qu'on lit longuement */
+.detail-dossier .texte-dossier section p {
+  font-size: calc(0.9rem * var(--taille-texte, 1));
+  line-height: 1.55;
+}

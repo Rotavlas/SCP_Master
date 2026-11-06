@@ -12,6 +12,15 @@ export interface Entree {
 export const JOURNAL: Entree[] = [
   {
     date: '2026-11-06',
+    titre: 'Seize synergies, et plus de confort',
+    points: [
+      'Nouvelles synergies : une FIM, un Site, un Département, un membre du personnel, un Groupe d’intérêt ou un canon lié à l’un de vos SCP ; deux fiches de Groupes d’intérêt ; trois fiches mémétiques, spatio-temporelles ou animales ; deux fiches de fin du monde ; deux SCP aux numéros qui se suivent ; trois fiches publiées la même année.',
+      'Synergies d’exception, une seule compte : Clé de voûte (une proposition pour SCP-001 : l’IA répond une seconde plus tard), Contre-feu (un Thaumiel face à un Keter : une mauvaise réponse retirée à la première question), Équipe d’intervention (quatre types de fiches : +10 d’intégrité au départ).',
+      'Les illustrations des cartes arrivent floues puis se précisent, le trait de l’onglet actif glisse d’un onglet à l’autre, et la fiche d’une carte a ses boutons A− et A+ pour agrandir le texte du dossier.',
+    ],
+  },
+  {
+    date: '2026-11-06',
     titre: 'Synergies, guerre de clans et cartes qui se retournent',
     points: [
       'Questions illustrées : contre l’IA, il faut parfois reconnaître une anomalie à son cliché d’archive. Jamais en JcJ ni à l’Épreuve.',

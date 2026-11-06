@@ -16,7 +16,7 @@ import {
   type Evenement,
 } from '../src/engine/breche'
 import { ADVERSAIRES, DUREE_QUESTION, deckAdversaire, reponseAdversaire } from '../src/engine/duel'
-import { bonusTemps } from '../src/engine/synergies'
+import { effetsEquipe } from '../src/engine/synergies'
 import { genererQuestion } from '../src/engine/quiz'
 import type { Langue } from '../src/types'
 import { Erreur, GRACE, base, rpc, texte, type Environnement } from './commun'
@@ -49,6 +49,9 @@ export interface EtatBreche {
   debut?: number
   /** Secondes de plus pour répondre, données par les synergies de l'équipe */
   bonus?: number
+  /** Synergies d'exception de l'équipe : une mauvaise réponse retirée à la première question, l'IA qui hésite */
+  retrait?: boolean
+  hesitation?: number
 }
 
 async function lire(env: Environnement, id: string, joueur: string): Promise<{ etat: EtatBreche; version: number }> {
@@ -105,7 +108,10 @@ async function debuter(env: Environnement, idJoueur: string, corps: Record<strin
     bonnes: 0,
     phase: 'choix',
     initiative: null,
-    bonus: bonusTemps(prep.equipe.map((id) => b.parId.get(id)!)),
+    ...(() => {
+      const e = effetsEquipe(prep.equipe.map((id) => b.parId.get(id)!))
+      return { bonus: e.temps, retrait: e.retrait, hesitation: e.hesitation }
+    })(),
   }
   await ecrire(env, prep.id, idJoueur, 0, etat)
   return { id: prep.id, ...vuePublique(etat) }
@@ -139,7 +145,16 @@ async function jouer(env: Environnement, idJoueur: string, corps: Record<string,
   // Chacun répond sur sa propre carte
   const q = genererQuestion(b, carte, carteIA, false)
   const qIA = genererQuestion(b, carteIA, carte, false)
-  const reponseIA = reponseAdversaire(adversaire, qIA)
+  const brute = reponseAdversaire(adversaire, qIA)
+  // Clé de voûte (SCP-001 dans l'équipe) : l'IA hésite
+  const reponseIA = { ...brute, temps: Math.min(DUREE_QUESTION, brute.temps + (etat.hesitation ?? 0)) }
+  // Contre-feu : à la première question, une mauvaise réponse disparaît (l'IA répond à sa propre question)
+  if (etat.retrait && etat.tour === 1 && q.options.length > 3) {
+    const candidates = q.options.map((_, i) => i).filter((i) => i !== q.bonne)
+    const retiree = candidates[Math.floor(Math.random() * candidates.length)]
+    q.options = q.options.filter((_, i) => i !== retiree)
+    if (q.bonne > retiree) q.bonne--
+  }
   const suivant: EtatBreche = {
     ...etat,
     phase: 'question',

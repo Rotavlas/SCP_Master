@@ -6,6 +6,12 @@ import { PAR_ID, type IdVariante } from '../engine/variantes'
 import { useCarteAffichee } from '../state/traduction'
 import type { Carte as TCarte } from '../types'
 import { Logo } from './Logo'
+
+/** L'illustration arrive floue, puis se précise une fois chargée (déjà en cache : nette d'emblée) */
+const chargee = (e: { currentTarget: HTMLImageElement }) => e.currentTarget.classList.add('chargee')
+const dejaChargee = (el: HTMLImageElement | null) => {
+  if (el?.complete && el.naturalWidth) el.classList.add('chargee')
+}
 import { SceneMythique, aUneScene } from './ScenesMythiques'
 
 interface Props {
@@ -316,6 +322,8 @@ export function Carte({
                 loading="lazy"
                 decoding="async"
                 referrerPolicy="no-referrer"
+                ref={dejaChargee}
+                onLoad={chargee}
                 onError={() => setEchecs({ id: carte.id, n: secours + 1 })}
               />
             ) : (
@@ -392,7 +400,16 @@ export function Carte({
         </header>
         <div className="carte-visuel">
           {image ? (
-            <img src={image} alt="" loading="lazy" decoding="async" referrerPolicy="no-referrer" onError={() => setEchecs({ id: carte.id, n: secours + 1 })} />
+            <img
+              src={image}
+              alt=""
+              loading="lazy"
+              decoding="async"
+              referrerPolicy="no-referrer"
+              ref={dejaChargee}
+              onLoad={chargee}
+              onError={() => setEchecs({ id: carte.id, n: secours + 1 })}
+            />
           ) : (
             <div className="carte-visuel-vide">
               <Embleme carte={carte} taille={taille === 'p' ? 40 : 64} />

@@ -183,7 +183,8 @@ await test("une carte qui n'est pas dans la main est refusée", async () => {
 await test("la question n'envoie ni la bonne réponse ni le choix de l'IA", async () => {
   const r = await appel('jeton-A', { action: 'jouer', id: duel, carte: equipeA[0] })
   assert.equal(r.statut, 200, r.texte)
-  assert.equal(r.corps.question.options.length, 4)
+  // Quatre réponses, ou trois si l'équipe (tirée au hasard) a la synergie Contre-feu (Thaumiel et Keter)
+  assert.ok([3, 4].includes(r.corps.question.options.length), r.texte)
   assert.ok(!/"bonne"|"choix"|"carteIA"|"mainIA"/.test(r.texte), r.texte)
 })
 await test("pas de deuxième question tant qu'on n'a pas répondu", async () => {

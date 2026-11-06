@@ -1,5 +1,5 @@
 import { Analytics } from '@vercel/analytics/react'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Accueil } from './components/Accueil'
 import { NombreAnime } from './components/Anime'
 import { Booster, retenirTirage, tirageRetenu, type Tirage } from './components/Booster'
@@ -145,6 +145,20 @@ export default function App() {
     window.scrollTo({ top: 0 })
   })
   useFermerAuRetour(menuPlus, () => setMenuPlus(false))
+  // Le trait de l'onglet actif glisse d'un onglet à l'autre (sur téléphone, « Plus » porte les onglets secondaires)
+  const barreOnglets = useRef<HTMLElement>(null)
+  useLayoutEffect(() => {
+    const nav = barreOnglets.current
+    if (!nav) return
+    const placer = () => {
+      const b = [...nav.querySelectorAll<HTMLElement>(':scope > button.actif')].find((x) => x.offsetParent !== null)
+      nav.style.setProperty('--trait-x', `${b?.offsetLeft ?? 0}px`)
+      nav.style.setProperty('--trait-l', `${b?.offsetWidth ?? 0}px`)
+    }
+    placer()
+    window.addEventListener('resize', placer)
+    return () => window.removeEventListener('resize', placer)
+  }, [ecran, menuPlus, connecte, base])
   // Une notification touchée alors que le jeu est déjà ouvert : le service worker demande d'aller à son écran
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return
@@ -249,7 +263,7 @@ export default function App() {
               SCP<b>Masters</b>
             </span>
           </button>
-          <nav className="onglets">
+          <nav className="onglets" ref={barreOnglets}>
             {ONGLETS.map((o) => (
               <button
                 key={o.id}
