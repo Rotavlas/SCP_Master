@@ -7,6 +7,8 @@ export interface Question {
   intitule: string
   /** Extrait de dossier affiché sous la question */
   document?: string
+  /** Illustration du dossier (question « Quelle anomalie est représentée ? ») */
+  image?: string
   options: string[]
   bonne: number
   /** 0 facile → 2 difficile, module la précision de l'adversaire */
@@ -50,12 +52,16 @@ function caviarder(texte: string, carte: Carte): string {
   return resultat
 }
 
-function construire(sujet: Carte, intitule: string, bonne: string, leurres: string[], difficulte: number, document?: string): Question | null {
+function construire(sujet: Carte, intitule: string, bonne: string, leurres: string[], difficulte: number, document?: string, image?: string): Question | null {
   const uniques = [...new Set(leurres.filter((l) => l && l !== bonne))].slice(0, 3)
   if (uniques.length < 3) return null
   const options = melanger([bonne, ...uniques])
-  return { sujet, intitule, document, options, bonne: options.indexOf(bonne), difficulte }
+  return { sujet, intitule, document, image, options, bonne: options.indexOf(bonne), difficulte }
 }
+
+/** Une image qui montre vraiment l'anomalie : pas un logo, un en-tête ou un schéma vectoriel */
+const IMAGE_PARLANTE = /\.(jpe?g|png|webp|gif)(\?|$)/i
+const IMAGE_DECOR = /header|logo|banner|bandeau|icon|signature|seal|sceau|title|titre/i
 
 /** Fiches du même type et de rareté proche : des leurres plausibles. */
 function voisines(base: Base, carte: Carte, nombre: number, exclure: Carte[] = [], filtre?: (c: Carte) => boolean): Carte[] {
@@ -85,7 +91,20 @@ type Generateur = (base: Base, sujet: Carte, autre: Carte) => Question | null
  * `identification` : la bonne réponse désigne la carte elle-même (numéro, document caviardé).
  * Ces questions portent sur la carte adverse, cachée pendant la question, ou sur une fiche sans désignation.
  */
-const GENERATEURS: { poids: number; identification?: boolean; f: Generateur }[] = [
+const GENERATEURS: { poids: number; identification?: boolean; illustree?: boolean; f: Generateur }[] = [
+  {
+    // Reconnaître l'anomalie à son illustration (l'image vient du wiki ; l'adresse contient le nom de la page, d'où
+    // seulement contre l'IA, jamais en classement)
+    poids: 4,
+    identification: true,
+    illustree: true,
+    f: (b, s) => {
+      const image = s.k === 's' && s.num && s.img && IMAGE_PARLANTE.test(s.img) && !IMAGE_DECOR.test(s.img) ? b.vignette(s) : null
+      if (!image) return null
+      const leurres = voisines(b, s, 6, [], aSurnom).map(etiquette)
+      return construire(s, 'Quelle anomalie est représentée sur ce cliché ?', etiquette(s), leurres, 1, undefined, image)
+    },
+  },
   {
     poids: 3,
     f: (_b, s) => {
@@ -211,11 +230,14 @@ const GENERATEURS: { poids: number; identification?: boolean; f: Generateur }[] 
   },
 ]
 
-/** Une question sur l'une des deux cartes en jeu ; `cachee` indique que le joueur ne voit pas le sujet. */
-export function genererQuestion(base: Base, sujet: Carte, autre: Carte, cachee: boolean): Question {
+/**
+ * Une question sur l'une des deux cartes en jeu ; `cachee` indique que le joueur ne voit pas le sujet ;
+ * `illustrees` permet les questions à image (combats contre l'IA seulement).
+ */
+export function genererQuestion(base: Base, sujet: Carte, autre: Carte, cachee: boolean, illustrees = false): Question {
   // Sur sa propre carte, une fiche sans désignation (conte, personnel, GdI…) a son nom caviardé pendant le duel :
   // la reconnaître à son extrait reste une vraie question, sinon il ne resterait que la rareté, visible sur la carte
-  const permis = GENERATEURS.filter((g) => cachee || !g.identification || !sujet.num)
+  const permis = GENERATEURS.filter((g) => (cachee || !g.identification || !sujet.num) && (illustrees || !g.illustree))
   const total = permis.reduce((s, g) => s + g.poids, 0)
   for (let essai = 0; essai < 30; essai++) {
     let x = Math.random() * total

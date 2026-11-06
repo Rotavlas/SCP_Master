@@ -203,6 +203,30 @@ const DEMO_HALL: Record<string, () => unknown> = {
           precedent: { semaine: '2026-10-26', cible: 'scp-106', pv: 850, degats: 900, vaincue: true, moi: 120, reclame: false, contributeurs: [] },
         }
       : null,
+  guerre_clan: () =>
+    enHall
+      ? {
+          fin: new Date(Date.now() + 4 * 86_400_000).toISOString(),
+          victoires: 1,
+          courante: { semaine: semaineAtelier, adversaire: { nom: 'Les Veilleurs', tag: 'VEIL' }, nous: 34, eux: 27, moi: 11, reclame: false },
+          precedente: { semaine: '2026-10-26', adversaire: { nom: 'Ordre de Minuit', tag: 'ODM' }, nous: 41, eux: 38, moi: 9, reclame: false },
+        }
+      : null,
+  mes_statistiques: () =>
+    enHall
+      ? {
+          familles: {
+            classe: { n: 48, b: 41, t: 210 },
+            surnom: { n: 31, b: 22, t: 190 },
+            extrait: { n: 26, b: 14, t: 260 },
+            illustration: { n: 9, b: 7, t: 61 },
+            auteur: { n: 12, b: 4, t: 120 },
+          },
+          serie: 11,
+          eclair: 1.42,
+        }
+      : null,
+  ajouter_statistiques: () => null,
   // Succès, contrats, Mythiques en circulation, créateur (?mode=app)
   codes_admin: () =>
     enHall

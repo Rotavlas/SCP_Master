@@ -27,6 +27,7 @@ import { Reconfinement } from './Reconfinement'
 import { CLE_TUTO_BRECHE, TutoBreche, Tuto, tutoVu } from './TutoBreche'
 import { Caviarde, Vide } from './Anime'
 import { CLE_TUTO_ECLAIR, CLE_TUTO_RECO, ETAPES_ECLAIR, ETAPES_RECO } from './TutoModes'
+import { Synergies } from './Synergies'
 
 /** Confrontations récompensées par 24 heures contre l'IA (le serveur fait foi : public.duel_clore) */
 const DUELS_IA_RECOMPENSES = 5
@@ -181,6 +182,7 @@ export function Duel({ base, aller, ouvrirProfil }: { base: Base; aller: (e: Ecr
             ),
           )}
         </div>
+        <Synergies equipe={equipe} />
         <div className="actions">
           <button
             className="btn"

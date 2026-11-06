@@ -14035,12 +14035,12 @@ html {
 }
 
 /* ---------- Carte en relief : la grande carte de la fiche suit le doigt (et le téléphone) ---------- */
-.detail-carte > .carte-g {
+.detail-carte .carte-g {
   touch-action: none;
 }
 
 /* ---------- La vignette devient la fiche (View Transitions) ---------- */
-.detail-carte > .carte {
+.detail-carte > .carte-retournable {
   view-transition-name: carte-ouverte;
 }
 
@@ -14147,5 +14147,605 @@ html.vt-fiche .modale.detail {
   from {
     opacity: 0;
     transform: scale(0.4);
+  }
+}
+
+/* =====================================================================================================================
+   Lot jeu et animations du 6 novembre 2026 (2)
+   ===================================================================================================================== */
+
+/* ---------- Questions illustrées ---------- */
+.question-image {
+  margin: 0.4rem auto 0.7rem;
+  width: fit-content;
+  max-width: 100%;
+  padding: 6px 6px 18px;
+  background: #e8e2d2;
+  border-radius: 3px;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.5);
+  transform: rotate(-1.2deg);
+  animation: cliche-pose 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+.question-image img {
+  display: block;
+  max-width: min(320px, 100%);
+  max-height: 34vh;
+  object-fit: contain;
+  filter: sepia(0.25) contrast(1.05);
+}
+
+@keyframes cliche-pose {
+  from {
+    opacity: 0;
+    transform: rotate(-8deg) translateY(-14px) scale(1.06);
+  }
+}
+
+/* ---------- Synergies d'équipe ---------- */
+.synergies {
+  grid-column: 1 / -1;
+}
+
+.synergies ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.synergies li {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid rgba(240, 180, 60, 0.45);
+  border-radius: 999px;
+  background: rgba(240, 180, 60, 0.08);
+  font-size: 0.8rem;
+}
+
+.synergies li strong {
+  color: var(--ambre);
+  font-family: var(--mono);
+}
+
+.synergies li em {
+  font-style: normal;
+  font-family: var(--mono);
+  color: #7ef0a0;
+}
+
+.synergies li.en-trop {
+  opacity: 0.55;
+  border-style: dashed;
+}
+
+.synergies li.en-trop em {
+  color: var(--discret);
+}
+
+.synergies p {
+  margin: 0;
+  font-size: 0.82rem;
+}
+
+/* ---------- Performance (statistiques personnelles) ---------- */
+.performance-records {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.performance-records > div {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.8rem 1rem;
+  background: var(--panneau);
+  border: 1px solid var(--bord);
+  border-radius: 10px;
+}
+
+.performance-records strong {
+  font-family: var(--mono);
+  font-size: 1.5rem;
+}
+
+.performance-records span {
+  color: var(--discret);
+  font-size: 0.8rem;
+}
+
+.performance-familles {
+  display: grid;
+  gap: 0.45rem;
+  margin: 1rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.performance-familles li {
+  display: grid;
+  grid-template-columns: minmax(9rem, 14rem) 1fr auto;
+  align-items: center;
+  gap: 0.7rem;
+  font-size: 0.85rem;
+}
+
+.performance-barre {
+  height: 0.55rem;
+  background: var(--panneau-2);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.performance-barre i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--rouge), var(--ambre), #7ef0a0);
+  border-radius: inherit;
+  transform-origin: left;
+  animation: barre-remplit 0.8s cubic-bezier(0.2, 0.85, 0.25, 1) both;
+}
+
+.performance-chiffres {
+  font-family: var(--mono);
+  color: var(--discret);
+  font-size: 0.78rem;
+}
+
+@keyframes barre-remplit {
+  from {
+    transform: scaleX(0);
+  }
+}
+
+@media (max-width: 760px) {
+  .performance-familles li {
+    grid-template-columns: 1fr auto;
+  }
+
+  .performance-barre {
+    grid-column: 1 / -1;
+    order: 3;
+  }
+}
+
+/* ---------- Guerre de clans ---------- */
+.guerre-clan {
+  margin: 1rem 0;
+  padding: 0.9rem 1rem;
+  border: 1px solid rgba(210, 58, 44, 0.45);
+  border-radius: 10px;
+  background: linear-gradient(135deg, rgba(210, 58, 44, 0.08), transparent 60%);
+}
+
+.guerre-face {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.6rem;
+  margin: 0.3rem 0 0.5rem;
+}
+
+.guerre-face strong {
+  font-family: var(--mono);
+  font-size: 1.8rem;
+}
+
+.guerre-nous {
+  color: #7ef0a0;
+}
+
+.guerre-eux {
+  color: #ff5a48;
+}
+
+.guerre-contre,
+.guerre-nom {
+  color: var(--discret);
+  font-family: var(--mono);
+  font-size: 0.85rem;
+}
+
+.guerre-barre {
+  height: 0.5rem;
+  border-radius: 999px;
+  background: rgba(255, 90, 72, 0.55);
+  overflow: hidden;
+}
+
+.guerre-barre i {
+  display: block;
+  height: 100%;
+  background: #7ef0a0;
+  transition: width 0.6s ease;
+}
+
+.guerre-precedente {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0.7rem 0 0;
+  font-size: 0.85rem;
+}
+
+.guerre-precedente.gagnee {
+  color: #7ef0a0;
+}
+
+/* ---------- La carte qui se retourne : sa fiche technique au verso ---------- */
+.carte-retournable {
+  position: relative;
+  display: grid;
+  width: fit-content;
+  margin: 0 auto;
+  perspective: 1200px;
+  cursor: pointer;
+  border-radius: 12px;
+}
+
+.carte-recto,
+.carte-verso {
+  grid-area: 1 / 1;
+  backface-visibility: hidden;
+  /* La face cachée s'efface à mi-course (la carte en relief ne se plie pas à backface-visibility) */
+  transition:
+    transform 0.6s cubic-bezier(0.3, 0.9, 0.3, 1),
+    visibility 0s linear 0.2s;
+}
+
+.carte-verso {
+  transform: rotateY(-180deg);
+  visibility: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.9rem 0.9rem 0.7rem;
+  border-radius: 12px;
+  border: 5px solid var(--rarete, var(--bord));
+  background: repeating-linear-gradient(0deg, transparent 0 22px, rgba(0, 0, 0, 0.12) 22px 23px), #e9e3d3;
+  color: #1d1b17;
+  font-size: 0.78rem;
+  overflow: hidden;
+}
+
+.carte-retournable.retournee .carte-recto {
+  transform: rotateY(180deg);
+  visibility: hidden;
+}
+
+.carte-retournable.retournee .carte-verso {
+  transform: none;
+  visibility: visible;
+}
+
+.verso-tete {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 2px solid #1d1b17;
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.verso-designation {
+  margin: 0.2rem 0 0;
+  font-family: var(--mono);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.verso-nom {
+  margin: 0;
+  font-style: italic;
+}
+
+.verso-fiche {
+  display: grid;
+  gap: 0.15rem;
+  margin: 0.3rem 0;
+}
+
+.verso-fiche div {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.6rem;
+  border-bottom: 1px dotted rgba(0, 0, 0, 0.3);
+}
+
+.verso-fiche dt {
+  font-family: var(--mono);
+  text-transform: uppercase;
+  font-size: 0.65rem;
+  color: #5a554a;
+}
+
+.verso-fiche dd {
+  margin: 0;
+  text-align: right;
+}
+
+.verso-jauges {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+}
+
+.verso-jauges i {
+  height: 0.45rem;
+  background: linear-gradient(90deg, #1d1b17 var(--v), rgba(0, 0, 0, 0.12) var(--v));
+  border-radius: 2px;
+}
+
+.verso-pied {
+  margin: auto 0 0;
+  text-align: center;
+  font-size: 0.65rem;
+  color: #5a554a;
+}
+
+/* ---------- La lumière de la classe autour de la fiche ---------- */
+.modale.detail {
+  isolation: isolate;
+}
+
+.ambiance-classe {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  pointer-events: none;
+  opacity: 0.55;
+  overflow: hidden;
+}
+
+.ambiance-keter .ambiance-classe::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: -60%;
+  width: 220%;
+  aspect-ratio: 1;
+  translate: -50% 0;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    rgba(220, 40, 30, 0.38) 18deg,
+    transparent 46deg,
+    transparent 180deg,
+    rgba(220, 40, 30, 0.38) 198deg,
+    transparent 226deg
+  );
+  animation: gyrophare 3.2s linear infinite;
+}
+
+.ambiance-euclid .ambiance-classe {
+  background: radial-gradient(ellipse at 50% 0%, rgba(240, 180, 60, 0.3), transparent 65%);
+  animation: lueur-euclid 3.6s ease-in-out infinite;
+}
+
+.ambiance-safe .ambiance-classe {
+  background: linear-gradient(180deg, rgba(110, 170, 230, 0.18), transparent 55%);
+}
+
+.ambiance-thaumiel .ambiance-classe {
+  background:
+    linear-gradient(115deg, transparent 30%, rgba(244, 197, 66, 0.25) 45%, transparent 60%) 0 0 / 300% 100%,
+    radial-gradient(ellipse at 50% 0%, rgba(244, 197, 66, 0.18), transparent 60%);
+  animation: reflet-thaumiel 5s ease-in-out infinite;
+}
+
+.ambiance-apollyon .ambiance-classe {
+  background: radial-gradient(ellipse at 50% 30%, rgba(0, 0, 0, 0.75), transparent 70%), rgba(60, 0, 20, 0.2);
+  animation: deregle-apollyon 2.4s steps(1) infinite;
+}
+
+.ambiance-neutralized .ambiance-classe,
+.ambiance-decommissioned .ambiance-classe {
+  background: linear-gradient(180deg, rgba(140, 150, 146, 0.16), transparent 55%);
+}
+
+@keyframes gyrophare {
+  to {
+    rotate: 360deg;
+  }
+}
+
+@keyframes lueur-euclid {
+  50% {
+    opacity: 0.25;
+  }
+}
+
+@keyframes reflet-thaumiel {
+  50% {
+    background-position:
+      100% 0,
+      0 0;
+  }
+}
+
+@keyframes deregle-apollyon {
+  0%,
+  86%,
+  100% {
+    filter: none;
+    transform: none;
+  }
+  88% {
+    filter: hue-rotate(90deg) contrast(2);
+    transform: translateX(6px);
+  }
+  92% {
+    filter: invert(0.15);
+    transform: translateX(-4px) skewX(3deg);
+  }
+}
+
+/* ---------- Cérémonie d'accréditation ---------- */
+.ceremonie-fond {
+  position: fixed;
+  inset: 0;
+  z-index: 90;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.8);
+  animation: ceremonie-fondu 0.3s ease-out;
+}
+
+.ceremonie {
+  display: grid;
+  justify-items: center;
+  gap: 0.9rem;
+  width: min(420px, 100%);
+  text-align: center;
+}
+
+.carte-agent {
+  position: relative;
+  width: 100%;
+  padding: 0.9rem 1rem 1.1rem;
+  border-radius: 12px;
+  background: repeating-linear-gradient(135deg, transparent 0 10px, rgba(0, 0, 0, 0.04) 10px 11px), #e9e3d3;
+  color: #1d1b17;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+  text-align: left;
+  clip-path: inset(0 0 100% 0);
+  animation: impression-carte 1.1s steps(18) 0.15s forwards;
+}
+
+.carte-agent-tete {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #1d1b17;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.carte-agent-corps {
+  display: flex;
+  gap: 0.9rem;
+  align-items: center;
+  margin-top: 0.7rem;
+}
+
+.carte-agent-photo {
+  display: grid;
+  place-items: center;
+  width: 4.2rem;
+  aspect-ratio: 3 / 4;
+  background: #1d1b17;
+  color: #e9e3d3;
+  font-family: var(--mono);
+  font-size: 1.8rem;
+  border-radius: 4px;
+}
+
+.carte-agent-nom {
+  margin: 0;
+  font-family: var(--mono);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.carte-agent-niveau {
+  margin: 0.15rem 0 0;
+  font-family: var(--mono);
+  color: #8a1f16;
+  font-weight: 700;
+}
+
+.carte-agent-titre {
+  margin: 0;
+}
+
+.carte-agent-tampon {
+  position: absolute;
+  right: 1rem;
+  bottom: 0.8rem;
+  padding: 0.1rem 0.6rem;
+  border: 3px double #8a1f16;
+  color: #8a1f16;
+  font-family: var(--mono);
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  opacity: 0;
+  transform: rotate(-12deg) scale(2.4);
+  animation: tampon-accredite 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.3) 1.3s forwards;
+}
+
+.ceremonie-deblocage {
+  margin: 0;
+  opacity: 0;
+  animation: fondu-monte 0.5s ease-out 1.7s forwards;
+}
+
+.ceremonie .btn {
+  opacity: 0;
+  animation: fondu-monte 0.5s ease-out 1.9s forwards;
+}
+
+@keyframes impression-carte {
+  to {
+    clip-path: inset(0 0 0 0);
+  }
+}
+
+@keyframes tampon-accredite {
+  to {
+    opacity: 0.9;
+    transform: rotate(-12deg) scale(1);
+  }
+}
+
+@keyframes fondu-monte {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes ceremonie-fondu {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Sans animations (réglage du système) : tout est là d'emblée */
+@media (prefers-reduced-motion: reduce) {
+  .carte-agent {
+    clip-path: none;
+  }
+
+  .carte-agent-tampon {
+    opacity: 0.9;
+    transform: rotate(-12deg);
+  }
+
+  .ceremonie-deblocage,
+  .ceremonie .btn {
+    opacity: 1;
   }
 }

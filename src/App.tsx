@@ -31,6 +31,7 @@ import { Reglement } from './components/Reglement'
 import { BandeauxPwa } from './components/Pwa'
 import { useEnLigneReseau } from './state/pwa'
 import { PageSucces } from './components/Succes'
+import { CeremonieAccreditation } from './components/Accreditation'
 import { changerFiche } from './state/transitions'
 import { demarrerHistorique, empilerEcran, useFermerAuRetour, useRetourEcran } from './state/historique'
 
@@ -417,6 +418,7 @@ export default function App() {
 
       {profilOuvert && <Profil pseudo={profilOuvert} base={base} onFermer={fermerProfil} ouvrirCarte={setCarteOuverte} ecrire={ecrire} />}
       {ecran !== 'duel' && <BandeauDefis aller={aller} />}
+      <CeremonieAccreditation />
       <BandeauxPwa />
 
       <Notifications />

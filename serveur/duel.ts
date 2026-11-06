@@ -9,6 +9,7 @@
 import { ADVERSAIRES, DUREE_QUESTION, INTEGRITE_MAX, MANCHES, deckAdversaire, degats, reponseAdversaire } from '../src/engine/duel'
 import { DUREE_TEMPORELLE, appliquerEcho, effetDe } from '../src/engine/effets'
 import { genererQuestion } from '../src/engine/quiz'
+import { bonusTemps } from '../src/engine/synergies'
 import type { Langue } from '../src/types'
 import { Erreur, GRACE, base, joueur, rpc, texte, type Environnement } from './commun'
 import { ACTIONS_BRECHE, traiterBreche } from './breche'
@@ -23,6 +24,7 @@ interface QuestionServeur {
   sujet: string
   intitule: string
   document?: string
+  image?: string
   options: string[]
   bonne: number
   difficulte: number
@@ -46,6 +48,8 @@ export interface Etat {
   reponseIA?: { choix: number; temps: number }
   /** Durée de la question du joueur (une anomalie temporelle adverse la raccourcit) */
   duree?: number
+  /** Secondes de plus pour répondre, données par les synergies de l'équipe (src/engine/synergies.ts) */
+  bonus?: number
   /** Contamination : dégâts subis à chaque manche par le joueur, par l'IA */
   poison?: number
   poisonIA?: number
@@ -83,6 +87,7 @@ async function debuter(env: Environnement, idJoueur: string, corps: Record<strin
     pvIA: INTEGRITE_MAX,
     bonnes: 0,
     phase: 'choix',
+    bonus: bonusTemps(prep.equipe.map((id) => b.parId.get(id)!)),
   }
   await ecrire(env, prep.id, idJoueur, 0, etat)
   return { id: prep.id, main: etat.main, cartesIA: etat.mainIA.length, manche: 1, pv: etat.pv, pvIA: etat.pvIA }
@@ -106,13 +111,13 @@ async function jouer(env: Environnement, idJoueur: string, corps: Record<string,
   const carteIA = b.parId.get(idIA)!
   // La question porte sur l'une des deux cartes ; la carte adverse reste cachée jusqu'à la réponse
   const surMaCarte = Math.random() < 0.5
-  const q = surMaCarte ? genererQuestion(b, carte, carteIA, false) : genererQuestion(b, carteIA, carte, true)
+  const q = surMaCarte ? genererQuestion(b, carte, carteIA, false) : genererQuestion(b, carteIA, carte, true, true)
   // Duel éclair : chaque carte altère la question de l'autre camp (src/engine/effets.ts)
   const effet = effetDe(carte)
   const effetIA = effetDe(carteIA)
   // SCP-939 imite : une des fausses réponses copie presque la bonne (pour les deux camps : la question est commune)
   if (effetIA.alteration === 'echo' || effet.alteration === 'echo') q.options = appliquerEcho(q.options, q.bonne)
-  const duree = effetIA.alteration === 'temporel' ? DUREE_TEMPORELLE : DUREE_QUESTION
+  const duree = (effetIA.alteration === 'temporel' ? DUREE_TEMPORELLE : DUREE_QUESTION) + (etat.bonus ?? 0)
   const dureeIA = effet.alteration === 'temporel' ? DUREE_TEMPORELLE : DUREE_QUESTION
   const brute = reponseAdversaire({ ...adversaire, precision: adversaire.precision - (effet.alteration ? 0.15 : 0) }, q)
   // Trop lente pour une question raccourcie : l'IA n'a pas répondu à temps
@@ -123,7 +128,15 @@ async function jouer(env: Environnement, idJoueur: string, corps: Record<string,
     phase: 'question',
     carte: idCarte,
     carteIA: idIA,
-    question: { sujet: q.sujet.id, intitule: q.intitule, document: q.document, options: q.options, bonne: q.bonne, difficulte: q.difficulte },
+    question: {
+      sujet: q.sujet.id,
+      intitule: q.intitule,
+      document: q.document,
+      image: q.image,
+      options: q.options,
+      bonne: q.bonne,
+      difficulte: q.difficulte,
+    },
     debut: maintenant,
     reponseIA,
     duree,
@@ -132,7 +145,7 @@ async function jouer(env: Environnement, idJoueur: string, corps: Record<string,
   return {
     manche,
     surMaCarte,
-    question: { intitule: q.intitule, document: q.document, options: q.options },
+    question: { intitule: q.intitule, document: q.document, image: q.image, options: q.options },
     duree,
     // L'effet de la carte adverse, encore cachée, se fait sentir sur la question
     alteration: effetIA.alteration ? { nom: effetIA.nom, icone: effetIA.icone, texte: effetIA.texte, alteration: effetIA.alteration } : null,

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { CLASSES, ORDRE_TYPES, RARETES, TYPES, type Base } from '../data/catalogue'
 import { VALEUR_RECYCLAGE, gainPlafonne } from '../engine/boosters'
 import { VARIANTES, type IdVariante } from '../engine/variantes'
@@ -12,6 +12,8 @@ import { BoutonConfirme } from './Confirmer'
 import { JaugeRecyclage } from './JaugeRecyclage'
 import { Section } from './Section'
 import { Vide } from './Anime'
+import { Synergies } from './Synergies'
+import { useGlissementGrille } from './flip'
 
 const PAR_PAGE = 60
 
@@ -95,6 +97,8 @@ export function Collection({
   ouvrirDossiers: () => void
 }) {
   const s = useSauvegarde()
+  // Au tri et aux filtres, les cartes glissent vers leur nouvelle place
+  const grille = useRef<HTMLDivElement>(null)
   // Le plus petit numéro de chaque Mythique possédée, gravé sur sa carte
   const numeros = useNumerosMythiques()
   const restantRecyclage = useRecyclageRestant() ?? Infinity
@@ -193,6 +197,7 @@ export function Collection({
   const pages = Math.max(1, Math.ceil(filtrees.length / PAR_PAGE))
   const pageCourante = Math.min(page, pages - 1)
   const visibles = filtrees.slice(pageCourante * PAR_PAGE, (pageCourante + 1) * PAR_PAGE)
+  useGlissementGrille(grille, visibles.map((c) => c.id).join())
 
   // Le gain annoncé tient compte du plafond du jour (3 000 ₵ à plein tarif, 20 % au-delà)
   const valeurDoublons = gainPlafonne(
@@ -279,6 +284,7 @@ export function Collection({
               ),
             )}
           </div>
+          <Synergies equipe={equipe} />
           <div className="actions">
             <button className="btn" onClick={() => modifier((x) => ({ ...x, deck: meilleureEquipe(base, x.collection) }))}>
               Composer automatiquement
@@ -507,9 +513,9 @@ export function Collection({
         </div>
       )}
 
-      <div className={`grille ${selection ? 'en-selection' : ''}`}>
+      <div className={`grille ${selection ? 'en-selection' : ''}`} ref={grille}>
         {visibles.map((c) => (
-          <div key={c.id} className={`case-carte ${selection ? 'case-selection' : ''} ${selection?.has(c.id) ? 'cochee' : ''}`}>
+          <div key={c.id} data-flip={c.id} className={`case-carte ${selection ? 'case-selection' : ''} ${selection?.has(c.id) ? 'cochee' : ''}`}>
             <Carte
               carte={c}
               base={base}

@@ -11,6 +11,7 @@ import { CREDITS_ILLUSTRATIONS } from '../data/mythiques'
 import type { Carte as TCarte } from '../types'
 import { Protocole } from './Booster'
 import { Carte } from './Carte'
+import { Retournable } from './Retournable'
 import { MarcheCarte } from './MarcheCarte'
 import { JaugeRecyclage } from './JaugeRecyclage'
 import { useGlisserPourFermer } from './feuille'
@@ -128,12 +129,25 @@ export function CarteDetail({
 
   return (
     <div className="modale-fond" onClick={onFermer}>
-      <div className="modale detail" ref={feuille} onClick={(e) => e.stopPropagation()} role="dialog" aria-label={`Dossier ${carte.num ?? carte.nm}`}>
+      <div
+        className={`modale detail ${carte.c ? `ambiance-${carte.c}` : ''}`}
+        ref={feuille}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-label={`Dossier ${carte.num ?? carte.nm}`}
+      >
+        {/* La lumière de sa classe : gyrophare Keter, lueur Euclid, lumière froide Safe, or Thaumiel, noir Apollyon */}
+        {carte.c && <div className="ambiance-classe" aria-hidden="true" />}
         <button className="fermer" onClick={onFermer} aria-label="Fermer">
           ✕
         </button>
         <div className="detail-carte">
-          <Carte carte={carte} base={base} taille="g" variante={variante} scellee={quantite === 0} souhait={souhait} numero={mesNumeros[0]} />
+          <Retournable
+            carte={carte}
+            exemplaires={quantite}
+            numeros={mesNumeros}
+            recto={<Carte carte={carte} base={base} taille="g" variante={variante} scellee={quantite === 0} souhait={souhait} numero={mesNumeros[0]} />}
+          />
           {quantite > 0 && (
             <div className="selecteur-variantes" role="radiogroup" aria-label="Variante affichée">
               {variantesPour(carte).map((v) => {

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { Alteration } from '../engine/effets'
 import { VIBRATIONS, vibrer } from '../state/vibrer'
+import { compterReponse } from '../state/statistiques'
 
 /**
  * Une question de confrontation, telle que l'anomalie adverse la fait vivre : réponses brouillées (mémétique),
@@ -57,6 +58,8 @@ const comptees = new WeakSet<object>()
 export interface QuestionAffichee {
   intitule: string
   document?: string
+  /** Une illustration du dossier à reconnaître */
+  image?: string
   options: string[]
 }
 
@@ -97,7 +100,8 @@ export function QuestionAlteree({
     serie = juste ? serie + 1 : 0
     setSerieAffichee(serie)
     vibrer(juste ? VIBRATIONS.juste : VIBRATIONS.faux)
-  }, [resultat, question, juste])
+    compterReponse(question.intitule, question.image, juste, ecoule, serie)
+  }, [resultat, question, juste]) // ecoule : sa valeur au moment de la réponse
 
   // Nouvelle question : ordre d'origine
   useEffect(() => setOrdre(question.options.map((_, i) => i)), [question])
@@ -162,6 +166,11 @@ export function QuestionAlteree({
         <blockquote className={`document ${actif === 'antimemetique' ? 's-efface' : ''}`} lang="en">
           {question.document}
         </blockquote>
+      )}
+      {question.image && actif !== 'effacement' && (
+        <figure className="question-image">
+          <img src={question.image} alt="Cliché d’archive à identifier" referrerPolicy="no-referrer" />
+        </figure>
       )}
       <div className="options">
         {ordre.map((i, position) => {

@@ -26,7 +26,7 @@ export function useGlisserPourFermer(onFermer: () => void) {
 
     const debut = (e: TouchEvent) => {
       // Sur la grande carte, le doigt l'incline : la fiche ne bouge pas
-      if (fond.scrollTop > 0 || e.touches.length > 1 || (e.target as Element).closest?.('.carte-g')) return
+      if (fond.scrollTop > 0 || e.touches.length > 1 || (e.target as Element).closest?.('.carte-retournable, .carte-g')) return
       depart = e.touches[0].clientY
       ecart = 0
       feuille.style.transition = 'none'

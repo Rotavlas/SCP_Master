@@ -53,6 +53,12 @@ export const COSMETIQUES: Record<string, Cosmetique & { type: TypeCosmetique }> 
   'titre-prisme': { type: 'titre', nom: 'Prisme', description: 'Succès : les 5 variantes d’une même carte.', couleur: '#ff3df0' },
   'titre-stratege': { type: 'titre', nom: 'Stratège du Site-19', description: 'Succès : 1 500 Elo.', couleur: '#4dd2ff' },
   'titre-negociant': { type: 'titre', nom: 'Négociant', description: 'Succès : 25 ventes aux enchères.', couleur: '#f0b43c' },
+  'titre-guerre': {
+    type: 'titre',
+    nom: 'Vétéran des guerres de clans',
+    description: 'Une guerre de clans gagnée, avec au moins un point marqué.',
+    couleur: '#d23a2c',
+  },
   'titre-emissaire': { type: 'titre', nom: 'Émissaire', description: 'Succès : toutes les collections de Groupes d’intérêt.', couleur: '#7a4f9a' },
   ...Object.fromEntries(
     Object.entries(ARCHIVES).map(([k, a]) => [

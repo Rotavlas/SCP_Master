@@ -1698,4 +1698,74 @@ await test('réserve de dossiers : une notification à 5, une à 10, réarmée q
   await echoue(en(D, 'select prive.annoncer_dossiers()'), /permission denied/)
 })
 
+await test('statistiques : cumul par famille, bornes à chaque envoi, meilleure série et réponse la plus rapide', async () => {
+  const S = '00000000-0000-0000-0000-0000000000f3'
+  await db.exec(`insert into auth.users (id) values ('${S}')`)
+  await admin("update public.profils set pseudo = 'Agent Stats' where id = $1", [S])
+  await valeur(S, 'select public.ajouter_statistiques($1)', [
+    { familles: { classe: { n: 4, b: 3, t: 22.5 }, surnom: { n: 2, b: 2, t: 8 } }, serie: 5, eclair: 1.2 },
+  ])
+  const s = await valeur(S, 'select public.ajouter_statistiques($1)', [
+    { familles: { classe: { n: 1000, b: 5000, t: 1e9 }, 'Pas-Valide!': { n: 3, b: 3, t: 3 } }, serie: 2, eclair: 0.1 },
+  ])
+  assert.deepEqual(s.familles.classe, { n: 64, b: 63, t: 2422.5 }, 'au plus 60 réponses par envoi, jamais plus de bonnes que de réponses')
+  assert.deepEqual(s.familles.surnom, { n: 2, b: 2, t: 8 })
+  assert.equal(s.familles['Pas-Valide!'], undefined)
+  assert.equal(s.serie, 5, 'la meilleure série reste')
+  assert.equal(Number(s.eclair), 1.2, 'une réponse en moins de 0,3 s ne compte pas')
+  assert.deepEqual(await valeur(S, 'select public.mes_statistiques()'), s)
+  await echoue(en(null, 'select public.mes_statistiques()'), /permission denied/)
+  await echoue(en(S, "select public.ajouter_statistiques('[1]')"), /invalides/)
+})
+
+await test('guerre de clans : appariement à la première consultation, points de la semaine, victoire inscrite une fois', async () => {
+  const [G1, G2, G3] = ['00000000-0000-0000-0000-0000000000f4', '00000000-0000-0000-0000-0000000000f5', '00000000-0000-0000-0000-0000000000f6']
+  for (const [j, n] of [
+    [G1, 'Guerrier Un'],
+    [G2, 'Guerrier Deux'],
+    [G3, 'Guerrier Trois'],
+  ]) {
+    await db.exec(`insert into auth.users (id) values ('${j}')`)
+    await admin('update public.profils set pseudo = $2 where id = $1', [j, n])
+  }
+  // Seuls deux clans en lice : les autres clans des tests précédents sont mis de côté
+  await admin('delete from prive.membres_clan')
+  const ca = (await admin("insert into prive.clans (nom, tag) values ('Les Rouges', 'ROU') returning id")).rows[0].id
+  const cb = (await admin("insert into prive.clans (nom, tag) values ('Les Bleus', 'BLE') returning id")).rows[0].id
+  await admin(
+    "insert into prive.membres_clan (joueur, clan, role, rejoint_le) values ($1, $3, 'chef', now() - interval '30 days'), ($2, $4, 'chef', now() - interval '30 days')",
+    [G1, G2, ca, cb],
+  )
+  // Cette semaine : deux victoires contre l'IA pour les Rouges
+  await admin("insert into prive.duels_ia (joueur, niveau, debut, fin, issue) values ($1, 1, now(), now(), 'victoire'), ($1, 1, now(), now(), 'victoire')", [
+    G1,
+  ])
+  const v = await valeur(G1, 'select public.guerre_clan()')
+  assert.equal(v.courante.adversaire.tag, 'BLE', 'appariés l’un à l’autre')
+  assert.equal(v.courante.nous, 2)
+  assert.equal(v.courante.eux, 0)
+  assert.equal((await valeur(G2, 'select public.guerre_clan()')).courante.adversaire.tag, 'ROU')
+  assert.equal((await admin('select count(*)::int as n from prive.guerres where semaine = prive.semaine_courante()')).rows[0].n, 2, 'un seul appariement')
+  // La semaine passée : les Bleus l'emportent (une victoire entre agents, 3 points, contre une victoire IA)
+  await admin('insert into prive.guerres (semaine, clan, adversaire) values (prive.semaine_precedente(), $1, $2), (prive.semaine_precedente(), $2, $1)', [
+    ca,
+    cb,
+  ])
+  const passe = "prive.debut_de_la_semaine() - interval '3 days'"
+  await admin(`insert into prive.duels_ia (joueur, niveau, debut, fin, issue) values ($1, 1, ${passe}, ${passe}, 'victoire')`, [G1])
+  await admin(`insert into public.duels_jcj (joueur_a, joueur_b, classe, statut, issue, gagnant, maj_le) values ($1, $2, true, 'termine', 'a', $1, ${passe})`, [
+    G2,
+    G1,
+  ])
+  await echoue(en(G1, 'select public.reclamer_guerre()'), /pas remporté/)
+  const r = await valeur(G2, 'select public.reclamer_guerre()')
+  assert.equal(r.guerre.victoires, 1)
+  assert.equal(r.guerre.precedente.reclame, true)
+  assert.equal((await admin("select count(*)::int as n from prive.cosmetiques_possedes where joueur = $1 and cosmetique = 'titre-guerre'", [G2])).rows[0].n, 1)
+  await echoue(en(G2, 'select public.reclamer_guerre()'), /déjà inscrite/)
+  // Un membre arrivé après coup, sans point marqué, ne réclame rien
+  await admin("insert into prive.membres_clan (joueur, clan, role) values ($1, $2, 'membre')", [G3, cb])
+  await echoue(en(G3, 'select public.reclamer_guerre()'), /au moins un point/)
+})
+
 console.log(`\n${reussis} tests réussis${process.exitCode ? ', des échecs' : ''}.`)

@@ -39,6 +39,7 @@ import { Carte } from './Carte'
 import { BoutonConfirme, BoutonSaisie } from './Confirmer'
 import { Pseudo } from './Badges'
 import { Indisponible, Caviarde, Vide } from './Anime'
+import { GuerreClan } from './GuerreClan'
 
 export type OngletSocial = 'amis' | 'clan' | 'messages'
 
@@ -367,6 +368,7 @@ function MonClanVue({ base, clan, recharger, ouvrirProfil }: { base: Base; clan:
         </div>
 
         <Raid base={base} />
+        <GuerreClan />
         <FilClan base={base} />
 
         {clan.candidatures && clan.candidatures.length > 0 && (

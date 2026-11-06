@@ -12,6 +12,18 @@ export interface Entree {
 export const JOURNAL: Entree[] = [
   {
     date: '2026-11-06',
+    titre: 'Synergies, guerre de clans et cartes qui se retournent',
+    points: [
+      'Questions illustrées : contre l’IA, il faut parfois reconnaître une anomalie à son cliché d’archive. Jamais en JcJ ni à l’Épreuve.',
+      'Synergies d’équipe : deux fiches d’un même Groupe d’intérêt ou d’un même auteur, trois SCP d’une même série ou d’une même classe. Chacune donne 2 secondes de plus pour répondre contre l’IA (deux au plus). Elles s’affichent sous votre équipe.',
+      'Guerre de clans : chaque semaine, votre clan affronte un autre clan tiré au sort. Victoire contre l’IA 1 point, entre agents 3, Épreuve terminée 2. La victoire s’inscrit au dossier de ceux qui ont marqué, avec le titre « Vétéran des guerres de clans » la première fois. Aucun crédit.',
+      'Page Succès, onglet « Performance » : votre taux de réussite et votre temps moyen par famille de questions, votre meilleure série, votre bonne réponse la plus rapide.',
+      'Sur la fiche, touchez la grande carte pour la retourner : sa fiche technique est au verso. La fiche baigne dans la lumière de sa classe (gyrophare Keter, lueur Euclid, or Thaumiel…).',
+      'Les Archives glissent vers leur nouvel ordre quand vous triez ou filtrez, et chaque nouveau niveau d’accréditation a sa cérémonie : la carte d’agent s’imprime, le tampon tombe, l’adversaire débloqué est annoncé.',
+    ],
+  },
+  {
+    date: '2026-11-06',
     titre: 'Plus fluide sur téléphone, plus vivant partout',
     points: [
       'Le bouton retour du téléphone fonctionne dans le jeu : il ferme la fiche, le profil, la cloche ou le menu ouverts, puis revient à l’écran précédent, au lieu de quitter l’application.',

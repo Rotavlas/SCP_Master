@@ -30,6 +30,7 @@ import {
 } from '../src/engine/reconfinement'
 import { appliquerEcho } from '../src/engine/effets'
 import { questionReconfinement } from '../src/engine/quiz'
+import { bonusTemps } from '../src/engine/synergies'
 import type { Carte, Langue } from '../src/types'
 import { Erreur, GRACE, base, rpc, texte, type Environnement } from './commun'
 
@@ -52,6 +53,8 @@ export interface EtatReco {
   phase: 'choix' | 'question'
   /** La main de l'IA est révélée (Révélation de Siegel) */
   revele: boolean
+  /** Secondes de plus pour répondre, données par les synergies de l'équipe */
+  bonus?: number
   coup?: string
   coupIA?: string
   /** Le reconfinement que le joueur doit réussir, avec la bonne réponse */
@@ -110,6 +113,7 @@ async function debuter(env: Environnement, idJoueur: string, corps: Record<strin
     questions: 0,
     phase: 'choix',
     revele: false,
+    bonus: bonusTemps(prep.equipe.map((id) => b.parId.get(id)!)),
   }
   await ecrire(env, prep.id, idJoueur, 0, etat)
   return { id: prep.id, ...vuePublique(etat, b) }
@@ -163,11 +167,12 @@ async function jouer(env: Environnement, idJoueur: string, corps: Record<string,
       const retirees = aRetirer(q.options, q.bonne, reco.retirees)
       // SCP-939 imite : une des fausses réponses copie presque la bonne
       const options = reco.alteree && reco.effet.alteration === 'echo' ? appliquerEcho(q.options, q.bonne, retirees) : q.options
-      const question = { intitule: q.intitule, document: q.document, options, bonne: q.bonne, retirees, duree: reco.duree }
+      const duree = reco.duree + (etat.bonus ?? 0)
+      const question = { intitule: q.intitule, document: q.document, options, bonne: q.bonne, retirees, duree }
       await ecrire(env, id, idJoueur, version, { ...suivant, phase: 'question', question, reco, debut: maintenant })
       return {
         ...revelation,
-        question: { intitule: q.intitule, document: q.document, options, retirees, duree: reco.duree },
+        question: { intitule: q.intitule, document: q.document, options, retirees, duree },
         reco: { effet: reco.effet, alteree: reco.alteree, actif: reco.actif },
       }
     }

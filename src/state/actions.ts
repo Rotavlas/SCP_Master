@@ -76,7 +76,7 @@ export type EffetVu = Pick<Effet, 'nom' | 'icone' | 'texte' | 'alteration'>
 export interface QuestionDuel {
   manche: number
   surMaCarte: boolean
-  question: { intitule: string; document?: string; options: string[] }
+  question: { intitule: string; document?: string; image?: string; options: string[] }
   duree: number
   /** Moment où l'IA répond, en secondes ; son choix n'est révélé qu'après la réponse */
   tempsIA: number

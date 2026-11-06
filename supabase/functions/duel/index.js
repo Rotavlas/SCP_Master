@@ -467,7 +467,7 @@ const RARETES$1 = [
 		couleur: "#ff3b5c"
 	}
 ];
-const CLASSES = {
+const CLASSES$1 = {
 	safe: {
 		nom: "Safe",
 		couleur: "#3fa66b"
@@ -594,7 +594,7 @@ const ORDRE_TYPES = [
 	"c"
 ];
 function nomClasse(carte) {
-	return carte.ce ?? (carte.c ? CLASSES[carte.c].nom : "");
+	return carte.ce ?? (carte.c ? CLASSES$1[carte.c].nom : "");
 }
 /** Comment désigner une carte dans une phrase : « SCP-173 », « MTF Epsilon-11 », « Dr. Alto Clef »… */
 function designation(carte) {
@@ -709,7 +709,7 @@ function caviarder(texte, carte) {
 	}
 	return resultat;
 }
-function construire(sujet, intitule, bonne, leurres, difficulte, document) {
+function construire(sujet, intitule, bonne, leurres, difficulte, document, image) {
 	const uniques = [...new Set(leurres.filter((l) => l && l !== bonne))].slice(0, 3);
 	if (uniques.length < 3) return null;
 	const options = melanger([bonne, ...uniques]);
@@ -717,11 +717,15 @@ function construire(sujet, intitule, bonne, leurres, difficulte, document) {
 		sujet,
 		intitule,
 		document,
+		image,
 		options,
 		bonne: options.indexOf(bonne),
 		difficulte
 	};
 }
+/** Une image qui montre vraiment l'anomalie : pas un logo, un en-tête ou un schéma vectoriel */
+const IMAGE_PARLANTE = /\.(jpe?g|png|webp|gif)(\?|$)/i;
+const IMAGE_DECOR = /header|logo|banner|bandeau|icon|signature|seal|sceau|title|titre/i;
 /** Fiches du même type et de rareté proche : des leurres plausibles. */
 function voisines(base, carte, nombre, exclure = [], filtre) {
 	const parRarete = base.parType.get(carte.k);
@@ -746,6 +750,17 @@ const memeLangue = (s) => (c) => !!c.vf === !!s.vf;
 * Ces questions portent sur la carte adverse, cachée pendant la question, ou sur une fiche sans désignation.
 */
 const GENERATEURS = [
+	{
+		poids: 4,
+		identification: true,
+		illustree: true,
+		f: (b, s) => {
+			const image = s.k === "s" && s.num && s.img && IMAGE_PARLANTE.test(s.img) && !IMAGE_DECOR.test(s.img) ? b.vignette(s) : null;
+			if (!image) return null;
+			const leurres = voisines(b, s, 6, [], aSurnom).map(etiquette);
+			return construire(s, "Quelle anomalie est représentée sur ce cliché ?", etiquette(s), leurres, 1, void 0, image);
+		}
+	},
 	{
 		poids: 3,
 		f: (_b, s) => {
@@ -850,9 +865,12 @@ const GENERATEURS = [
 		}
 	}
 ];
-/** Une question sur l'une des deux cartes en jeu ; `cachee` indique que le joueur ne voit pas le sujet. */
-function genererQuestion(base, sujet, autre, cachee) {
-	const permis = GENERATEURS.filter((g) => cachee || !g.identification || !sujet.num);
+/**
+* Une question sur l'une des deux cartes en jeu ; `cachee` indique que le joueur ne voit pas le sujet ;
+* `illustrees` permet les questions à image (combats contre l'IA seulement).
+*/
+function genererQuestion(base, sujet, autre, cachee, illustrees = false) {
+	const permis = GENERATEURS.filter((g) => (cachee || !g.identification || !sujet.num) && (illustrees || !g.illustree));
 	const total = permis.reduce((s, g) => s + g.poids, 0);
 	for (let essai = 0; essai < 30; essai++) {
 		let x = Math.random() * total;
@@ -883,6 +901,107 @@ function questionReconfinement(base, anomalie) {
 		if (q) return q;
 	}
 	return genererQuestion(base, anomalie, anomalie, false);
+}
+/** Les Groupes d'intérêt, par leur tag du wiki */
+const GROUPES = {
+	"serpents-hand": "la Main du Serpent",
+	"chaos-insurgency": "l’Insurrection du Chaos",
+	"global-occult-coalition": "la Coalition occulte mondiale",
+	"marshall-carter-and-dark": "Marshall, Carter & Dark",
+	"are-we-cool-yet": "Are We Cool Yet?",
+	"broken-god": "l’Église du Dieu Brisé",
+	prometheus: "Prometheus Labs",
+	"wilsons-wildlife": "Wilson’s Wildlife Solutions",
+	"unusual-incidents-unit": "l’Unité des incidents inhabituels",
+	"herman-fuller": "le Cirque d’Herman Fuller",
+	"black-queen": "la Reine Noire",
+	sarkic: "les Sarkiques",
+	"gru-division-p": "le GRU Division P",
+	"horizon-initiative": "l’Initiative de l’Horizon",
+	oneiroi: "les Oneiroi",
+	fifthist: "l’Église du Cinquième",
+	anderson: "Anderson Robotics",
+	"dr-wondertainment": "le Dr Wondertainment",
+	factory: "l’Usine",
+	"manna-charitable-foundation": "la Fondation caritative Manna",
+	ijamea: "l’IJAMEA",
+	obskura: "l’Obskuraprojekt",
+	alexylva: "l’Université d’Alexylva",
+	nobody: "Personne",
+	"shark-punching-center": "le Centre de boxe anti-requins",
+	daevite: "les Daevites",
+	"three-moons-initiative": "l’Initiative des Trois Lunes",
+	parawatch: "Parawatch",
+	"deer-college": "le Deer College"
+};
+const SERIES = [
+	"",
+	"I",
+	"II",
+	"III",
+	"IV",
+	"V",
+	"VI",
+	"VII",
+	"VIII",
+	"IX",
+	"X"
+];
+const CLASSES = {
+	safe: "Safe",
+	euclid: "Euclid",
+	keter: "Keter",
+	thaumiel: "Thaumiel",
+	apollyon: "Apollyon"
+};
+/** Le plus grand groupe de cartes qui partagent une même clé */
+function meilleur(cartes, cles) {
+	const groupes = /* @__PURE__ */ new Map();
+	for (const c of cartes) for (const k of new Set(cles(c))) groupes.set(k, [...groupes.get(k) ?? [], c]);
+	let mieux = null;
+	for (const [cle, l] of groupes) if (!mieux || l.length > mieux.cartes.length) mieux = {
+		cle,
+		cartes: l
+	};
+	return mieux;
+}
+/** Les synergies de l'équipe, dans l'ordre où elles comptent (les deux premières donnent leur bonus). */
+function synergies(equipe) {
+	const res = [];
+	const groupe = meilleur(equipe, (c) => (c.t ?? []).filter((t) => t in GROUPES));
+	if (groupe && groupe.cartes.length >= 2) res.push({
+		id: "groupe",
+		nom: "Groupe d’intérêt",
+		detail: `${groupe.cartes.length} fiches liées à ${GROUPES[groupe.cle]}`,
+		cartes: groupe.cartes.map((c) => c.id)
+	});
+	const scp = equipe.filter((c) => c.k === "s");
+	const serie = meilleur(scp, (c) => c.s ? [String(c.s)] : []);
+	if (serie && serie.cartes.length >= 3) res.push({
+		id: "serie",
+		nom: "Même série",
+		detail: `${serie.cartes.length} SCP de la série ${SERIES[Number(serie.cle)] ?? serie.cle}`,
+		cartes: serie.cartes.map((c) => c.id)
+	});
+	const auteur = meilleur(equipe, (c) => c.a ? [c.a] : []);
+	if (auteur && auteur.cartes.length >= 2) res.push({
+		id: "auteur",
+		nom: "Même plume",
+		detail: `${auteur.cartes.length} fiches de ${auteur.cle}`,
+		cartes: auteur.cartes.map((c) => c.id)
+	});
+	const classe = meilleur(scp, (c) => c.c && CLASSES[c.c] ? [c.c] : []);
+	if (classe && classe.cartes.length >= 3) res.push({
+		id: "classe",
+		nom: `Protocole ${CLASSES[classe.cle]}`,
+		detail: `${classe.cartes.length} SCP de classe ${CLASSES[classe.cle]}`,
+		cartes: classe.cartes.map((c) => c.id)
+	});
+	return res;
+}
+/** Les secondes de plus pour répondre que donne l'équipe */
+function bonusTemps(equipe) {
+	return Math.min(2, synergies(equipe).length) * 2;
 }
 // serveur/commun.ts
 /**
@@ -1311,7 +1430,8 @@ async function debuter$3(env, idJoueur, corps) {
 		ia: campNeuf(),
 		bonnes: 0,
 		phase: "choix",
-		initiative: null
+		initiative: null,
+		bonus: bonusTemps(prep.equipe.map((id) => b.parId.get(id)))
 	};
 	await ecrire$3(env, prep.id, idJoueur, 0, etat);
 	return {
@@ -1370,7 +1490,7 @@ async function jouer$2(env, idJoueur, corps, maintenant) {
 			document: q.document,
 			options: q.options
 		},
-		duree: 20,
+		duree: 20 + (etat.bonus ?? 0),
 		tempsIA: reponseIA.temps
 	};
 }
@@ -1381,8 +1501,9 @@ async function repondre$4(env, idJoueur, corps, maintenant) {
 	const q = etat.question;
 	const ecoule = (maintenant - etat.debut) / 1e3;
 	const choix = corps.choix;
-	const choixRetenu = typeof choix === "number" && Number.isInteger(choix) && choix >= 0 && choix < q.options.length && ecoule <= 23 ? choix : null;
-	const temps = Math.min(20, ecoule);
+	const duree = 20 + (etat.bonus ?? 0);
+	const choixRetenu = typeof choix === "number" && Number.isInteger(choix) && choix >= 0 && choix < q.options.length && ecoule <= duree + 3 ? choix : null;
+	const temps = Math.min(duree, ecoule);
 	const juste = choixRetenu === q.bonne;
 	const justeIA = etat.reponseIA.choix === etat.reponseIA.bonne;
 	const b = await base(env, etat.langue);
@@ -2725,7 +2846,8 @@ async function debuter$1(env, idJoueur, corps) {
 		bonnes: 0,
 		questions: 0,
 		phase: "choix",
-		revele: false
+		revele: false,
+		bonus: bonusTemps(prep.equipe.map((id) => b.parId.get(id)))
 	};
 	await ecrire$1(env, prep.id, idJoueur, 0, etat);
 	return {
@@ -2788,13 +2910,14 @@ async function jouer$1(env, idJoueur, corps, maintenant) {
 			const q = questionReconfinement(b, carteIA);
 			const retirees = aRetirer(q.options, q.bonne, reco.retirees);
 			const options = reco.alteree && reco.effet.alteration === "echo" ? appliquerEcho(q.options, q.bonne, retirees) : q.options;
+			const duree = reco.duree + (etat.bonus ?? 0);
 			const question = {
 				intitule: q.intitule,
 				document: q.document,
 				options,
 				bonne: q.bonne,
 				retirees,
-				duree: reco.duree
+				duree
 			};
 			await ecrire$1(env, id, idJoueur, version, {
 				...suivant,
@@ -2810,7 +2933,7 @@ async function jouer$1(env, idJoueur, corps, maintenant) {
 					document: q.document,
 					options,
 					retirees,
-					duree: reco.duree
+					duree
 				},
 				reco: {
 					effet: reco.effet,
@@ -3360,7 +3483,8 @@ async function debuter(env, idJoueur, corps) {
 		pv: 100,
 		pvIA: 100,
 		bonnes: 0,
-		phase: "choix"
+		phase: "choix",
+		bonus: bonusTemps(prep.equipe.map((id) => b.parId.get(id)))
 	};
 	await ecrire(env, prep.id, idJoueur, 0, etat);
 	return {
@@ -3388,11 +3512,11 @@ async function jouer(env, idJoueur, corps, maintenant) {
 	const idIA = etat.mainIA[Math.floor(Math.random() * etat.mainIA.length)];
 	const carteIA = b.parId.get(idIA);
 	const surMaCarte = Math.random() < .5;
-	const q = surMaCarte ? genererQuestion(b, carte, carteIA, false) : genererQuestion(b, carteIA, carte, true);
+	const q = surMaCarte ? genererQuestion(b, carte, carteIA, false) : genererQuestion(b, carteIA, carte, true, true);
 	const effet = effetDe(carte);
 	const effetIA = effetDe(carteIA);
 	if (effetIA.alteration === "echo" || effet.alteration === "echo") q.options = appliquerEcho(q.options, q.bonne);
-	const duree = effetIA.alteration === "temporel" ? 12 : 20;
+	const duree = (effetIA.alteration === "temporel" ? 12 : 20) + (etat.bonus ?? 0);
 	const dureeIA = effet.alteration === "temporel" ? 12 : 20;
 	const brute = reponseAdversaire({
 		...adversaire,
@@ -3412,6 +3536,7 @@ async function jouer(env, idJoueur, corps, maintenant) {
 			sujet: q.sujet.id,
 			intitule: q.intitule,
 			document: q.document,
+			image: q.image,
 			options: q.options,
 			bonne: q.bonne,
 			difficulte: q.difficulte
@@ -3426,6 +3551,7 @@ async function jouer(env, idJoueur, corps, maintenant) {
 		question: {
 			intitule: q.intitule,
 			document: q.document,
+			image: q.image,
 			options: q.options
 		},
 		duree,

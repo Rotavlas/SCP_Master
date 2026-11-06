@@ -6,13 +6,14 @@ import { appeler, appliquerProfil, type ProfilServeur } from '../state/enLigne'
 import { modifier, notifier, useSauvegarde } from '../state/sauvegarde'
 import { jouer } from '../state/sons'
 import type { Carte } from '../types'
-import { Caviarde, Indisponible, useTampon } from './Anime'
+import { Caviarde, Indisponible, Vide, useTampon } from './Anime'
+import { FAMILLES, useStatistiques } from '../state/statistiques'
 
 /**
  * Le dossier de carrière : les succès (public.succes), et les collections à compléter (pages de l'album et Groupes
  * d'intérêt). Les succès rapportent au plus un titre ou un cadre ; l'album, des crédits ; les Groupes, un titre et un cadre.
  */
-type Onglet = 'succes' | 'collections'
+type Onglet = 'succes' | 'collections' | 'performance'
 
 interface Succes {
   id: string
@@ -96,6 +97,7 @@ export function PageSucces({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id
             [
               ['succes', 'Succès'],
               ['collections', 'Collections'],
+              ['performance', 'Performance'],
             ] as const
           ).map(([id, nom]) => (
             <button key={id} role="tab" aria-selected={onglet === id} className={onglet === id ? 'actif' : ''} onClick={() => setOnglet(id)}>
@@ -104,8 +106,71 @@ export function PageSucces({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id
           ))}
         </nav>
       </div>
-      {onglet === 'succes' ? <ListeSucces /> : <Collections base={base} ouvrirCarte={ouvrirCarte} />}
+      {onglet === 'succes' ? <ListeSucces /> : onglet === 'collections' ? <Collections base={base} ouvrirCarte={ouvrirCarte} /> : <Performance />}
     </section>
+  )
+}
+
+// ---------- Performance ----------
+
+/** Les statistiques personnelles : réussite et temps moyen par famille de questions, records */
+function Performance() {
+  const s = useStatistiques()
+  if (s === undefined) return <Caviarde lignes={6} />
+  const lignes = Object.entries(s?.familles ?? {})
+    .map(([id, v]) => ({ id, nom: FAMILLES[id] ?? id, ...v, taux: v.n ? v.b / v.n : 0, moyen: v.n ? v.t / v.n : 0 }))
+    .sort((a, b) => b.n - a.n)
+  const total = lignes.reduce((x, l) => x + l.n, 0)
+  if (!total)
+    return (
+      <Vide titre="Pas encore de statistiques">
+        Chaque réponse en combat (contre l’IA, entre agents, à l’Épreuve) est comptée ici, par famille de questions.
+      </Vide>
+    )
+  const bonnes = lignes.reduce((x, l) => x + l.b, 0)
+  const fiables = lignes.filter((l) => l.n >= 5)
+  const fort = [...fiables].sort((a, b) => b.taux - a.taux)[0]
+  const faible = [...fiables].sort((a, b) => a.taux - b.taux)[0]
+  const pct = (x: number) => `${Math.round(x * 100)} %`
+  return (
+    <div className="performance">
+      <div className="performance-records">
+        <div>
+          <strong>{total.toLocaleString('fr-FR')}</strong>
+          <span>réponses</span>
+        </div>
+        <div>
+          <strong>{pct(bonnes / total)}</strong>
+          <span>de bonnes réponses</span>
+        </div>
+        <div>
+          <strong>×{s?.serie ?? 0}</strong>
+          <span>meilleure série</span>
+        </div>
+        <div>
+          <strong>{s?.eclair !== undefined ? `${s.eclair.toLocaleString('fr-FR')} s` : '—'}</strong>
+          <span>bonne réponse la plus rapide</span>
+        </div>
+      </div>
+      {fort && faible && fort.id !== faible.id && (
+        <p className="discret">
+          Point fort : <strong>{fort.nom}</strong> ({pct(fort.taux)}). À travailler : <strong>{faible.nom}</strong> ({pct(faible.taux)}).
+        </p>
+      )}
+      <ul className="performance-familles">
+        {lignes.map((l) => (
+          <li key={l.id}>
+            <span className="performance-nom">{l.nom}</span>
+            <span className="performance-barre" aria-hidden="true">
+              <i style={{ width: pct(l.taux) }} />
+            </span>
+            <span className="performance-chiffres">
+              {pct(l.taux)} · {l.b}/{l.n} · {l.moyen.toLocaleString('fr-FR', { maximumFractionDigits: 1 })} s
+            </span>
+          </li>
+        ))}
+      </ul>
+    </div>
   )
 }
 

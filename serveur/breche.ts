@@ -16,6 +16,7 @@ import {
   type Evenement,
 } from '../src/engine/breche'
 import { ADVERSAIRES, DUREE_QUESTION, deckAdversaire, reponseAdversaire } from '../src/engine/duel'
+import { bonusTemps } from '../src/engine/synergies'
 import { genererQuestion } from '../src/engine/quiz'
 import type { Langue } from '../src/types'
 import { Erreur, GRACE, base, rpc, texte, type Environnement } from './commun'
@@ -46,6 +47,8 @@ export interface EtatBreche {
   question?: { intitule: string; document?: string; options: string[]; bonne: number }
   reponseIA?: { choix: number; temps: number; bonne: number }
   debut?: number
+  /** Secondes de plus pour répondre, données par les synergies de l'équipe */
+  bonus?: number
 }
 
 async function lire(env: Environnement, id: string, joueur: string): Promise<{ etat: EtatBreche; version: number }> {
@@ -102,6 +105,7 @@ async function debuter(env: Environnement, idJoueur: string, corps: Record<strin
     bonnes: 0,
     phase: 'choix',
     initiative: null,
+    bonus: bonusTemps(prep.equipe.map((id) => b.parId.get(id)!)),
   }
   await ecrire(env, prep.id, idJoueur, 0, etat)
   return { id: prep.id, ...vuePublique(etat) }
@@ -149,7 +153,7 @@ async function jouer(env: Environnement, idJoueur: string, corps: Record<string,
   return {
     tour: etat.tour,
     question: { intitule: q.intitule, document: q.document, options: q.options },
-    duree: DUREE_QUESTION,
+    duree: DUREE_QUESTION + (etat.bonus ?? 0),
     // Quand l'IA « a répondu », pour l'afficher pendant la question ; jamais son choix
     tempsIA: reponseIA.temps,
   }
@@ -165,9 +169,10 @@ async function repondre(env: Environnement, idJoueur: string, corps: Record<stri
   const ecoule = (maintenant - etat.debut) / 1000
   const choix = corps.choix
   // Hors délai ou réponse mal formée : comme si le temps était écoulé
-  const valide = typeof choix === 'number' && Number.isInteger(choix) && choix >= 0 && choix < q.options.length && ecoule <= DUREE_QUESTION + GRACE
+  const duree = DUREE_QUESTION + (etat.bonus ?? 0)
+  const valide = typeof choix === 'number' && Number.isInteger(choix) && choix >= 0 && choix < q.options.length && ecoule <= duree + GRACE
   const choixRetenu = valide ? (choix as number) : null
-  const temps = Math.min(DUREE_QUESTION, ecoule)
+  const temps = Math.min(duree, ecoule)
   const juste = choixRetenu === q.bonne
   const justeIA = etat.reponseIA.choix === etat.reponseIA.bonne
 
