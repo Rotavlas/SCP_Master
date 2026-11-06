@@ -15347,3 +15347,61 @@ html.vt-fiche .modale.detail {
     justify-content: flex-start;
   }
 }
+
+/* ---------- Téléphone, en partie : la page défile, plus rien ne défile à l'intérieur ----------
+   Le combat était calé sur la hauteur de l'écran, sa scène défilant dans un cadre : la question (et ses réponses)
+   tenait dans une petite fenêtre à barre de défilement, la main était rognée par la barre du bas. Sur téléphone,
+   la table s'étire à sa taille et c'est la page qui défile ; la question vient d'elle-même à l'écran. */
+@media (max-width: 760px) {
+  body.en-partie .contenu {
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+
+  body.en-partie .breche,
+  body.en-partie .reco {
+    height: auto;
+    overflow: visible;
+    grid-template-rows: none;
+  }
+
+  body.en-partie .breche-table,
+  body.en-partie .reco-scene {
+    min-height: 0;
+    overflow: visible;
+  }
+
+  body.en-partie .reco-scene {
+    align-content: start;
+  }
+
+  /* La main : des cartes entières, un peu d'air au-dessus pour la carte choisie qui se soulève */
+  body.en-partie .breche-main,
+  body.en-partie .reco-main {
+    padding: 0.6rem 0 0.3rem;
+  }
+
+  /* La main dévoilée de l'adversaire : une rangée de vignettes qui défile de côté, plutôt qu'une grille */
+  body.en-partie .site-reco-main-vue {
+    display: flex;
+    gap: 0.4rem;
+    overflow-x: auto;
+    scrollbar-width: none;
+    padding-bottom: 0.2rem;
+  }
+
+  body.en-partie .site-reco-main-vue .main-vue-carte {
+    flex: none;
+    width: 4.8rem;
+  }
+
+  body.en-partie .site-reco-main-vue .carte {
+    --w: 4.8rem;
+  }
+
+  /* Les réponses ne sont jamais tronquées */
+  body.en-partie .duel-question .options,
+  body.en-partie .question-alteree {
+    max-height: none;
+    overflow: visible;
+  }
+}
