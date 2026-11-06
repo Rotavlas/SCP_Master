@@ -3,7 +3,7 @@ import type { Base } from '../data/catalogue'
 import { classement, classementClans, type Classement as TClassement, type LigneClan, type Tableau } from '../state/social'
 import { Carte } from './Carte'
 import { Pseudo } from './Badges'
-import { Indisponible } from './Anime'
+import { Indisponible, Caviarde } from './Anime'
 
 const TABLEAUX: { id: Tableau | 'clans'; nom: string; unite: (v: number) => string }[] = [
   { id: 'elo', nom: 'Elo', unite: (v) => `${v}` },
@@ -58,7 +58,7 @@ export function Classement({ base, ouvrirProfil }: { base: Base; ouvrirProfil: (
 
       {tableau === 'clans' ? (
         clans === undefined ? (
-          <p className="discret">Chargement…</p>
+          <Caviarde lignes={6} />
         ) : !clans ? (
           <Indisponible reessayer={reessayer} />
         ) : clans.length === 0 ? (
@@ -89,7 +89,7 @@ export function Classement({ base, ouvrirProfil }: { base: Base; ouvrirProfil: (
           </ol>
         )
       ) : joueurs === undefined ? (
-        <p className="discret">Chargement…</p>
+        <Caviarde lignes={6} />
       ) : !joueurs ? (
         <Indisponible reessayer={reessayer} />
       ) : (

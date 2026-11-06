@@ -204,6 +204,12 @@ export function notifier(texte: string, ton: Notification['ton'] = 'info') {
   }, 4200)
 }
 
+/** Un message écarté d'un glissement (ou d'un toucher) avant la fin de son délai */
+export function retirerNotification(id: number) {
+  notifications = notifications.filter((x) => x.id !== id)
+  abonnesNotif.forEach((a) => a())
+}
+
 export function useNotifications(): Notification[] {
   return useSyncExternalStore(
     (a) => {

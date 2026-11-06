@@ -19,6 +19,7 @@ export type TypeNotification =
   | 'epreuve_resultat'
   | 'saison_resultat'
   | 'raid_vaincu'
+  | 'dossiers_prets'
 
 export interface Notification {
   id: number
@@ -41,6 +42,8 @@ export interface Notification {
     score?: number
     credits?: number
     palier?: string
+    // Réserve de dossiers gratuits
+    nombre?: number
   }
   lu: boolean
   le: string
@@ -95,10 +98,14 @@ export function useCloche(actif: boolean, nouvelle: (n: Notification) => void) {
         nouvelle(notif)
       })
       .subscribe()
-    // Filet de sécurité si le direct décroche
+    // Filet de sécurité si le direct décroche ; l'application installée qui revient au premier plan relit aussi la liste
+    // (le direct a souvent décroché pendant qu'elle dormait)
     const t = setInterval(() => void rafraichirNotifications(), 180_000)
+    const retour = () => document.visibilityState === 'visible' && void rafraichirNotifications()
+    document.addEventListener('visibilitychange', retour)
     return () => {
       clearInterval(t)
+      document.removeEventListener('visibilitychange', retour)
       void supabase?.removeChannel(canal)
     }
   }, [actif, nouvelle])

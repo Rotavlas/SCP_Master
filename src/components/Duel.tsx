@@ -25,6 +25,7 @@ import { DuelJcj } from './DuelJcj'
 import { EpreuveHall, EpreuvePartie } from './Epreuve'
 import { Reconfinement } from './Reconfinement'
 import { CLE_TUTO_BRECHE, TutoBreche, Tuto, tutoVu } from './TutoBreche'
+import { Caviarde, Vide } from './Anime'
 import { CLE_TUTO_ECLAIR, CLE_TUTO_RECO, ETAPES_ECLAIR, ETAPES_RECO } from './TutoModes'
 
 /** Confrontations récompensées par 24 heures contre l'IA (le serveur fait foi : public.duel_clore) */
@@ -474,9 +475,9 @@ function HallJcj({
         <h3>Défier un ami</h3>
         <p className="discret">Reconfinement amical : sans Elo ni crédits, pour le plaisir (et 15 XP).</p>
         {!tableau ? (
-          <p className="discret">Chargement…</p>
+          <Caviarde lignes={4} />
         ) : tableau.amisEnLigne.length === 0 ? (
-          <p className="discret">Aucun ami en ligne pour l'instant.</p>
+          <Vide titre="Aucun ami en ligne">Ajoutez des agents depuis l’onglet Social, ou défiez-les quand ils se connectent.</Vide>
         ) : (
           <ul className="liste-amis">
             {tableau.amisEnLigne.map((a) => (

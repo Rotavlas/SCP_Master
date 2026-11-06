@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { useFermerAuRetour } from '../state/historique'
 
 /** Glissement à partir duquel la fiche se ferme (px) */
 const SEUIL = 110
@@ -12,6 +13,8 @@ export function useGlisserPourFermer(onFermer: () => void) {
   const ref = useRef<HTMLDivElement>(null)
   const fermer = useRef(onFermer)
   fermer.current = onFermer
+  // Le bouton retour du téléphone ferme aussi la fiche
+  useFermerAuRetour(true, onFermer)
 
   useEffect(() => {
     const feuille = ref.current
@@ -22,7 +25,8 @@ export function useGlisserPourFermer(onFermer: () => void) {
     let ecart = 0
 
     const debut = (e: TouchEvent) => {
-      if (fond.scrollTop > 0 || e.touches.length > 1) return
+      // Sur la grande carte, le doigt l'incline : la fiche ne bouge pas
+      if (fond.scrollTop > 0 || e.touches.length > 1 || (e.target as Element).closest?.('.carte-g')) return
       depart = e.touches[0].clientY
       ecart = 0
       feuille.style.transition = 'none'

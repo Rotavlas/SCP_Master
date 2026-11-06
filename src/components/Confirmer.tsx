@@ -1,4 +1,5 @@
-import { useState, type ReactNode } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
+import { VIBRATIONS, vibrer } from '../state/vibrer'
 
 /**
  * Bouton en deux temps, à la place de confirm() : le premier clic affiche la question
@@ -24,10 +25,22 @@ export function BoutonConfirme({
   title?: string
 }) {
   const [ouvert, setOuvert] = useState(false)
+  // Confirmé : un tampon « Validé » s'abat un instant sur le bouton
+  const [tamponne, setTamponne] = useState(false)
+  useEffect(() => {
+    if (!tamponne) return
+    const t = setTimeout(() => setTamponne(false), 1100)
+    return () => clearTimeout(t)
+  }, [tamponne])
   if (!ouvert) {
     return (
-      <button className={className} disabled={disabled} title={title} onClick={() => setOuvert(true)}>
+      <button className={`${className} ${tamponne ? 'tamponne' : ''}`} disabled={disabled} title={title} onClick={() => setOuvert(true)}>
         {children}
+        {tamponne && (
+          <span className="tampon-valide" aria-hidden="true">
+            Validé
+          </span>
+        )}
       </button>
     )
   }
@@ -39,6 +52,8 @@ export function BoutonConfirme({
         autoFocus
         onClick={() => {
           setOuvert(false)
+          setTamponne(true)
+          vibrer(VIBRATIONS.tampon)
           onConfirme()
         }}
       >

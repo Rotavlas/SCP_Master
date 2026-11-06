@@ -21,7 +21,8 @@ import { useCompte } from './state/enLigne'
 import { basculerSon, useSonActif } from './state/sons'
 import { oublierInvitation, repondreDefi, useDuelDemarre, useDuelsEntrants, useInvitations } from './state/jcj'
 import { totalNonLus, useConversations, useMessagesEntrants, usePresence, type Destinataire } from './state/social'
-import { modifier, notifier, useNotifications, useSauvegarde } from './state/sauvegarde'
+import { modifier, notifier, retirerNotification, useNotifications, useSauvegarde } from './state/sauvegarde'
+import { VIBRATIONS, vibrer } from './state/vibrer'
 import { preparerTraducteur } from './state/traduction'
 import { useCloche, useNotificationsJeu, type Notification } from './state/notifications'
 import { Cloche, decrire, type OngletMarche } from './components/Cloche'
@@ -30,6 +31,8 @@ import { Reglement } from './components/Reglement'
 import { BandeauxPwa } from './components/Pwa'
 import { useEnLigneReseau } from './state/pwa'
 import { PageSucces } from './components/Succes'
+import { changerFiche } from './state/transitions'
+import { demarrerHistorique, empilerEcran, useFermerAuRetour, useRetourEcran } from './state/historique'
 
 /** Les onglets ; sur téléphone, les quatre principaux restent dans la barre du bas, les autres passent sous « Plus ». */
 const ONGLETS: { id: Ecran; nom: string; icone: string; principal?: boolean }[] = [
@@ -55,7 +58,11 @@ export default function App() {
     return ONGLETS.some((o) => o.id === demande) ? (demande as Ecran) : 'accueil'
   })
   const [tirage, setTirageBrut] = useState<Tirage | null>(null)
-  const [carteOuverte, setCarteOuverte] = useState<string | null>(null)
+  const [carteOuverte, setCarteBrute] = useState<string | null>(null)
+  // La vignette touchée s'agrandit jusqu'à la fiche, et y revient à la fermeture (state/transitions.ts)
+  const ficheOuverte = useRef<string | null>(null)
+  ficheOuverte.current = carteOuverte
+  const setCarteOuverte = useCallback((id: string | null) => changerFiche(ficheOuverte.current, id, setCarteBrute), [])
   // Carte à retrouver en ouvrant le marché depuis sa fiche
   const [rechercheMarche, setRechercheMarche] = useState('')
   const [ongletMarche, setOngletMarche] = useState<OngletMarche>(() => {
@@ -89,7 +96,14 @@ export default function App() {
   usePresence(connecte)
   useMessagesEntrants(connecte)
   // Une notification qui arrive pendant la partie s'affiche aussi en bas de l'écran
-  const annoncer = useCallback((n: Notification) => baseVO && notifier(decrire(n, baseVO).texte, 'info'), [baseVO])
+  const annoncer = useCallback(
+    (n: Notification) => {
+      if (!baseVO) return
+      notifier(decrire(n, baseVO).texte, 'info')
+      vibrer(VIBRATIONS.message)
+    },
+    [baseVO],
+  )
   useCloche(connecte, annoncer)
   useDuelsEntrants(connecte)
   const nonLus = totalNonLus(useConversations())
@@ -120,8 +134,16 @@ export default function App() {
 
   const aller = useCallback((e: Ecran) => {
     setEcran(e)
+    empilerEcran(e)
     window.scrollTo({ top: 0 })
   }, [])
+  // Le bouton retour du téléphone revient à l'écran précédent (et ferme d'abord les fenêtres ouvertes)
+  useEffect(() => demarrerHistorique(ecran), []) // l'écran d'arrivée seulement
+  useRetourEcran((e) => {
+    setEcran(e as Ecran)
+    window.scrollTo({ top: 0 })
+  })
+  useFermerAuRetour(menuPlus, () => setMenuPlus(false))
   // Une notification touchée alors que le jeu est déjà ouvert : le service worker demande d'aller à son écran
   useEffect(() => {
     if (!('serviceWorker' in navigator)) return
@@ -315,7 +337,7 @@ export default function App() {
               }}
               aller={(cible) => {
                 if (cible === 'clan') setOngletSocial('clan')
-                aller(cible === 'clan' ? 'social' : 'duel')
+                aller(cible === 'clan' ? 'social' : cible)
               }}
             />
           )}
@@ -337,7 +359,13 @@ export default function App() {
         )}
         {ecran === 'booster' && <Booster base={base} tirage={tirage} setTirage={setTirage} aller={aller} ouvrirCarte={setCarteOuverte} />}
         {ecran === 'collection' && (
-          <Collection base={base} ouvrirCarte={setCarteOuverte} voirReglement={() => aller('reglement')} voirSucces={() => aller('succes')} />
+          <Collection
+            base={base}
+            ouvrirCarte={setCarteOuverte}
+            voirReglement={() => aller('reglement')}
+            voirSucces={() => aller('succes')}
+            ouvrirDossiers={() => aller('booster')}
+          />
         )}
         {ecran === 'repertoire' && <Repertoire base={base} ouvrirCarte={setCarteOuverte} />}
         {ecran === 'succes' && <PageSucces base={base} ouvrirCarte={setCarteOuverte} />}
@@ -380,7 +408,8 @@ export default function App() {
           voirMarche={(c) => {
             setRechercheMarche(c.id)
             setOngletMarche('encheres')
-            setCarteOuverte(null)
+            // On change d'écran : la fiche se ferme sans revenir vers sa vignette
+            setCarteBrute(null)
             aller('marche')
           }}
         />
@@ -433,10 +462,53 @@ function Notifications() {
   return (
     <div className="notifications" aria-live="polite">
       {notifications.map((n) => (
-        <div key={n.id} className={`notification notification-${n.ton}`}>
-          {n.texte}
-        </div>
+        <Message key={n.id} id={n.id} texte={n.texte} ton={n.ton} />
       ))}
+    </div>
+  )
+}
+
+/**
+ * Un message du terminal : il s'imprime lettre par lettre comme sur un téléscripteur (le texte entier est lu d'un coup
+ * par les lecteurs d'écran), et s'écarte d'un glissement de côté ou d'un toucher.
+ */
+function Message({ id, texte, ton }: { id: number; texte: string; ton: string }) {
+  const lent = useMemo(() => matchMedia('(prefers-reduced-motion: reduce)').matches, [])
+  const [n, setN] = useState(lent ? texte.length : 0)
+  useEffect(() => {
+    if (n >= texte.length) return
+    const t = setTimeout(() => setN((x) => Math.min(texte.length, x + 2)), 16)
+    return () => clearTimeout(t)
+  }, [n, texte.length])
+  const ref = useRef<HTMLDivElement>(null)
+  const depart = useRef<number | null>(null)
+  const [ecart, setEcart] = useState(0)
+  return (
+    <div
+      ref={ref}
+      className={`notification notification-${ton} ${depart.current !== null ? 'glisse' : ''}`}
+      style={ecart ? { transform: `translateX(${ecart}px)`, opacity: Math.max(0, 1 - Math.abs(ecart) / 160) } : undefined}
+      onPointerDown={(e) => {
+        depart.current = e.clientX
+        ref.current?.setPointerCapture(e.pointerId)
+      }}
+      onPointerMove={(e) => depart.current !== null && setEcart(e.clientX - depart.current)}
+      onPointerUp={() => {
+        // Un toucher ou un glissement assez long l'écarte ; un petit glissement le remet en place
+        if (Math.abs(ecart) > 70 || Math.abs(ecart) < 4) retirerNotification(id)
+        depart.current = null
+        setEcart(0)
+      }}
+      onPointerCancel={() => {
+        depart.current = null
+        setEcart(0)
+      }}
+    >
+      <span className="sr-only">{texte}</span>
+      <span aria-hidden="true">
+        {texte.slice(0, n)}
+        {n < texte.length && <span className="curseur-teletype">▌</span>}
+      </span>
     </div>
   )
 }

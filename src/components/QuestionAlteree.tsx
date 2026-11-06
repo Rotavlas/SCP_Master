@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import type { Alteration } from '../engine/effets'
+import { VIBRATIONS, vibrer } from '../state/vibrer'
 
 /**
  * Une question de confrontation, telle que l'anomalie adverse la fait vivre : réponses brouillées (mémétique),
@@ -48,6 +49,11 @@ function brouiller(texte: string, graine: number): string {
     .join('')
 }
 
+// La série de bonnes réponses d'affilée, d'une question à l'autre (remise à zéro après deux minutes sans réponse)
+let serie = 0
+let derniereReponse = 0
+const comptees = new WeakSet<object>()
+
 export interface QuestionAffichee {
   intitule: string
   document?: string
@@ -79,6 +85,19 @@ export function QuestionAlteree({
   const [tic, setTic] = useState(0)
   const [glitch, setGlitch] = useState(false)
   const actif = !resultat ? alteration : null
+
+  // La réponse tombe : une vibration, et la série de bonnes réponses qui s'allonge (ou se brise)
+  const [serieAffichee, setSerieAffichee] = useState(0)
+  const juste = resultat?.bonne !== undefined && resultat.choix === resultat.bonne
+  useEffect(() => {
+    if (!resultat || resultat.bonne === undefined || comptees.has(question)) return
+    comptees.add(question)
+    if (Date.now() - derniereReponse > 120_000) serie = 0
+    derniereReponse = Date.now()
+    serie = juste ? serie + 1 : 0
+    setSerieAffichee(serie)
+    vibrer(juste ? VIBRATIONS.juste : VIBRATIONS.faux)
+  }, [resultat, question, juste])
 
   // Nouvelle question : ordre d'origine
   useEffect(() => setOrdre(question.options.map((_, i) => i)), [question])
@@ -167,6 +186,11 @@ export function QuestionAlteree({
           )
         })}
       </div>
+      {juste && serieAffichee >= 2 && (
+        <p className="serie-bonnes" style={{ ['--serie' as string]: Math.min(serieAffichee, 6) }}>
+          Série ×{serieAffichee}
+        </p>
+      )}
       {/* Éclairs, paupières : par-dessus la question, sans bloquer les clics */}
       {(actif === 'visuel' || actif === 'clignement' || actif === 'obscurite') && <div className={`voile-${actif}`} aria-hidden="true" />}
     </div>

@@ -38,7 +38,7 @@ import {
 import { Carte } from './Carte'
 import { BoutonConfirme, BoutonSaisie } from './Confirmer'
 import { Pseudo } from './Badges'
-import { Indisponible } from './Anime'
+import { Indisponible, Caviarde, Vide } from './Anime'
 
 export type OngletSocial = 'amis' | 'clan' | 'messages'
 
@@ -189,11 +189,11 @@ function Amis({ ouvrirProfil, ecrire }: { ouvrirProfil: (p: string) => void; ecr
       <div className="encart">
         <h3>Mes amis {amis && <span className="discret">({amis.amis.filter((a) => a.enLigne).length} en ligne)</span>}</h3>
         {amis === undefined ? (
-          <p className="discret">Chargement…</p>
+          <Caviarde lignes={4} />
         ) : !amis ? (
           <Indisponible reessayer={charger} />
         ) : amis.amis.length === 0 ? (
-          <p className="discret">Pas encore d'amis. Ajoutez un agent par son pseudo, ou depuis les classements.</p>
+          <Vide titre="Pas encore d’amis">Ajoutez un agent par son pseudo ci-dessus, ou depuis son profil dans les classements.</Vide>
         ) : (
           <ul className="liste-amis">
             {amis.amis.map((a) => (
@@ -237,7 +237,7 @@ function Clan({ base, ouvrirProfil }: { base: Base; ouvrirProfil: (p: string) =>
   const charger = useCallback(() => void monClan().then(setClan), [])
   useEffect(charger, [charger])
 
-  if (clan === undefined) return <p className="discret">Chargement…</p>
+  if (clan === undefined) return <Caviarde lignes={4} />
   if (!clan) return <Indisponible reessayer={charger} />
   if (!clan.tag) return <SansClan base={base} candidatures={clan.candidatures as string[]} recharger={charger} />
   return <MonClanVue base={base} clan={clan as FicheClan} recharger={charger} ouvrirProfil={ouvrirProfil} />
@@ -264,9 +264,9 @@ function SansClan({ base, candidatures, recharger }: { base: Base; candidatures:
         {candidatures.length > 0 && <p className="alerte">Candidature en attente : {candidatures.map((t) => `[${t}]`).join(', ')}</p>}
         <input value={recherche} onChange={(e) => setRecherche(e.target.value)} placeholder="Nom ou tag du clan" />
         {!clans ? (
-          <p className="discret">Chargement…</p>
+          <Caviarde lignes={4} />
         ) : clans.length === 0 ? (
-          <p className="discret">Aucun clan trouvé.</p>
+          <Vide titre="Aucun clan trouvé">{recherche ? 'Aucun clan ne porte ce nom ou ce tag.' : 'Fondez le premier : le formulaire est juste à côté.'}</Vide>
         ) : (
           <ul className="liste-clans">
             {clans.map((c) => {
@@ -640,7 +640,7 @@ function Chat({ destinataire, ouvrirProfil }: { destinataire: Destinataire; ouvr
             Messages précédents
           </button>
         )}
-        {messages.length === 0 && <p className="discret">Aucun message pour l'instant.</p>}
+        {messages.length === 0 && <Vide titre="Canal silencieux">Écrivez le premier message.</Vide>}
         {messages.map((m, i) => {
           const suite = i > 0 && messages[i - 1].pseudo === m.pseudo
           return (

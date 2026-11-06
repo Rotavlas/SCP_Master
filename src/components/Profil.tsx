@@ -9,7 +9,7 @@ import { BadgesAffiches, PastilleBadge } from './Badges'
 import { Carte } from './Carte'
 import { useGlisserPourFermer } from './feuille'
 import { COSMETIQUES, styleCadre } from '../data/cosmetiques'
-import { Indisponible } from './Anime'
+import { Indisponible, Caviarde } from './Anime'
 import { SceauCreateur, estCreateur, useCreateurs } from './Createur'
 
 const ROLES = { chef: 'Chef', officier: 'Officier', membre: 'Membre' }
@@ -62,7 +62,7 @@ export function Profil({ pseudo, base, onFermer, ouvrirCarte, ecrire }: Props) {
           ✕
         </button>
         {p === undefined ? (
-          <p className="discret">Consultation du dossier personnel…</p>
+          <Caviarde lignes={6} label="Consultation du dossier personnel" />
         ) : !p ? (
           <Indisponible reessayer={charger} />
         ) : (

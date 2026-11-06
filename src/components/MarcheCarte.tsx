@@ -8,7 +8,7 @@ import { CoursGraphique } from './CoursGraphique'
 import { JaugeRecyclage } from './JaugeRecyclage'
 import { useRecyclageRestant } from '../state/enLigne'
 import { gainPlafonne } from '../engine/boosters'
-import { Indisponible } from './Anime'
+import { Indisponible, Caviarde } from './Anime'
 
 const credits = (n: number | null) => (n === null ? '—' : `${n.toLocaleString('fr-FR')} ₵`)
 
@@ -30,7 +30,7 @@ export function MarcheCarte({ carte, variante: varianteAffichee, voirMarche }: {
     return (
       <section className="marche-carte">
         <h4>Marché</h4>
-        {cours === undefined ? <p className="discret">Consultation des cours…</p> : <Indisponible reessayer={recharger} />}
+        {cours === undefined ? <Caviarde lignes={4} label="Consultation des cours" /> : <Indisponible reessayer={recharger} />}
       </section>
     )
 

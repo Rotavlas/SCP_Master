@@ -12,6 +12,19 @@ export interface Entree {
 export const JOURNAL: Entree[] = [
   {
     date: '2026-11-06',
+    titre: 'Plus fluide sur téléphone, plus vivant partout',
+    points: [
+      'Le bouton retour du téléphone fonctionne dans le jeu : il ferme la fiche, le profil, la cloche ou le menu ouverts, puis revient à l’écran précédent, au lieu de quitter l’application.',
+      'La cloche s’affiche enfin en entier sur téléphone (sa liste sortait de l’écran), et l’application installée relit les notifications en revenant au premier plan.',
+      'Nouvelles notifications : 5 dossiers gratuits vous attendent, puis réserve pleine à 10 (plus rien n’arrive tant que vous n’en ouvrez pas). Sur l’appareil si le jeu est fermé.',
+      'La vignette touchée s’agrandit jusqu’à la fiche, et y revient à la fermeture. Sur la fiche, la carte s’incline sous le doigt, et suit l’inclinaison du téléphone sur Android.',
+      'Combat : micro-pause et secousse à la mesure du coup reçu, chiffres de dégâts plus gros pour les gros coups, badge « Série ×N » pour les bonnes réponses d’affilée. Sur Android, le téléphone vibre (bonne ou mauvaise réponse, coup reçu, notification).',
+      'Les messages du terminal s’impriment comme sur un téléscripteur, et s’écartent d’un glissement ou d’un toucher. Un tampon « Validé » s’abat sur les actions confirmées.',
+      'Les chargements sont caviardés partout, les pages vides disent quoi faire (avec un bouton quand il y en a un), et les fiches nouvelles arrivent dans les Archives sous un tampon « Nouveau », leur encre se déposant.',
+    ],
+  },
+  {
+    date: '2026-11-06',
     titre: 'Le marché vous dit ce qui vous manque',
     points: [
       'Chaque vente aux enchères indique si la carte est « Nouvelle pour vous » ou déjà possédée (combien d’exemplaires, et si la variante en vente vous manque). Un filtre « Cartes que je n’ai pas » ne garde que les nouvelles.',

@@ -26,7 +26,7 @@ import type { Carte as TCarte } from '../types'
 import { Carte } from './Carte'
 import { BoutonConfirme } from './Confirmer'
 import { Cote } from './Cote'
-import { Indisponible } from './Anime'
+import { Indisponible, Caviarde, Vide } from './Anime'
 
 type Onglet = 'encheres' | 'ventes' | 'echanges' | 'cote'
 const credits = (n: number) => `${n.toLocaleString('fr-FR')} ₵`
@@ -364,7 +364,11 @@ function HistoriqueMises({ idEnchere, nbMises }: { idEnchere: string; nbMises: n
       </button>
       {ouvert && (
         <ol>
-          {!mises && <li className="discret">Chargement…</li>}
+          {!mises && (
+            <li>
+              <Caviarde lignes={3} />
+            </li>
+          )}
           {mises?.map((m, i) => (
             <li key={`${m.le}-${i}`} className={`${i === 0 ? 'meilleure' : ''} ${m.moi ? 'moi' : ''}`}>
               <strong>{credits(m.montant)}</strong>
@@ -403,7 +407,7 @@ function MesVentes({
       <p className="discret">Pour vendre une carte, ouvrez sa fiche dans vos archives : le cours et la mise aux enchères s'y trouvent.</p>
       <h2>En cours</h2>
       {miennes.length === 0 ? (
-        <p className="discret">Aucune vente ni mise en tête.</p>
+        <Vide titre="Aucune vente ni enchère en tête">Ouvrez la fiche d’une carte de vos archives pour la mettre aux enchères.</Vide>
       ) : (
         <div className="liste-encheres">
           {miennes.map((e) => {
@@ -495,7 +499,7 @@ function Echanges({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id: string)
       )}
       <h2>Offres reçues</h2>
       {recues.length === 0 ? (
-        <p className="discret">Aucune offre en attente.</p>
+        <Vide titre="Aucune offre reçue">Les propositions d’échange des autres agents arriveront ici.</Vide>
       ) : (
         recues.map((o) => <CarteOffre key={o.id} o={o} base={base} ouvrirCarte={ouvrirCarte} apres={recharger} />)
       )}

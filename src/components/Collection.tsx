@@ -11,6 +11,7 @@ import { Carte } from './Carte'
 import { BoutonConfirme } from './Confirmer'
 import { JaugeRecyclage } from './JaugeRecyclage'
 import { Section } from './Section'
+import { Vide } from './Anime'
 
 const PAR_PAGE = 60
 
@@ -85,11 +86,13 @@ export function Collection({
   ouvrirCarte,
   voirReglement,
   voirSucces,
+  ouvrirDossiers,
 }: {
   base: Base
   ouvrirCarte: (id: string) => void
   voirReglement: () => void
   voirSucces: () => void
+  ouvrirDossiers: () => void
 }) {
   const s = useSauvegarde()
   // Le plus petit numéro de chaque Mythique possédée, gravé sur sa carte
@@ -431,8 +434,26 @@ export function Collection({
 
       <p className="discret resultat">
         {filtrees.length.toLocaleString('fr-FR')} dossier{filtrees.length > 1 ? 's' : ''}
-        {possession === 'possedees' && filtrees.length === 0 && ' — ouvrez un booster pour commencer votre collection.'}
       </p>
+      {filtrees.length === 0 &&
+        (recherche.trim() || actifs > 0 ? (
+          <Vide
+            titre="Aucun dossier ne correspond"
+            action={{
+              libelle: 'Effacer la recherche et les filtres',
+              faire: () => {
+                setRecherche('')
+                changer({ ...FILTRES_DEFAUT, tri, inverse })
+              },
+            }}
+          >
+            La recherche ou les filtres écartent tout.
+          </Vide>
+        ) : (
+          <Vide titre="Les archives sont vides" action={{ libelle: 'Ouvrir un dossier', faire: ouvrirDossiers }}>
+            Chaque dossier ouvert y range ses fiches.
+          </Vide>
+        ))}
 
       {selection && (
         <div className="barre-selection" role="toolbar" aria-label="Actions sur la sélection">

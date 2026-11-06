@@ -9882,7 +9882,9 @@ body.en-partie .reco:has(.duel-fin) {
   border: 1px solid var(--bord);
   border-radius: 8px;
   cursor: pointer;
-  transition: border-color 0.2s, transform 0.2s;
+  transition:
+    border-color 0.2s,
+    transform 0.2s;
 }
 
 .objectif:hover {
@@ -11233,8 +11235,7 @@ body.en-partie .reco:has(.duel-fin) {
   color: var(--encre);
   background:
     radial-gradient(ellipse at 15% 10%, rgba(255, 255, 255, 0.35), transparent 50%),
-    radial-gradient(ellipse at 90% 95%, rgba(150, 120, 70, 0.12), transparent 55%),
-    var(--papier);
+    radial-gradient(ellipse at 90% 95%, rgba(150, 120, 70, 0.12), transparent 55%), var(--papier);
   border-radius: 2px;
   box-shadow:
     0 1px 0 #fff8 inset,
@@ -11866,8 +11867,7 @@ canvas {
 /* Le rabat se décolle de gauche à droite, derrière les ciseaux, en se soulevant ; son bord est déchiré */
 .dossier-scelle .paquet-rabat {
   transform-origin: 100% 100%;
-  transform: perspective(700px) rotateX(calc(var(--dechirure) * 22deg)) rotate(calc(var(--dechirure) * -3deg))
-    translateY(calc(var(--dechirure) * -5px));
+  transform: perspective(700px) rotateX(calc(var(--dechirure) * 22deg)) rotate(calc(var(--dechirure) * -3deg)) translateY(calc(var(--dechirure) * -5px));
   clip-path: polygon(
     0 0,
     100% 0,
@@ -12550,12 +12550,7 @@ html {
 .couv.couv-ruban-keter:not(.dossier-apollyon) {
   background:
     linear-gradient(118deg, transparent 0 41%, rgba(0, 0, 0, 0.25) 41% 41.6%, transparent 41.6%),
-    linear-gradient(
-      118deg,
-      transparent 0 42%,
-      #b3241b 42% 50%,
-      transparent 50%
-    ),
+    linear-gradient(118deg, transparent 0 42%, #b3241b 42% 50%, transparent 50%),
     repeating-linear-gradient(118deg, transparent 0 8px, rgba(255, 255, 255, 0.12) 8px 10px),
     radial-gradient(circle at 25% 15%, rgba(255, 255, 255, 0.24), transparent 55%),
     linear-gradient(160deg, color-mix(in srgb, var(--paquet) 88%, #fff), color-mix(in srgb, var(--paquet) 78%, #000));
@@ -12567,8 +12562,7 @@ html {
     linear-gradient(64deg, transparent 58%, rgba(196, 150, 50, 0.55) 58.5%, transparent 59.4%),
     linear-gradient(152deg, transparent 70%, rgba(120, 110, 100, 0.35) 70.6%, transparent 72%),
     linear-gradient(32deg, transparent 34%, rgba(120, 110, 100, 0.28) 34.8%, transparent 36%),
-    radial-gradient(ellipse at 70% 30%, rgba(255, 255, 255, 0.35), transparent 50%),
-    radial-gradient(ellipse at 20% 80%, rgba(0, 0, 0, 0.12), transparent 55%),
+    radial-gradient(ellipse at 70% 30%, rgba(255, 255, 255, 0.35), transparent 50%), radial-gradient(ellipse at 20% 80%, rgba(0, 0, 0, 0.12), transparent 55%),
     linear-gradient(160deg, color-mix(in srgb, var(--paquet) 55%, #f4efe6), color-mix(in srgb, var(--paquet) 62%, #b9b1a3));
 }
 
@@ -12955,7 +12949,9 @@ html {
 
 .succes-tuile.pret {
   border-color: rgba(240, 180, 60, 0.7);
-  box-shadow: 0 0 0 1px rgba(240, 180, 60, 0.25), 0 0 18px rgba(240, 180, 60, 0.12);
+  box-shadow:
+    0 0 0 1px rgba(240, 180, 60, 0.25),
+    0 0 18px rgba(240, 180, 60, 0.12);
 }
 
 .succes-tuile.pret .succes-sceau {
@@ -13839,4 +13835,317 @@ html {
 
 .codes-formulaire > input {
   width: 100%;
+}
+
+/* =====================================================================================================================
+   Lot UX/UI et animations du 6 novembre 2026
+   ===================================================================================================================== */
+
+/* ---------- Accessibilité : texte pour les lecteurs d'écran seulement, contour visible au clavier partout ---------- */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+:where(button, a, input, select, textarea, summary, [role='button'], [tabindex]):focus-visible {
+  outline: 2px solid var(--ambre);
+  outline-offset: 2px;
+}
+
+/* ---------- La cloche sur téléphone : la liste prend la largeur de l'écran sous l'en-tête (elle sortait à gauche) ---------- */
+@media (max-width: 760px) {
+  .cloche {
+    position: static;
+  }
+
+  .cloche-liste {
+    left: 8px;
+    right: 8px;
+    top: calc(100% + 4px);
+    width: auto;
+    max-height: calc(100dvh - 9rem - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  }
+}
+
+/* ---------- Boutons vivants : ils s'enfoncent sous le doigt ; un tampon « Validé » après une confirmation ---------- */
+.btn {
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    transform 0.08s ease-out;
+}
+
+.btn:active:not(:disabled),
+.onglets button:active,
+.menu-plus button:active,
+.option:active:not(:disabled) {
+  transform: translateY(1px) scale(0.97);
+}
+
+.btn.tamponne {
+  position: relative;
+}
+
+.tampon-valide {
+  position: absolute;
+  inset: 50% auto auto 50%;
+  padding: 0.05rem 0.45rem;
+  border: 2px solid currentColor;
+  border-radius: 3px;
+  color: #7ef0a0;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  background: rgba(11, 13, 14, 0.85);
+  pointer-events: none;
+  animation: tampon-valide 1.1s cubic-bezier(0.2, 0.9, 0.3, 1.2) forwards;
+}
+
+@keyframes tampon-valide {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(-14deg) scale(2.2);
+  }
+  18% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(-8deg) scale(1);
+  }
+  80% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(-8deg) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) rotate(-8deg) scale(1);
+  }
+}
+
+/* ---------- Messages en téléscripteur : ils s'impriment, et s'écartent d'un glissement ---------- */
+.notification {
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none;
+}
+
+.notification.glisse {
+  animation: none;
+  transition: none;
+}
+
+.curseur-teletype {
+  margin-left: 1px;
+  color: var(--ambre);
+  animation: curseur-teletype 0.7s steps(1) infinite;
+}
+
+@keyframes curseur-teletype {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* ---------- Pages vides qui guident ---------- */
+.vide-guide {
+  display: grid;
+  justify-items: center;
+  gap: 0.45rem;
+  margin: 0.6rem 0;
+  padding: 1.1rem 1rem 1.2rem;
+  border: 1px dashed var(--bord);
+  border-radius: 10px;
+  text-align: center;
+}
+
+.vide-guide p {
+  margin: 0;
+  max-width: 34rem;
+}
+
+.vide-titre {
+  font-family: var(--mono);
+  font-weight: 600;
+}
+
+.vide-tampon {
+  padding: 0.05rem 0.5rem;
+  border: 2px solid rgba(210, 58, 44, 0.55);
+  border-radius: 3px;
+  color: rgba(210, 58, 44, 0.75);
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  transform: rotate(-6deg);
+  animation: tampon-vide 0.45s cubic-bezier(0.2, 0.9, 0.3, 1.2) 0.1s both;
+}
+
+.vide-guide .btn {
+  margin-top: 0.3rem;
+}
+
+@keyframes tampon-vide {
+  from {
+    opacity: 0;
+    transform: rotate(-12deg) scale(1.8);
+  }
+}
+
+/* ---------- Tampon « Nouveau » : une fiche jamais vue arrive dans les archives, son encre se dépose ---------- */
+.pastille-nouvelle {
+  border: 2px solid #1a1307;
+  box-shadow:
+    0 0 0 2px var(--ambre),
+    0 4px 12px rgba(0, 0, 0, 0.5);
+  letter-spacing: 0.1em;
+  transform: rotate(-8deg);
+  animation: tampon-nouveau 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.25) 0.35s both;
+}
+
+@keyframes tampon-nouveau {
+  from {
+    opacity: 0;
+    transform: rotate(-16deg) scale(2.4);
+  }
+}
+
+.grille .carte:has(> .pastille-nouvelle) {
+  animation: encre-nouvelle 0.9s ease-out both;
+}
+
+@keyframes encre-nouvelle {
+  from {
+    filter: grayscale(1) contrast(1.8) brightness(0.45) blur(1.5px);
+    clip-path: circle(0% at 50% 45%);
+  }
+  60% {
+    filter: grayscale(0.6) contrast(1.3) brightness(0.8) blur(0.4px);
+    clip-path: circle(75% at 50% 45%);
+  }
+  to {
+    filter: none;
+    clip-path: circle(100% at 50% 50%);
+  }
+}
+
+/* ---------- Carte en relief : la grande carte de la fiche suit le doigt (et le téléphone) ---------- */
+.detail-carte > .carte-g {
+  touch-action: none;
+}
+
+/* ---------- La vignette devient la fiche (View Transitions) ---------- */
+.detail-carte > .carte {
+  view-transition-name: carte-ouverte;
+}
+
+::view-transition-group(carte-ouverte) {
+  z-index: 100;
+  animation-duration: 0.42s;
+  animation-timing-function: cubic-bezier(0.2, 0.85, 0.25, 1);
+}
+
+::view-transition-old(carte-ouverte),
+::view-transition-new(carte-ouverte) {
+  height: 100%;
+  animation-duration: 0.42s;
+}
+
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation-duration: 0.28s;
+}
+
+/* Pendant la transition, la fiche ne joue pas en plus sa propre entrée (elle tirerait la carte vers le bas) */
+html.vt-fiche .modale-fond,
+html.vt-fiche .modale.detail {
+  animation: none !important;
+}
+
+/* ---------- Combat plus percutant : micro-pause à l'impact, secousse à la mesure du coup, série de bonnes réponses ---------- */
+.site-reco {
+  position: relative;
+}
+
+.site-reco.touche:not(.adverse) {
+  animation:
+    impact-arret 0.08s steps(1) 1,
+    secousse-impact 0.5s cubic-bezier(0.36, 0.07, 0.19, 0.97) 0.08s 1;
+}
+
+.site-reco.touche:not(.adverse)::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 30%, rgba(255, 90, 72, calc(0.25 + var(--force, 0) * 0.35)), transparent 70%);
+  animation: flash-impact 0.55s ease-out forwards;
+}
+
+@keyframes impact-arret {
+  0% {
+    filter: brightness(2.2) contrast(1.3);
+  }
+}
+
+@keyframes secousse-impact {
+  10%,
+  90% {
+    transform: translateX(calc(var(--force, 0.3) * -2px));
+  }
+  20%,
+  80% {
+    transform: translateX(calc(var(--force, 0.3) * 4px));
+  }
+  30%,
+  50%,
+  70% {
+    transform: translateX(calc(var(--force, 0.3) * -7px)) rotate(calc(var(--force, 0.3) * -0.4deg));
+  }
+  40%,
+  60% {
+    transform: translateX(calc(var(--force, 0.3) * 7px)) rotate(calc(var(--force, 0.3) * 0.4deg));
+  }
+}
+
+@keyframes flash-impact {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+.site-reco:not(.adverse) .flottant.perte {
+  font-size: calc(1.35rem + var(--force, 0) * 0.9rem);
+}
+
+.serie-bonnes {
+  justify-self: center;
+  margin: 0.5rem auto 0;
+  width: fit-content;
+  padding: 0.15rem 0.7rem;
+  border: 1px solid rgba(126, 240, 160, 0.6);
+  border-radius: 999px;
+  color: #7ef0a0;
+  font-family: var(--mono);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 calc(var(--serie, 2) * 3px) rgba(126, 240, 160, 0.8);
+  box-shadow: 0 0 calc(var(--serie, 2) * 4px) rgba(126, 240, 160, calc(var(--serie, 2) * 0.08));
+  animation: serie-bonnes 0.5s cubic-bezier(0.2, 0.9, 0.3, 1.4) both;
+}
+
+@keyframes serie-bonnes {
+  from {
+    opacity: 0;
+    transform: scale(0.4);
+  }
 }

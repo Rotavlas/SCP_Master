@@ -94,6 +94,15 @@ export function contenu(type: string, d: Record<string, unknown>, b: Base | null
       return { titre: 'Saison classée close', texte: `Vous finissez ${rang(d.rang)} : +${credits(d.credits)}.`, url: '/?ecran=classement', etiquette: 'saison' }
     case 'raid_vaincu':
       return { titre: 'Raid réussi', texte: `${nom} est reconfiné. Réclamez votre part dans la page du clan.`, url: '/?ecran=social', etiquette: 'raid' }
+    case 'dossiers_prets':
+      return Number(d.nombre) >= 10
+        ? {
+            titre: 'Réserve pleine : 10 dossiers',
+            texte: 'Plus aucun dossier gratuit n’arrive tant que vous n’en ouvrez pas.',
+            url: '/?ecran=booster',
+            etiquette: 'dossiers',
+          }
+        : { titre: '5 dossiers vous attendent', texte: 'Votre réserve de dossiers gratuits se remplit.', url: '/?ecran=booster', etiquette: 'dossiers' }
     case 'essai':
       return {
         titre: 'Notifications activées',

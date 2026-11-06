@@ -1,4 +1,4 @@
-import { useRef, useState, type PointerEvent } from 'react'
+import { useEffect, useRef, useState, type PointerEvent } from 'react'
 import { RARETES, TYPES, entete, pastille, type Base } from '../data/catalogue'
 import { signature } from '../data/mythiques'
 import { EDITION_MYTHIQUE, PREMIERE_EDITION } from '../engine/boosters'
@@ -143,28 +143,62 @@ export function Carte({
   const etiquette = pastille(carte)
   const image = secours === 0 ? base.vignette(carte) : secours === 1 ? base.image(carte) : null
 
-  function suivre(e: PointerEvent<HTMLDivElement>) {
+  // La grande carte (fiche) s'incline aussi sous le doigt, et suit l'inclinaison du téléphone (Android)
+  const grande = taille === 'g' && inclinable
+  const doigt = useRef(false)
+
+  function incliner(x: number, y: number) {
     const el = ref.current
-    if (!el || !inclinable || e.pointerType === 'touch') return
-    const r = el.getBoundingClientRect()
-    const x = (e.clientX - r.left) / r.width
-    const y = (e.clientY - r.top) / r.height
+    if (!el) return
     el.style.setProperty('--mx', `${x * 100}%`)
     el.style.setProperty('--my', `${y * 100}%`)
     el.style.setProperty('--rx', `${(0.5 - y) * 14}deg`)
     el.style.setProperty('--ry', `${(x - 0.5) * 18}deg`)
   }
 
+  function suivre(e: PointerEvent<HTMLDivElement>) {
+    const el = ref.current
+    if (!el || !inclinable || (e.pointerType === 'touch' && !grande)) return
+    if (e.pointerType === 'touch') doigt.current = true
+    const r = el.getBoundingClientRect()
+    incliner(Math.min(1, Math.max(0, (e.clientX - r.left) / r.width)), Math.min(1, Math.max(0, (e.clientY - r.top) / r.height)))
+  }
+
   function relacher() {
     const el = ref.current
+    doigt.current = false
     if (!el) return
     el.style.setProperty('--rx', '0deg')
     el.style.setProperty('--ry', '0deg')
   }
 
+  useEffect(() => {
+    if (!grande || scellee || matchMedia('(prefers-reduced-motion: reduce)').matches || !('DeviceOrientationEvent' in window)) return
+    // iPhone : l'inclinaison du téléphone demande une autorisation, on s'en passe (le doigt suffit)
+    if (typeof (DeviceOrientationEvent as unknown as { requestPermission?: unknown }).requestPermission === 'function') return
+    let reference: { b: number; g: number } | null = null
+    let image = 0
+    const bouge = (e: DeviceOrientationEvent) => {
+      if (e.beta === null || e.gamma === null || doigt.current) return
+      const depart = (reference ??= { b: e.beta, g: e.gamma })
+      const b = e.beta
+      const g = e.gamma
+      cancelAnimationFrame(image)
+      image = requestAnimationFrame(() => {
+        const borne = (v: number) => Math.min(1, Math.max(0, v))
+        incliner(borne(0.5 + (g - depart.g) / 40), borne(0.5 + (b - depart.b) / 40))
+      })
+    }
+    window.addEventListener('deviceorientation', bouge)
+    return () => {
+      window.removeEventListener('deviceorientation', bouge)
+      cancelAnimationFrame(image)
+    }
+  }, [grande, scellee])
+
   if (scellee) {
     return (
-      <div className={`carte carte-${taille} scellee`} onClick={onClick} role={onClick ? 'button' : undefined}>
+      <div className={`carte carte-${taille} scellee`} data-carte={carte.id} onClick={onClick} role={onClick ? 'button' : undefined}>
         <div className="scellee-contenu">
           <Logo taille={taille === 'p' ? 34 : 48} />
           <span className="scellee-num">{carte.num ?? TYPES[carte.k].court}</span>
@@ -191,8 +225,11 @@ export function Carte({
         ref={ref}
         className={`carte carte-${taille} type-${carte.k} rarete-5 carte-mythique variante-${variante}${caviardee ? ' caviardee' : ''}${premiere ? ' premiere-edition' : ''}`}
         style={{ ['--rarete' as string]: rarete.couleur, ['--sig' as string]: signature(carte).couleur }}
+        data-carte={carte.id}
         onPointerMove={suivre}
         onPointerLeave={relacher}
+        onPointerUp={relacher}
+        onPointerCancel={relacher}
         onClick={onClick}
         role={onClick ? 'button' : undefined}
         tabIndex={onClick ? 0 : undefined}
@@ -259,8 +296,11 @@ export function Carte({
         ref={ref}
         className={`carte carte-${taille} type-${carte.k} rarete-4 carte-legendaire variante-${variante}${caviardee ? ' caviardee' : ''}`}
         style={{ ['--rarete' as string]: rarete.couleur, ['--classe' as string]: etiquette.couleur }}
+        data-carte={carte.id}
         onPointerMove={suivre}
         onPointerLeave={relacher}
+        onPointerUp={relacher}
+        onPointerCancel={relacher}
         onClick={onClick}
         role={onClick ? 'button' : undefined}
         tabIndex={onClick ? 0 : undefined}
@@ -334,8 +374,11 @@ export function Carte({
       ref={ref}
       className={`carte carte-${taille} type-${carte.k} rarete-${carte.ra} variante-${variante}${caviardee ? ' caviardee' : ''}`}
       style={{ ['--rarete' as string]: rarete.couleur, ['--classe' as string]: etiquette.couleur }}
+      data-carte={carte.id}
       onPointerMove={suivre}
       onPointerLeave={relacher}
+      onPointerUp={relacher}
+      onPointerCancel={relacher}
       onClick={onClick}
       role={onClick ? 'button' : undefined}
       tabIndex={onClick ? 0 : undefined}

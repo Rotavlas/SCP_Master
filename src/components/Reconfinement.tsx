@@ -22,6 +22,7 @@ import { Carte } from './Carte'
 import { usePleinEcran } from './pleinEcran'
 import { jouer as son } from '../state/sons'
 import { QuestionAlteree } from './QuestionAlteree'
+import { VIBRATIONS, vibrer } from '../state/vibrer'
 import { FrappeMythique } from './FrappeMythique'
 
 /**
@@ -387,6 +388,13 @@ export function SiteReco({
   const pertes = evenements.filter((e) => (e.type === 'breche' || e.type === 'poison' || e.type === 'reconfinement') && (e.valeur ?? 0) > 0)
   const soins = evenements.filter((e) => e.type === 'soin' && (e.valeur ?? 0) > 0)
   const touche = pertes.length > 0
+  // Un coup reçu : le téléphone vibre, d'autant plus fort que le coup est rude ; le Site tremble à proportion
+  const totalPertes = pertes.reduce((s, e) => s + (e.valeur ?? 0), 0)
+  // (les événements sont filtrés à chaque rendu : c'est le premier coup du tour, un objet stable, qui sert de repère)
+  const premierCoup = pertes[0]
+  useEffect(() => {
+    if (!adverse && premierCoup) vibrer(VIBRATIONS.coup(totalPertes))
+  }, [premierCoup]) // une fois par tour
   const statuts = [
     camp.poison > 0 && `☣ Contamination −${camp.poison}/tour`,
     camp.reconfinementsAuto > 0 && `✋ ${camp.reconfinementsAuto} reconfinement${camp.reconfinementsAuto > 1 ? 's' : ''} d’office`,
@@ -395,7 +403,10 @@ export function SiteReco({
     camp.questionsFaciles > 0 && `✦ ${camp.questionsFaciles} question${camp.questionsFaciles > 1 ? 's' : ''} à deux réponses`,
   ].filter(Boolean) as string[]
   return (
-    <div className={`site-reco ${adverse ? 'adverse' : ''} ${touche ? 'touche' : ''} ${soins.length ? 'soigne' : ''}`}>
+    <div
+      className={`site-reco ${adverse ? 'adverse' : ''} ${touche ? 'touche' : ''} ${soins.length ? 'soigne' : ''}`}
+      style={{ ['--force' as string]: Math.min(1, totalPertes / 12) }}
+    >
       <div className="site-reco-tete">
         <div>
           <strong>{titre}</strong>

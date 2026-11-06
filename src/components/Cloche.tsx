@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { designation, type Base } from '../data/catalogue'
+import { useFermerAuRetour } from '../state/historique'
 import { lireNotifications, useNotificationsJeu, type Notification } from '../state/notifications'
 
 export type OngletMarche = 'encheres' | 'ventes' | 'echanges' | 'cote'
@@ -7,7 +8,7 @@ export type OngletMarche = 'encheres' | 'ventes' | 'echanges' | 'cote'
 const credits = (n?: number) => `${Number(n ?? 0).toLocaleString('fr-FR')} ₵`
 
 /** Où mène une notification : un onglet du marché, le hall des confrontations ou la page du clan */
-export type Destination = { onglet: OngletMarche; carte?: string } | { ecran: 'duel' | 'clan' }
+export type Destination = { onglet: OngletMarche; carte?: string } | { ecran: 'duel' | 'clan' | 'booster' }
 
 const PALIERS: Record<string, string> = { or: 'Or', argent: 'Argent', bronze: 'Bronze', participation: 'Participation' }
 const rang = (r?: number) => `${r ?? '?'}${r === 1 ? 'er' : 'e'}`
@@ -46,6 +47,10 @@ export function decrire(n: Notification, base: Base): { texte: string } & Destin
       }
     case 'raid_vaincu':
       return { texte: `Raid réussi : ${nom} est reconfiné. Réclamez votre part dans la page du clan`, ecran: 'clan' }
+    case 'dossiers_prets':
+      return (n.donnees.nombre ?? 0) >= 10
+        ? { texte: 'Réserve pleine : 10 dossiers gratuits vous attendent, plus rien n’arrive tant que vous n’en ouvrez pas', ecran: 'booster' }
+        : { texte: '5 dossiers gratuits vous attendent', ecran: 'booster' }
   }
 }
 
@@ -65,11 +70,12 @@ export function Cloche({
 }: {
   base: Base
   voirMarche: (onglet: OngletMarche, recherche?: string) => void
-  aller: (ecran: 'duel' | 'clan') => void
+  aller: (ecran: 'duel' | 'clan' | 'booster') => void
 }) {
   const { liste, nonLues } = useNotificationsJeu()
   const [ouverte, setOuverte] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
+  useFermerAuRetour(ouverte, () => setOuverte(false))
 
   // Un clic ailleurs ou Échap ferme la liste
   useEffect(() => {
@@ -116,7 +122,8 @@ export function Cloche({
           <p className="dossier-entete">Notifications</p>
           {liste.length === 0 ? (
             <p className="discret">
-              Rien pour l'instant : enchères, ventes, échanges, cartes souhaitées mises en vente, résultats de l'Épreuve et raids apparaîtront ici.
+              Rien pour l'instant : enchères, ventes, échanges, cartes souhaitées mises en vente, résultats de l'Épreuve, raids et réserve de dossiers
+              apparaîtront ici.
             </p>
           ) : (
             <ul>

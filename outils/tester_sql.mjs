@@ -1668,4 +1668,34 @@ await test('purge quotidienne : vieux tirages et vieux duels retirés, état des
   await echoue(en(P, 'select prive.purger()'), /permission denied/)
 })
 
+await test('réserve de dossiers : une notification à 5, une à 10, réarmée quand la réserve redescend, rien si l’agent joue', async () => {
+  const D = '00000000-0000-0000-0000-0000000000f2'
+  await db.exec(`insert into auth.users (id) values ('${D}')`)
+  await admin("update public.profils set pseudo = 'Agent Reserve', boosters = 3, dernier_booster = now(), dossiers_annonces = 0 where id = $1", [D])
+  const annonces = async () =>
+    (await admin("select (donnees->>'nombre')::int as n from public.notifications where joueur = $1 and type = 'dossiers_prets' order by id", [D])).rows.map(
+      (r) => r.n,
+    )
+  await admin('select prive.annoncer_dossiers()')
+  assert.deepEqual(await annonces(), [], 'à 3, rien')
+  // 30 minutes plus tard : 5 dossiers (crédités à la prochaine visite, mais déjà annoncés)
+  await admin("update public.profils set dernier_booster = now() - interval '31 minutes' where id = $1", [D])
+  await admin('select prive.annoncer_dossiers()')
+  await admin('select prive.annoncer_dossiers()')
+  assert.deepEqual(await annonces(), [5], 'une seule fois à 5')
+  await admin("update public.profils set dernier_booster = now() - interval '2 hours' where id = $1", [D])
+  await admin('select prive.annoncer_dossiers()')
+  assert.deepEqual(await annonces(), [5, 10], 'puis à 10')
+  // Il ouvre ses dossiers : la réserve redescend, l'annonce se réarme sans rien dire
+  await admin('update public.profils set boosters = 1, dernier_booster = now() where id = $1', [D])
+  await admin('select prive.annoncer_dossiers()')
+  assert.equal((await admin('select dossiers_annonces as a from public.profils where id = $1', [D])).rows[0].a, 0)
+  // Il joue (jeu à l'écran) quand la réserve atteint 5 : pas de notification, le compteur de l'onglet suffit
+  await admin('update public.profils set boosters = 5, premier_plan_le = now() where id = $1', [D])
+  await admin('select prive.annoncer_dossiers()')
+  assert.deepEqual(await annonces(), [5, 10])
+  assert.equal((await admin('select dossiers_annonces as a from public.profils where id = $1', [D])).rows[0].a, 5)
+  await echoue(en(D, 'select prive.annoncer_dossiers()'), /permission denied/)
+})
+
 console.log(`\n${reussis} tests réussis${process.exitCode ? ', des échecs' : ''}.`)

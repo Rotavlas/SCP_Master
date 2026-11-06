@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type ReactNode } from 'react'
 
 /** L'appareil demande moins d'animations */
 export const peuDAnimations = () => typeof matchMedia === 'function' && matchMedia('(prefers-reduced-motion: reduce)').matches
@@ -64,6 +64,24 @@ export function Indisponible({ reessayer }: { reessayer: () => void }) {
     </p>
   )
 }
+/** Une page vide qui guide : ce qui manque, et ce qu'on peut faire (un bouton, quand il y a une action toute trouvée) */
+export function Vide({ titre, children, action }: { titre: string; children?: ReactNode; action?: { libelle: string; faire: () => void } }) {
+  return (
+    <div className="vide-guide">
+      <span className="vide-tampon" aria-hidden="true">
+        Néant
+      </span>
+      <p className="vide-titre">{titre}</p>
+      {children && <p className="discret">{children}</p>}
+      {action && (
+        <button className="btn btn-principal" onClick={action.faire}>
+          {action.libelle}
+        </button>
+      )}
+    </div>
+  )
+}
+
 export function Caviarde({ lignes = 3, label = 'Chargement' }: { lignes?: number; label?: string }) {
   return (
     <div className="caviarde" role="status" aria-label={label}>

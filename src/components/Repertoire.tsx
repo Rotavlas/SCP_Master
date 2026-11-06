@@ -4,6 +4,7 @@ import { boostersPour } from '../engine/boosters'
 import { variantesPour } from '../engine/variantes'
 import { exemplairesStandard, modifier, useSauvegarde } from '../state/sauvegarde'
 import type { Carte, TypeFiche } from '../types'
+import { Vide } from './Anime'
 
 const HAUTEUR_LIGNE = 52
 const MARGE = 8
@@ -155,7 +156,14 @@ export function Repertoire({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id
               <Ligne key={c.id} carte={c} haut={(debut + i) * HAUTEUR_LIGNE} ouvrir={() => ouvrirCarte(c.id)} />
             ))}
           </div>
-          {lignes.length === 0 && <p className="vide">Aucune fiche ne correspond.</p>}
+          {lignes.length === 0 && (
+            <Vide
+              titre="Aucune fiche ne correspond"
+              action={recherche ? { libelle: 'Effacer la recherche', faire: () => filtre(setRecherche)('') } : undefined}
+            >
+              Essayez une désignation (SCP-173), un nom ou une catégorie.
+            </Vide>
+          )}
         </div>
       </div>
     </section>
