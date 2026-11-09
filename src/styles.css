@@ -15656,3 +15656,15 @@ button.emplacement-vide:hover {
 .console-discord {
   margin: 0 0 0.8rem;
 }
+
+/* ---------- Le Discord, d'un toucher depuis l'en-tête ---------- */
+.btn-discord-entete {
+  color: #9aa2f8;
+  text-decoration: none;
+}
+
+.btn-discord-entete:hover {
+  color: #fff;
+  border-color: #5865f2;
+  background: rgba(88, 101, 242, 0.18);
+}

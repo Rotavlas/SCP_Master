@@ -6,7 +6,7 @@ import { Booster, retenirTirage, tirageRetenu, type Tirage } from './components/
 import { Boutique } from './components/Boutique'
 import { CarteDetail } from './components/CarteDetail'
 import { Classement } from './components/Classement'
-import { BoutonCompte, Portail } from './components/Compte'
+import { BoutonCompte, LogoDiscord, Portail } from './components/Compte'
 import { Collection } from './components/Collection'
 import { Duel } from './components/Duel'
 import { Journal } from './components/Journal'
@@ -343,6 +343,16 @@ export default function App() {
           <span className="solde" title="Crédits">
             <NombreAnime valeur={s.credits} /> ₵
           </span>
+          <a
+            className="btn btn-cloche btn-discord-entete"
+            href={DISCORD}
+            target="_blank"
+            rel="noreferrer"
+            title="Rejoindre le Discord"
+            aria-label="Rejoindre le Discord de la communauté"
+          >
+            <LogoDiscord taille={18} />
+          </a>
           <BoutonJournal ouvert={ecran === 'journal'} ouvrir={() => aller('journal')} />
           {base && (
             <Cloche
