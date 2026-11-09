@@ -31,7 +31,7 @@ const API = 'https://discord.com/api/v10'
 const SITE = 'https://scp-masters.vercel.app'
 
 /** discordClePublique : seulement pour les tests (une clé générée), sinon celle de l'application */
-type EnvDiscord = Environnement & { discord?: string; discordClePublique?: string }
+type EnvDiscord = Environnement & { discord?: string; discordClePublique?: string; discordDiffere?: boolean }
 
 async function bot(env: EnvDiscord, chemin: string, init: RequestInit = {}): Promise<Response> {
   if (!env.discord) throw new Erreur(503, 'Bot Discord non configuré (secret discordBotSecret absent)')
@@ -205,6 +205,7 @@ async function reponsePodium(env: EnvDiscord): Promise<Record<string, unknown>> 
 interface Interaction {
   type: number
   token: string
+  application_id?: string
   data?: { name: string; options?: { name: string; value: string }[] }
 }
 
@@ -225,28 +226,45 @@ export async function traiterInteraction(req: Request, env: EnvDiscord): Promise
   if (i.type === 1) return json({ type: 1 })
   if (i.type !== 2 || !i.data) return json({ type: 4, data: { content: 'Commande inconnue.' } })
   const option = (nom: string) => String(i.data?.options?.find((o) => o.name === nom)?.value ?? '')
-  const travail = (async () => {
-    let message: Record<string, unknown>
+  const preparation: Promise<Record<string, unknown>> = (async () => {
     try {
-      message =
-        i.data!.name === 'carte'
-          ? await reponseCarte(env, option('nom'))
-          : i.data!.name === 'profil'
-            ? await reponseProfil(env, option('pseudo'))
-            : i.data!.name === 'podium'
-              ? await reponsePodium(env)
-              : { content: 'Commande inconnue.' }
-    } catch {
-      message = { content: 'Le terminal de la Fondation ne répond pas, réessayez dans un instant.' }
+      return i.data!.name === 'carte'
+        ? await reponseCarte(env, option('nom'))
+        : i.data!.name === 'profil'
+          ? await reponseProfil(env, option('pseudo'))
+          : i.data!.name === 'podium'
+            ? await reponsePodium(env)
+            : { content: 'Commande inconnue.' }
+    } catch (e) {
+      console.error('Discord : commande', i.data!.name, e instanceof Error ? e.message : e)
+      return { content: 'Le terminal de la Fondation ne répond pas, réessayez dans un instant.' }
     }
-    await fetch(`${API}/webhooks/${DISCORD.application}/${i.token}/messages/@original`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ...message, allowed_mentions: { parse: [] } }),
-    })
   })()
-  // La réponse doit partir en moins de trois secondes : « le bot réfléchit », la suite arrive ensuite
-  if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime?.waitUntil) EdgeRuntime.waitUntil(travail)
-  else await travail
+  const sansMention = (m: Record<string, unknown>) => ({ ...m, allowed_mentions: { parse: [] } })
+
+  // Discord attend une réponse en moins de trois secondes : prête à temps (le cas courant), elle part directement
+  if (!env.discordDiffere) {
+    let minuterie: ReturnType<typeof setTimeout> | undefined
+    const prete = await Promise.race([preparation, new Promise<null>((r) => (minuterie = setTimeout(() => r(null), 2000)))])
+    clearTimeout(minuterie)
+    if (prete) return json({ type: 4, data: sansMention(prete) })
+  }
+
+  // Sinon « le bot réfléchit », et le message est complété ensuite
+  const adresse = `${API}/webhooks/${i.application_id ?? DISCORD.application}/${i.token}/messages/@original`
+  const completer = async (m: Record<string, unknown>) =>
+    fetch(adresse, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(sansMention(m)) })
+  const suite = (async () => {
+    try {
+      const r = await completer(await preparation)
+      if (r.ok) return
+      console.error('Discord : réponse refusée', r.status, (await r.text()).slice(0, 500))
+      await completer({ content: 'La fiche n’a pas pu être affichée, réessayez dans un instant.' })
+    } catch (e) {
+      console.error('Discord : envoi impossible', e instanceof Error ? e.message : e)
+    }
+  })()
+  if (typeof EdgeRuntime !== 'undefined' && EdgeRuntime?.waitUntil) EdgeRuntime.waitUntil(suite)
+  else await suite
   return json({ type: 5 })
 }

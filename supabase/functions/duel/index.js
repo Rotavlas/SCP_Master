@@ -3810,24 +3810,45 @@ async function traiterInteraction(req, env) {
 		data: { content: "Commande inconnue." }
 	});
 	const option = (nom) => String(i.data?.options?.find((o) => o.name === nom)?.value ?? "");
-	const travail = (async () => {
-		let message;
+	const preparation = (async () => {
 		try {
-			message = i.data.name === "carte" ? await reponseCarte(env, option("nom")) : i.data.name === "profil" ? await reponseProfil(env, option("pseudo")) : i.data.name === "podium" ? await reponsePodium(env) : { content: "Commande inconnue." };
-		} catch {
-			message = { content: "Le terminal de la Fondation ne répond pas, réessayez dans un instant." };
+			return i.data.name === "carte" ? await reponseCarte(env, option("nom")) : i.data.name === "profil" ? await reponseProfil(env, option("pseudo")) : i.data.name === "podium" ? await reponsePodium(env) : { content: "Commande inconnue." };
+		} catch (e) {
+			console.error("Discord : commande", i.data.name, e instanceof Error ? e.message : e);
+			return { content: "Le terminal de la Fondation ne répond pas, réessayez dans un instant." };
 		}
-		await fetch(`${API}/webhooks/${DISCORD.application}/${i.token}/messages/@original`, {
-			method: "PATCH",
-			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({
-				...message,
-				allowed_mentions: { parse: [] }
-			})
-		});
 	})();
-	if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) EdgeRuntime.waitUntil(travail);
-	else await travail;
+	const sansMention = (m) => ({
+		...m,
+		allowed_mentions: { parse: [] }
+	});
+	if (!env.discordDiffere) {
+		let minuterie;
+		const prete = await Promise.race([preparation, new Promise((r) => minuterie = setTimeout(() => r(null), 2e3))]);
+		clearTimeout(minuterie);
+		if (prete) return json({
+			type: 4,
+			data: sansMention(prete)
+		});
+	}
+	const adresse = `${API}/webhooks/${i.application_id ?? DISCORD.application}/${i.token}/messages/@original`;
+	const completer = async (m) => fetch(adresse, {
+		method: "PATCH",
+		headers: { "Content-Type": "application/json" },
+		body: JSON.stringify(sansMention(m))
+	});
+	const suite = (async () => {
+		try {
+			const r = await completer(await preparation);
+			if (r.ok) return;
+			console.error("Discord : réponse refusée", r.status, (await r.text()).slice(0, 500));
+			await completer({ content: "La fiche n’a pas pu être affichée, réessayez dans un instant." });
+		} catch (e) {
+			console.error("Discord : envoi impossible", e instanceof Error ? e.message : e);
+		}
+	})();
+	if (typeof EdgeRuntime !== "undefined" && EdgeRuntime?.waitUntil) EdgeRuntime.waitUntil(suite);
+	else await suite;
 	return json({ type: 5 });
 }
 // serveur/duel.ts

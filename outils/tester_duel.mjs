@@ -910,9 +910,20 @@ await test('PING signé : PONG', async () => {
   assert.equal(r.statut, 200, r.texte)
   assert.deepEqual(r.corps, { type: 1 })
 })
-await test('/carte : réponse différée puis fiche de la carte, sans mention', async () => {
+await test('/carte : la fiche part directement quand elle est prête, sans mention', async () => {
+  discordEnvoyes.length = 0
+  const r = await interaction({ type: 2, token: 'jeton-interaction', data: { name: 'carte', options: [{ name: 'nom', value: '2747' }] } })
+  assert.equal(r.statut, 200, r.texte)
+  assert.equal(r.corps.type, 4)
+  assert.equal(discordEnvoyes.length, 0)
+  assert.deepEqual(r.corps.data.allowed_mentions, { parse: [] })
+  assert.ok(r.corps.data.embeds[0].title.startsWith('SCP-2747'), r.corps.data.embeds[0].title)
+})
+await test('/carte trop lente : « réfléchit », puis le message est complété', async () => {
+  env.discordDiffere = true
   discordEnvoyes.length = 0
   const r = await interaction({ type: 2, token: 'jeton-interaction', data: { name: 'carte', options: [{ name: 'nom', value: '173' }] } })
+  delete env.discordDiffere
   assert.equal(r.statut, 200, r.texte)
   assert.equal(r.corps.type, 5)
   assert.equal(discordEnvoyes.length, 1)
@@ -923,11 +934,11 @@ await test('/carte : réponse différée puis fiche de la carte, sans mention', 
   assert.ok(JSON.stringify(envoi.corps).includes('173'), JSON.stringify(envoi.corps).slice(0, 200))
 })
 await test('/profil et /podium répondent même sans résultat', async () => {
-  discordEnvoyes.length = 0
-  await interaction({ type: 2, token: 't2', data: { name: 'profil', options: [{ name: 'pseudo', value: 'personne-de-ce-nom' }] } })
-  await interaction({ type: 2, token: 't3', data: { name: 'podium' } })
-  assert.equal(discordEnvoyes.length, 2)
-  for (const e of discordEnvoyes) assert.ok(e.corps.content || e.corps.embeds?.length, JSON.stringify(e.corps))
+  for (const data of [{ name: 'profil', options: [{ name: 'pseudo', value: 'personne-de-ce-nom' }] }, { name: 'podium' }]) {
+    const r = await interaction({ type: 2, token: 't2', data })
+    assert.equal(r.corps.type, 4, r.texte)
+    assert.ok(r.corps.data.content || r.corps.data.embeds?.length, r.texte)
+  }
 })
 await test('grade : un agent sans Discord lié n’appelle pas Discord', async () => {
   const r = await appel('jeton-A', { action: 'discord_grade' })
