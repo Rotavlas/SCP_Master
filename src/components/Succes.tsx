@@ -10,7 +10,7 @@ import { Caviarde, Indisponible, Vide, useTampon } from './Anime'
 import { FAMILLES, useStatistiques } from '../state/statistiques'
 import { FicheAgent } from './Profil'
 import { Piste } from './Piste'
-import { ActionsCompte } from './Compte'
+import { ActionsCompte, BarreCreateur } from './Compte'
 import { Cosmetiques } from './Cosmetiques'
 
 /**
@@ -110,7 +110,8 @@ export function PageSucces({
           <p className="dossier-entete">Ressources humaines · Dossier de carrière</p>
           <h1>Mon agent</h1>
         </div>
-        <nav className="onglets-page" role="tablist">
+        <BarreCreateur base={base} />
+        <nav className="onglets-page onglets-agent" role="tablist">
           {(
             [
               ['profil', 'Profil'],

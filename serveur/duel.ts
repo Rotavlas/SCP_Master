@@ -17,6 +17,7 @@ import { ACTIONS_EPREUVE, traiterEpreuve } from './epreuve'
 import { ACTIONS_JCJ, traiterJcj } from './jcj'
 import { ACTIONS_RECO, traiterReco } from './reconfinement'
 import { traiterPush } from './push'
+import { installerCommandes, synchroniserGrade, traiterInteraction } from './discord'
 
 export type { Environnement } from './commun'
 
@@ -261,6 +262,8 @@ export async function traiter(req: Request, env: Environnement): Promise<Respons
   try {
     if (req.method !== 'POST') throw new Erreur(405, 'Méthode non autorisée')
     if (!env.url || !env.cleService) throw new Erreur(500, 'Configuration du serveur incomplète')
+    // Une commande du bot Discord (/carte, /profil, /podium) : la requête est signée par Discord (serveur/discord.ts)
+    if (req.headers.has('X-Signature-Ed25519')) return await traiterInteraction(req, env)
     const corps = (await req.json().catch(() => null)) as Record<string, unknown> | null
     if (!corps || typeof corps !== 'object') throw new Erreur(400, 'Requête invalide')
     // Notifications sur l'appareil : réveillée par pg_cron, sans joueur ; vide la file d'attente (serveur/push.ts)
@@ -268,6 +271,11 @@ export async function traiter(req: Request, env: Environnement): Promise<Respons
     const idJoueur = await joueur(env, req)
     const maintenant = (env.maintenant ?? Date.now)()
     switch (corps.action) {
+      // Le grade Discord suit le niveau d'accréditation ; les commandes du bot s'installent depuis la console du créateur
+      case 'discord_grade':
+        return repondreJson(200, await synchroniserGrade(env, idJoueur))
+      case 'discord_commandes':
+        return repondreJson(200, await installerCommandes(env, idJoueur))
       case 'debuter':
         return repondreJson(200, await debuter(env, idJoueur, corps))
       case 'jouer':

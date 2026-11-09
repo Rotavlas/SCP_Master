@@ -21,7 +21,7 @@ import { useCompte } from './state/enLigne'
 import { basculerSon, useSonActif } from './state/sons'
 import { oublierInvitation, repondreDefi, useDuelDemarre, useDuelsEntrants, useInvitations } from './state/jcj'
 import { totalNonLus, useConversations, useMessagesEntrants, usePresence, type Destinataire } from './state/social'
-import { modifier, notifier, retirerNotification, useNotifications, useSauvegarde } from './state/sauvegarde'
+import { accreditation, modifier, notifier, retirerNotification, useNotifications, useSauvegarde } from './state/sauvegarde'
 import { VIBRATIONS, vibrer } from './state/vibrer'
 import { preparerTraducteur } from './state/traduction'
 import { useCloche, useNotificationsJeu, type Notification } from './state/notifications'
@@ -38,7 +38,7 @@ import { changerFiche } from './state/transitions'
 import { demarrerHistorique, empilerEcran, useRetourEcran } from './state/historique'
 import { DISCORD } from './data/liens'
 import { estCreateur, useCreateurs } from './components/Createur'
-import { usePublierVersion } from './state/discord'
+import { useGradeDiscord, usePublierVersion } from './state/discord'
 
 /** Les onglets ; sur téléphone, les quatre principaux restent dans la barre du bas, les autres passent sous « Plus ». */
 /** Les écrans qu'une adresse (raccourci de l'application, notification) peut demander */
@@ -122,6 +122,8 @@ export default function App() {
   // Le créateur charge une nouvelle version : ses notes partent sur le Discord de la communauté (une fois)
   const createur = estCreateur(useCreateurs(), connecte ? s.agent : null)
   usePublierVersion(createur)
+  // Le grade sur le Discord suit le niveau d'accréditation (agents au compte Discord lié)
+  useGradeDiscord(connecte, accreditation(s.xp).niveau)
   // Le réseau revient après un lancement hors ligne : on recharge, la session reprend d'elle-même
   const reseau = useEnLigneReseau()
   const avaitPerduLeReseau = useRef(!navigator.onLine)

@@ -41,6 +41,7 @@ import { Pseudo } from './Badges'
 import { Indisponible, Caviarde, Vide } from './Anime'
 import { GuerreClan } from './GuerreClan'
 import { DISCORD } from '../data/liens'
+import { useWidgetDiscord } from '../state/discord'
 
 export type OngletSocial = 'amis' | 'clan' | 'messages'
 
@@ -54,6 +55,22 @@ interface Props {
   setConversation: (d: Destinataire | null) => void
 }
 
+/** Le lien vers le Discord, avec le nombre d'agents en ligne quand le widget du serveur répond */
+function DiscordEnLigne() {
+  const w = useWidgetDiscord()
+  return (
+    <a className="btn btn-discord discord-en-ligne" href={DISCORD} target="_blank" rel="noreferrer">
+      Discord de la communauté ↗
+      {w && w.enLigne > 0 && (
+        <span className="discord-presence">
+          <span className="pastille-en-ligne" aria-hidden="true" />
+          {w.enLigne} en ligne
+        </span>
+      )}
+    </a>
+  )
+}
+
 export function Social({ base, ouvrirProfil, onglet, setOnglet, conversation, setConversation }: Props) {
   const conversations = useConversations()
   const nonLus = conversations.reduce((t, c) => t + c.nonLus, 0)
@@ -63,9 +80,7 @@ export function Social({ base, ouvrirProfil, onglet, setOnglet, conversation, se
         <div>
           <p className="dossier-entete">Réseau du personnel · communications internes</p>
           <h1>Social</h1>
-          <a className="btn btn-discord" href={DISCORD} target="_blank" rel="noreferrer">
-            Discord de la communauté ↗
-          </a>
+          <DiscordEnLigne />
         </div>
         <nav className="onglets-page" role="tablist">
           {(

@@ -16,6 +16,8 @@ export interface Environnement {
   origines: string[]
   /** Clé VAPID des notifications sur l'appareil (JWK privée P-256, secret VAPID_JWK) */
   vapid?: string
+  /** Jeton du bot Discord (secret discordBotSecret) : grades et commandes (serveur/discord.ts) */
+  discord?: string
   maintenant?: () => number
 }
 

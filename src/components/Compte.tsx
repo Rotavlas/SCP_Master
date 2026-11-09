@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   appeler,
   appliquerProfil,
@@ -10,7 +10,7 @@ import {
   verifierCode,
   type ProfilServeur,
 } from '../state/enLigne'
-import { modifier, notifier, useSauvegarde } from '../state/sauvegarde'
+import { ACCREDITATIONS, modifier, notifier, useSauvegarde } from '../state/sauvegarde'
 import { majCosmetiques, type EtatCosmetiques } from '../state/cosmetiques'
 import { useBadgesDe } from '../state/social'
 import { BadgesAffiches } from './Badges'
@@ -22,6 +22,7 @@ import type { Base } from '../data/catalogue'
 import { ConsoleCreateur } from './ConsoleCreateur'
 import { Carte } from './Carte'
 import { DISCORD } from '../data/liens'
+import { lireDiscord, lierDiscord, synchroniserGrade, type EtatDiscord } from '../state/discord'
 
 const NOMS_FOURNISSEURS = { discord: 'Discord', google: 'Google', github: 'GitHub' } as const
 
@@ -66,11 +67,88 @@ export function BoutonCompte({ actif, ouvrir }: { actif: boolean; ouvrir: () => 
 }
 
 /** L'onglet « Compte » de Mon agent : réglages, aide, code, application, outils du créateur, déconnexion */
+/**
+ * Le compte Discord de l'agent : le lier (comptes ouverts par e-mail, Google ou GitHub), et voir le grade que le bot
+ * lui a donné sur le serveur de la communauté, qui suit son niveau d'accréditation.
+ */
+function CompteDiscord() {
+  const [etat, setEtat] = useState<EtatDiscord | null | undefined>(undefined)
+  const [horsServeur, setHorsServeur] = useState(false)
+  const [attente, setAttente] = useState(false)
+  useEffect(() => {
+    void lireDiscord().then(setEtat)
+  }, [])
+
+  async function lier() {
+    setAttente(true)
+    const erreur = await lierDiscord()
+    // Sans erreur, le navigateur part chez Discord et revient sur le jeu
+    if (erreur) {
+      notifier(erreur)
+      setAttente(false)
+    }
+  }
+
+  async function synchroniser() {
+    setAttente(true)
+    const r = await synchroniserGrade()
+    setAttente(false)
+    if ('erreur' in r) return notifier(r.erreur)
+    if (r.lie && r.membre === false) return setHorsServeur(true)
+    setHorsServeur(false)
+    setEtat(await lireDiscord())
+    notifier('Grade posé sur le Discord', 'succes')
+  }
+
+  const nomNiveau = (n: number) => ACCREDITATIONS[n]?.nom ?? `Niveau ${n}`
+  return (
+    <div className="encart compte-discord">
+      <h3>
+        <LogoDiscord taille={16} /> Discord
+      </h3>
+      {etat === undefined ? (
+        <p className="discret">Lecture…</p>
+      ) : etat === null ? (
+        <p className="discret">Indisponible pour le moment.</p>
+      ) : !etat.lie ? (
+        <>
+          <p className="discret">Liez votre compte Discord : sur le serveur de la communauté, votre grade suivra votre niveau d’accréditation.</p>
+          <div className="actions-compte-liste">
+            <button className="btn btn-discord" disabled={attente} onClick={() => void lier()}>
+              <LogoDiscord taille={16} /> Lier mon Discord
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <p>
+            Compte Discord lié.{' '}
+            {etat.grade === etat.niveau ? (
+              <span className="compte-discord-grade">Grade : {nomNiveau(etat.niveau)} ✓</span>
+            ) : (
+              <span className="discret">Grade à poser : {nomNiveau(etat.niveau)}</span>
+            )}
+          </p>
+          {horsServeur && <p className="discret">Rejoignez d’abord le serveur, puis synchronisez : le grade se pose sur les membres seulement.</p>}
+          {etat.grade !== etat.niveau && (
+            <div className="actions-compte-liste">
+              <button className="btn" disabled={attente} onClick={() => void synchroniser()}>
+                Synchroniser mon grade
+              </button>
+            </div>
+          )}
+        </>
+      )}
+      <div className="actions-compte-liste">
+        <a className="btn btn-discord" href={DISCORD} target="_blank" rel="noreferrer">
+          <LogoDiscord taille={16} /> Rejoindre le serveur ↗
+        </a>
+      </div>
+    </div>
+  )
+}
+
 export function ActionsCompte({ base, aller }: { base: Base | null; aller: (e: 'reglages' | 'reglement') => void }) {
-  const s = useSauvegarde()
-  const createur = estCreateur(useCreateurs(), s.agent)
-  const [gestion, setGestion] = useState(false)
-  const [consoleOuverte, setConsole] = useState(false)
   return (
     <div className="actions-compte">
       <div className="encart">
@@ -82,11 +160,9 @@ export function ActionsCompte({ base, aller }: { base: Base | null; aller: (e: '
           <button className="btn" onClick={() => aller('reglement')}>
             Aide, glossaire et règlement
           </button>
-          <a className="btn btn-discord" href={DISCORD} target="_blank" rel="noreferrer">
-            <LogoDiscord taille={16} /> Discord de la communauté ↗
-          </a>
         </div>
       </div>
+      <CompteDiscord />
       <div className="encart">
         <h3>Code et application</h3>
         <div className="actions-compte-liste">
@@ -95,19 +171,6 @@ export function ActionsCompte({ base, aller }: { base: Base | null; aller: (e: '
           <NotificationsAppareil />
         </div>
       </div>
-      {createur && (
-        <div className="encart">
-          <h3>Créateur</h3>
-          <div className="actions-compte-liste">
-            <button className="btn" onClick={() => setConsole(true)}>
-              ✦ Console du créateur
-            </button>
-            <button className="btn" onClick={() => setGestion(true)}>
-              ✦ Gérer les codes
-            </button>
-          </div>
-        </div>
-      )}
       <div className="encart">
         <h3>Session</h3>
         <div className="actions-compte-liste">
@@ -116,6 +179,26 @@ export function ActionsCompte({ base, aller }: { base: Base | null; aller: (e: '
           </button>
         </div>
       </div>
+    </div>
+  )
+}
+
+/** Les outils du créateur, en tête de Mon agent : visibles d'emblée, sans chercher l'onglet Compte */
+export function BarreCreateur({ base }: { base: Base | null }) {
+  const s = useSauvegarde()
+  const createur = estCreateur(useCreateurs(), s.agent)
+  const [gestion, setGestion] = useState(false)
+  const [consoleOuverte, setConsole] = useState(false)
+  if (!createur) return null
+  return (
+    <div className="barre-createur" role="group" aria-label="Outils du créateur">
+      <span className="barre-createur-titre">✦ Créateur</span>
+      <button className="btn" onClick={() => setConsole(true)}>
+        Console
+      </button>
+      <button className="btn" onClick={() => setGestion(true)}>
+        Gérer les codes
+      </button>
       {gestion && <GestionCodes base={base} onFermer={() => setGestion(false)} />}
       {consoleOuverte && <ConsoleCreateur onFermer={() => setConsole(false)} />}
     </div>

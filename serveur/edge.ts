@@ -24,6 +24,7 @@ const env = {
   site,
   origines: [site, 'http://localhost:5191'],
   vapid: Deno.env.get('VAPID_JWK'),
+  discord: Deno.env.get('discordBotSecret'),
 }
 
 Deno.serve((req) => traiter(req, env))

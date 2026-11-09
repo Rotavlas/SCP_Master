@@ -71,8 +71,13 @@ globalThis.fetch = async (url, options = {}) => {
       return json(400, { message: e.message })
     }
   }
+  if (url.startsWith('https://discord.com/api/v10/webhooks/')) {
+    discordEnvoyes.push({ url, methode: options.method, corps: JSON.parse(options.body) })
+    return json(200, {})
+  }
   throw new Error(`fetch inattendu : ${url}`)
 }
+const discordEnvoyes = []
 
 let horloge = 1_000_000
 const env = { url: URL_SUPABASE, cleService: 'cle-service', site: SITE, origines: [SITE], maintenant: () => horloge }
@@ -877,6 +882,60 @@ await test('dix réponses : terminée, une seule tentative par semaine', async (
   )
   assert.equal((await appel('jeton-A', { action: 'epreuve_debuter' })).statut, 409)
   assert.equal((await appel('jeton-A', { action: 'epreuve_question' })).statut, 409)
+})
+
+console.log('Discord : grades et commandes')
+const paireDiscord = await crypto.subtle.generateKey({ name: 'Ed25519' }, true, ['sign', 'verify'])
+env.discordClePublique = Buffer.from(await crypto.subtle.exportKey('raw', paireDiscord.publicKey)).toString('hex')
+async function interaction(corps, { signer = true } = {}) {
+  const texte = JSON.stringify(corps)
+  const horodatage = String(Math.floor(horloge / 1000))
+  const signature = signer
+    ? Buffer.from(await crypto.subtle.sign('Ed25519', paireDiscord.privateKey, new TextEncoder().encode(horodatage + texte))).toString('hex')
+    : '00'.repeat(64)
+  const req = new Request(`${URL_SUPABASE}/functions/v1/duel`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'X-Signature-Ed25519': signature, 'X-Signature-Timestamp': horodatage },
+    body: texte,
+  })
+  const r = await traiter(req, env)
+  const t = await r.text()
+  return { statut: r.status, texte: t, corps: t.startsWith('{') ? JSON.parse(t) : null }
+}
+await test('interaction mal signée : refusée', async () => {
+  assert.equal((await interaction({ type: 1 }, { signer: false })).statut, 401)
+})
+await test('PING signé : PONG', async () => {
+  const r = await interaction({ type: 1 })
+  assert.equal(r.statut, 200, r.texte)
+  assert.deepEqual(r.corps, { type: 1 })
+})
+await test('/carte : réponse différée puis fiche de la carte, sans mention', async () => {
+  discordEnvoyes.length = 0
+  const r = await interaction({ type: 2, token: 'jeton-interaction', data: { name: 'carte', options: [{ name: 'nom', value: '173' }] } })
+  assert.equal(r.statut, 200, r.texte)
+  assert.equal(r.corps.type, 5)
+  assert.equal(discordEnvoyes.length, 1)
+  const envoi = discordEnvoyes[0]
+  assert.equal(envoi.methode, 'PATCH')
+  assert.ok(envoi.url.endsWith('/jeton-interaction/messages/@original'), envoi.url)
+  assert.deepEqual(envoi.corps.allowed_mentions, { parse: [] })
+  assert.ok(JSON.stringify(envoi.corps).includes('173'), JSON.stringify(envoi.corps).slice(0, 200))
+})
+await test('/profil et /podium répondent même sans résultat', async () => {
+  discordEnvoyes.length = 0
+  await interaction({ type: 2, token: 't2', data: { name: 'profil', options: [{ name: 'pseudo', value: 'personne-de-ce-nom' }] } })
+  await interaction({ type: 2, token: 't3', data: { name: 'podium' } })
+  assert.equal(discordEnvoyes.length, 2)
+  for (const e of discordEnvoyes) assert.ok(e.corps.content || e.corps.embeds?.length, JSON.stringify(e.corps))
+})
+await test('grade : un agent sans Discord lié n’appelle pas Discord', async () => {
+  const r = await appel('jeton-A', { action: 'discord_grade' })
+  assert.equal(r.statut, 200, r.texte)
+  assert.equal(r.corps.lie, false)
+})
+await test('commandes : réservées au créateur', async () => {
+  assert.equal((await appel('jeton-A', { action: 'discord_commandes' })).statut, 403)
 })
 
 console.log(`\n${reussis} tests réussis${process.exitCode ? ', des échecs' : ''}.`)

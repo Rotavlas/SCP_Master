@@ -250,6 +250,7 @@ const DEMO_HALL: Record<string, () => unknown> = {
         ]
       : null,
   publier_version: () => false,
+  mon_discord: () => (enHall ? { lie: true, grade: 3, niveau: 3 } : null),
   mes_notifications_coupees: () => (enHall ? ['dossiers_prets'] : null),
   couper_notifications: () => null,
   reclamer_titre_thaumiel: () => true,

@@ -12,6 +12,17 @@ export interface Entree {
 export const JOURNAL: Entree[] = [
   {
     date: '2026-11-09',
+    titre: 'Le Discord relié au jeu',
+    points: [
+      'Votre grade sur le Discord suit votre niveau d’accréditation, de Niveau 0 à Thaumiel : il change de lui-même quand vous montez de niveau.',
+      'Connecté avec Discord, rien à faire. Sinon, « Lier mon Discord » dans Mon agent, onglet Compte, puis rejoignez le serveur.',
+      'Sur le serveur : /carte pour la fiche d’une anomalie, /profil pour celle d’un agent, /podium pour la dernière Épreuve et le haut du classement.',
+      'Dans Social, le nombre d’agents en ligne sur le Discord.',
+      'Sur téléphone, les onglets de Mon agent passent à la ligne au lieu de déborder.',
+    ],
+  },
+  {
+    date: '2026-11-09',
     titre: 'Un site plus simple à parcourir',
     points: [
       'Votre avatar ouvre directement « Mon agent » : profil, apparence (titres et cadres à porter), succès, Groupes d’intérêt, performance, et un onglet « Compte » pour les réglages, l’aide, les codes et la déconnexion.',

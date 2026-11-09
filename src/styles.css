@@ -15756,3 +15756,67 @@ button.emplacement-vide:hover {
   gap: 0.6rem 1rem;
   margin-bottom: 1rem;
 }
+
+/* ---------- Discord : compte lié, grade, agents en ligne ---------- */
+.compte-discord h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+.compte-discord p {
+  margin: 0 0 0.6rem;
+}
+.compte-discord-grade {
+  color: var(--vert);
+  font-family: var(--mono);
+  font-size: 0.85rem;
+}
+.discord-en-ligne {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+.discord-presence {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  opacity: 0.9;
+}
+.console-discord {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* ---------- Mon agent : outils du créateur en tête, six onglets à la ligne sur téléphone ---------- */
+.barre-createur {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid color-mix(in srgb, var(--ambre) 45%, var(--bord));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ambre) 7%, var(--panneau));
+}
+.barre-createur-titre {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--ambre);
+  margin-right: 0.2rem;
+}
+@media (max-width: 760px) {
+  .onglets-page.onglets-agent {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    align-items: stretch;
+  }
+  .onglets-page.onglets-agent button[role='tab'] {
+    flex: 1 1 calc(33% - 0.4rem);
+    padding: 0.5rem 0.4rem;
+    text-align: center;
+  }
+}

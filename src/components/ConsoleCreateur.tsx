@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createPortal } from 'react-dom'
-import { appeler } from '../state/enLigne'
+import { appeler, appelerDuel } from '../state/enLigne'
 import { notifier } from '../state/sauvegarde'
 import { Caviarde, Indisponible, Vide } from './Anime'
 import { BoutonConfirme } from './Confirmer'
@@ -73,6 +73,15 @@ export function ConsoleCreateur({ onFermer }: { onFermer: () => void }) {
             }
           >
             Publier les notes de version sur le Discord
+          </button>
+          <button
+            className="btn"
+            onClick={async () => {
+              const r = await appelerDuel<{ commandes: number }>('discord_commandes')
+              if (r) notifier(`${r.commandes} commandes installées sur le serveur Discord (/carte, /profil, /podium)`, 'succes')
+            }}
+          >
+            Installer les commandes Discord
           </button>
         </p>
         <nav className="onglets-page" role="tablist">
