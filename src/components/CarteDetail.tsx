@@ -19,11 +19,10 @@ import { useGlisserPourFermer } from './feuille'
 import { Fusion, Registre } from './Registre'
 import { imageDeCarte, partagerImage } from './imageCarte'
 import { Aide } from './Aide'
-
-type OngletFiche = 'dossier' | 'marche' | 'registre'
+import { prendreOngletFiche, type OngletFiche } from '../state/fiche'
 
 const ONGLETS_FICHE: { id: OngletFiche; nom: string }[] = [
-  { id: 'dossier', nom: 'Dossier' },
+  { id: 'dossier', nom: 'Fiche' },
   { id: 'marche', nom: 'Marché' },
   { id: 'registre', nom: 'Registre' },
 ]
@@ -78,7 +77,7 @@ export function CarteDetail({
   }
 
   // La fiche se lit par onglets : le dossier, le marché (et les doublons), le registre d'une Mythique
-  const [onglet, setOnglet] = useState<OngletFiche>('dossier')
+  const [onglet, setOnglet] = useState<OngletFiche>(prendreOngletFiche)
   // La taille du texte du dossier, retenue sur l'appareil
   const [tailleTexte, setTailleTexte] = useState(lireTailleTexte)
   function changerTaille(pas: number) {

@@ -318,6 +318,7 @@ export function Collection({
           <div className="filtres-recherche">
             <input
               type="search"
+              aria-label="Rechercher dans les archives"
               placeholder="Numéro, surnom ou tag…"
               value={recherche}
               onChange={(e) => {

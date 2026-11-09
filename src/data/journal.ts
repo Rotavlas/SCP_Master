@@ -12,6 +12,16 @@ export interface Entree {
 export const JOURNAL: Entree[] = [
   {
     date: '2026-11-09',
+    titre: 'Un site plus simple à parcourir',
+    points: [
+      'Votre avatar ouvre directement « Mon agent » : profil, apparence (titres et cadres à porter), succès, Groupes d’intérêt, performance, et un onglet « Compte » pour les réglages, l’aide, les codes et la déconnexion.',
+      'Des noms qui ne se croisent plus : l’onglet de la fiche d’une carte s’appelle « Fiche », celui de l’Intendance « Boutique ».',
+      'Au Marché, « Mettre une carte en vente » : choisissez la carte, sa fiche s’ouvre directement sur le marché.',
+      'Accessibilité : les fenêtres prennent le focus et le rendent à la fermeture, la barre du bas est plus lisible, les « ? » plus faciles à toucher, les champs de recherche ont un nom pour les lecteurs d’écran.',
+    ],
+  },
+  {
+    date: '2026-11-09',
     titre: 'Des équipes qui jouent leurs synergies',
     points: [
       'La composition automatique cherche maintenant les synergies, en plus des cartes les plus fortes.',

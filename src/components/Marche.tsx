@@ -27,6 +27,8 @@ import { Carte } from './Carte'
 import { BoutonConfirme } from './Confirmer'
 import { Cote } from './Cote'
 import { Indisponible, Caviarde, Vide } from './Anime'
+import { ChoixCarte } from './ChoixEquipe'
+import { demanderOngletFiche } from '../state/fiche'
 
 type Onglet = 'encheres' | 'ventes' | 'echanges' | 'cote'
 const credits = (n: number) => `${n.toLocaleString('fr-FR')} ₵`
@@ -399,15 +401,34 @@ function MesVentes({
   ouvrirCarte: (id: string) => void
   rafraichir: () => Promise<void>
 }) {
+  const [choix, setChoix] = useState(false)
   if (!etat) return <p className="discret">Connexion au bureau des transferts…</p>
   const miennes = etat.ouvertes.filter((e) => e.aMoi || e.enTete)
   const STATUTS = { vendue: 'Vendue', invendue: 'Sans acheteur', annulee: 'Retirée' } as const
   return (
     <>
-      <p className="discret">Pour vendre une carte, ouvrez sa fiche dans vos archives : le cours et la mise aux enchères s'y trouvent.</p>
+      <div className="vendre-entete">
+        <button className="btn btn-principal" onClick={() => setChoix(true)}>
+          Mettre une carte en vente
+        </button>
+        <span className="discret">Choisissez la carte : sa fiche s’ouvre sur le marché, avec sa cote et la mise aux enchères.</span>
+      </div>
+      {choix && (
+        <ChoixCarte
+          base={base}
+          entete="Bureau des transferts · Mise en vente"
+          titre="Quelle carte vendre ?"
+          onFermer={() => setChoix(false)}
+          onChoisir={(c) => {
+            setChoix(false)
+            demanderOngletFiche('marche')
+            ouvrirCarte(c.id)
+          }}
+        />
+      )}
       <h2>En cours</h2>
       {miennes.length === 0 ? (
-        <Vide titre="Aucune vente ni enchère en tête">Ouvrez la fiche d’une carte de vos archives pour la mettre aux enchères.</Vide>
+        <Vide titre="Aucune vente ni enchère en tête">Mettez une carte en vente avec le bouton ci-dessus.</Vide>
       ) : (
         <div className="liste-encheres">
           {miennes.map((e) => {

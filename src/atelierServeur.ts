@@ -227,6 +227,7 @@ const DEMO_HALL: Record<string, () => unknown> = {
         }
       : null,
   ajouter_statistiques: () => null,
+  marche: () => (enHall ? { maintenant: new Date().toISOString(), ouvertes: [], historique: [] } : null),
   mes_tirages: () =>
     enHall
       ? [

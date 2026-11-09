@@ -38,103 +38,84 @@ export function LogoDiscord({ taille = 18 }: { taille?: number }) {
  * Bouton du bandeau : « ton profil », avec déconnexion. L'adresse e-mail du compte (celle de Discord,
  * par exemple) n'est jamais affichée : seul le pseudo public apparaît.
  */
-export function BoutonCompte({ base, aller }: { base: Base | null; aller: (e: 'succes' | 'reglages' | 'reglement') => void }) {
+/** L'avatar de l'en-tête : un toucher ouvre « Mon agent » (profil, apparence, succès, compte) */
+export function BoutonCompte({ actif, ouvrir }: { actif: boolean; ouvrir: () => void }) {
   const compte = useCompte()
   const s = useSauvegarde()
   const badges = useBadgesDe(s.agent || null)
-  const [menu, setMenu] = useState(false)
-  // Le créateur gère les codes depuis ce menu
-  const createur = estCreateur(useCreateurs(), s.agent)
-  const [gestion, setGestion] = useState(false)
-  const [consoleOuverte, setConsole] = useState(false)
   if (compte.statut !== 'connecte') return null
   return (
     <div className="compte-menu">
-      <button className="btn btn-compte connecte" onClick={() => setMenu(!menu)} aria-expanded={menu} title="Ton profil" aria-label={s.agent || 'Ton profil'}>
+      <button
+        className={`btn btn-compte connecte ${actif ? 'actif' : ''}`}
+        onClick={ouvrir}
+        aria-current={actif ? 'page' : undefined}
+        title="Mon agent"
+        aria-label={`Mon agent : ${s.agent || 'profil'}`}
+      >
         <span className="pastille-en-ligne" aria-hidden="true" />
         {/* Téléphone : l'initiale seule, dans une pastille */}
         <span className="compte-initiale" aria-hidden="true">
           {(s.agent || '?').trim().charAt(0).toUpperCase()}
         </span>
-        <span className="compte-nom">{s.agent || 'Ton profil'}</span>
+        <span className="compte-nom">{s.agent || 'Mon agent'}</span>
         <BadgesAffiches ids={badges} />
       </button>
-      {menu && (
-        <div className="compte-deroulant" role="menu">
-          {s.agent && (
-            <button
-              className="btn btn-principal"
-              role="menuitem"
-              onClick={() => {
-                setMenu(false)
-                aller('succes')
-              }}
-            >
-              Ton dossier personnel
-            </button>
-          )}
+    </div>
+  )
+}
+
+/** L'onglet « Compte » de Mon agent : réglages, aide, code, application, outils du créateur, déconnexion */
+export function ActionsCompte({ base, aller }: { base: Base | null; aller: (e: 'reglages' | 'reglement') => void }) {
+  const s = useSauvegarde()
+  const createur = estCreateur(useCreateurs(), s.agent)
+  const [gestion, setGestion] = useState(false)
+  const [consoleOuverte, setConsole] = useState(false)
+  return (
+    <div className="actions-compte">
+      <div className="encart">
+        <h3>Réglages et aide</h3>
+        <div className="actions-compte-liste">
+          <button className="btn" onClick={() => aller('reglages')}>
+            Réglages : son, notifications, lecture
+          </button>
+          <button className="btn" onClick={() => aller('reglement')}>
+            Aide, glossaire et règlement
+          </button>
+          <a className="btn btn-discord" href={DISCORD} target="_blank" rel="noreferrer">
+            <LogoDiscord taille={16} /> Discord de la communauté ↗
+          </a>
+        </div>
+      </div>
+      <div className="encart">
+        <h3>Code et application</h3>
+        <div className="actions-compte-liste">
+          <SaisirCode base={base} />
           <InstallerApplication />
           <NotificationsAppareil />
-          <SaisirCode base={base} />
-          <button
-            className="btn"
-            role="menuitem"
-            onClick={() => {
-              setMenu(false)
-              aller('reglages')
-            }}
-          >
-            Réglages
-          </button>
-          <button
-            className="btn"
-            role="menuitem"
-            onClick={() => {
-              setMenu(false)
-              aller('reglement')
-            }}
-          >
-            Aide et règlement
-          </button>
-          <a className="btn" role="menuitem" href={DISCORD} target="_blank" rel="noreferrer" onClick={() => setMenu(false)}>
-            Discord de la communauté ↗
-          </a>
-          {createur && (
-            <button
-              className="btn"
-              role="menuitem"
-              onClick={() => {
-                setMenu(false)
-                setConsole(true)
-              }}
-            >
+        </div>
+      </div>
+      {createur && (
+        <div className="encart">
+          <h3>Créateur</h3>
+          <div className="actions-compte-liste">
+            <button className="btn" onClick={() => setConsole(true)}>
               ✦ Console du créateur
             </button>
-          )}
-          {createur && (
-            <button
-              className="btn"
-              role="menuitem"
-              onClick={() => {
-                setMenu(false)
-                setGestion(true)
-              }}
-            >
+            <button className="btn" onClick={() => setGestion(true)}>
               ✦ Gérer les codes
             </button>
-          )}
-          <button
-            className="btn"
-            role="menuitem"
-            onClick={() => {
-              setMenu(false)
-              void deconnexion()
-            }}
-          >
+          </div>
+        </div>
+      )}
+      <div className="encart">
+        <h3>Session</h3>
+        <div className="actions-compte-liste">
+          <button className="btn" onClick={() => void deconnexion()}>
             Se déconnecter
           </button>
         </div>
-      )}
+      </div>
       {gestion && <GestionCodes base={base} onFermer={() => setGestion(false)} />}
       {consoleOuverte && <ConsoleCreateur onFermer={() => setConsole(false)} />}
     </div>
@@ -164,7 +145,7 @@ const ATOUTS: { titre: string; texte: string; icone: string }[] = [
   {
     icone: '✪',
     titre: 'Progressez',
-    texte: 'Clans, raids et guerres de clans, synergies d’équipe, accréditations, succès et titres : votre dossier personnel se remplit.',
+    texte: 'Clans, raids et guerres de clans, synergies d’équipe, accréditations, succès et titres : votre fiche d’agent se remplit.',
   },
 ]
 
@@ -313,7 +294,7 @@ function SaisirCode({ base }: { base: Base | null }) {
   const [envoi, setEnvoi] = useState(false)
   if (!ouvert)
     return (
-      <button className="btn" role="menuitem" onClick={() => setOuvert(true)}>
+      <button className="btn" onClick={() => setOuvert(true)}>
         Saisir un code
       </button>
     )

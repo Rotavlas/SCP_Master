@@ -129,7 +129,14 @@ function Amis({ ouvrirProfil, ecrire }: { ouvrirProfil: (p: string) => void; ecr
             if (recherche.trim()) void agir(() => demanderAmi(recherche.trim())).then(() => setRecherche(''))
           }}
         >
-          <input value={recherche} onChange={(e) => setRecherche(e.target.value)} placeholder="Pseudo de l'agent" list="suggestions-amis" maxLength={24} />
+          <input
+            value={recherche}
+            onChange={(e) => setRecherche(e.target.value)}
+            aria-label="Pseudo de l'agent à ajouter"
+            placeholder="Pseudo de l'agent"
+            list="suggestions-amis"
+            maxLength={24}
+          />
           <datalist id="suggestions-amis">
             {suggestions.map((s) => (
               <option key={s} value={s} />
@@ -267,7 +274,7 @@ function SansClan({ base, candidatures, recharger }: { base: Base; candidatures:
       <div className="encart">
         <h3>Rejoindre un clan</h3>
         {candidatures.length > 0 && <p className="alerte">Candidature en attente : {candidatures.map((t) => `[${t}]`).join(', ')}</p>}
-        <input value={recherche} onChange={(e) => setRecherche(e.target.value)} placeholder="Nom ou tag du clan" />
+        <input value={recherche} onChange={(e) => setRecherche(e.target.value)} aria-label="Rechercher un clan" placeholder="Nom ou tag du clan" />
         {!clans ? (
           <Caviarde lignes={4} />
         ) : clans.length === 0 ? (

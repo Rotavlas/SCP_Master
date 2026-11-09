@@ -100,15 +100,21 @@ export function Repertoire({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id
       </div>
 
       <div className="filtres">
-        <input type="search" placeholder="Désignation, nom, catégorie…" value={recherche} onChange={(e) => filtre(setRecherche)(e.target.value)} />
-        <select value={possession} onChange={(e) => filtre(setPossession)(e.target.value as Possession)}>
+        <input
+          type="search"
+          aria-label="Rechercher une fiche"
+          placeholder="Désignation, nom, catégorie…"
+          value={recherche}
+          onChange={(e) => filtre(setRecherche)(e.target.value)}
+        />
+        <select aria-label="Possession" value={possession} onChange={(e) => filtre(setPossession)(e.target.value as Possession)}>
           <option value="toutes">Toutes les fiches</option>
           <option value="possedees">Possédées</option>
           <option value="manquantes">Manquantes</option>
           <option value="souhaits">Liste de souhaits ({s.souhaits.length})</option>
           <option value="variantes">Avec variantes rares</option>
         </select>
-        <select value={type} onChange={(e) => filtre(setType)(e.target.value as TypeFiche | 'tous')}>
+        <select aria-label="Type de fiche" value={type} onChange={(e) => filtre(setType)(e.target.value as TypeFiche | 'tous')}>
           <option value="tous">Tous types</option>
           {ORDRE_TYPES.map((k) => (
             <option key={k} value={k}>
@@ -116,7 +122,7 @@ export function Repertoire({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id
             </option>
           ))}
         </select>
-        <select value={rarete} onChange={(e) => filtre(setRarete)(e.target.value === 'toutes' ? 'toutes' : Number(e.target.value))}>
+        <select aria-label="Rareté" value={rarete} onChange={(e) => filtre(setRarete)(e.target.value === 'toutes' ? 'toutes' : Number(e.target.value))}>
           <option value="toutes">Toutes raretés</option>
           {RARETES.map((r, i) => (
             <option key={r.nom} value={i}>
@@ -124,7 +130,7 @@ export function Repertoire({ base, ouvrirCarte }: { base: Base; ouvrirCarte: (id
             </option>
           ))}
         </select>
-        <select value={tri} onChange={(e) => filtre(setTri)(e.target.value as Tri)}>
+        <select aria-label="Trier par" value={tri} onChange={(e) => filtre(setTri)(e.target.value as Tri)}>
           <option value="designation">Tri : désignation</option>
           <option value="rarete">Tri : rareté</option>
           <option value="popularite">Tri : popularité</option>

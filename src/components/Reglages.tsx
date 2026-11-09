@@ -81,6 +81,7 @@ export function Reglages() {
               step={0.05}
               value={vol.general}
               disabled={!son}
+              aria-label="Volume général"
               onChange={(e) => changerVolume(Number(e.target.value), vol.ambiances)}
             />
           </label>
@@ -95,6 +96,7 @@ export function Reglages() {
               step={0.05}
               value={vol.ambiances}
               disabled={!son}
+              aria-label="Volume des ambiances"
               onChange={(e) => changerVolume(vol.general, Number(e.target.value))}
             />
           </label>

@@ -263,9 +263,9 @@ export function Carte({
                 N° {String(numero).padStart(2, '0')}/{EDITION_MYTHIQUE}
               </span>
             )}
-            <h3 className="carte-nom cm-nom" title={caviardee ? undefined : carte.nm}>
+            <p className="carte-nom cm-nom" title={caviardee ? undefined : carte.nm}>
               {caviardee ? <span className="caviarde">██████ ████</span> : carte.nm}
-            </h3>
+            </p>
             {taille !== 'p' && extrait && !caviardee && <p className="cm-extrait">{extrait}</p>}
             <footer className="cm-stats">
               <span title="Menace (attaque)">
@@ -346,9 +346,9 @@ export function Carte({
               <span className="cl-rang">Légendaire</span>
               <span className="cl-classe">{caviardee ? '█████' : etiquette.texte}</span>
             </div>
-            <h3 className="carte-nom cl-nom" title={caviardee ? undefined : carte.nm}>
+            <p className="carte-nom cl-nom" title={caviardee ? undefined : carte.nm}>
               {caviardee ? <span className="caviarde">██████ ████</span> : carte.nm}
-            </h3>
+            </p>
             {taille !== 'p' && extrait && !caviardee && <p className="cl-extrait">{extrait}</p>}
             <footer className="cl-stats">
               <span title="Menace (attaque)">
@@ -419,9 +419,9 @@ export function Carte({
           {variante === 'exp' && <span className="tampon-expurge">Expurgé</span>}
           {variante === 'o5' && <span className="sceau-o5">O5</span>}
         </div>
-        <h3 className="carte-nom" title={caviardee ? undefined : carte.nm}>
+        <p className="carte-nom" title={caviardee ? undefined : carte.nm}>
           {caviardee ? <span className="caviarde">██████ ████</span> : carte.nm}
-        </h3>
+        </p>
         {taille !== 'p' && extrait && !caviardee && <p className="carte-extrait">{extrait}</p>}
         <footer className="carte-stats">
           <span className="stat stat-atk" title="Menace (attaque)">

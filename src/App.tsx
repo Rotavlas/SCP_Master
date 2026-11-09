@@ -46,8 +46,8 @@ const ECRANS: Ecran[] = ['accueil', 'booster', 'collection', 'repertoire', 'succ
 
 /**
  * La navigation en cinq pôles : chacun regroupe des écrans, dont les sous-onglets apparaissent sous l'en-tête ; sur
- * téléphone, les cinq pôles forment la barre du bas. Le reste (dossier personnel, réglages, journal, aide) passe par
- * le menu du compte.
+ * téléphone, les cinq pôles forment la barre du bas. L'avatar ouvre « Mon agent » (profil, apparence, succès, compte :
+ * réglages, aide, code) ; le journal et les notifications restent dans l'en-tête.
  */
 const POLES: { id: string; nom: string; icone: string; ecrans: { id: Ecran; nom: string }[] }[] = [
   { id: 'terminal', nom: 'Terminal', icone: '⌂', ecrans: [{ id: 'accueil', nom: 'Terminal' }] },
@@ -368,7 +368,7 @@ export default function App() {
               }}
             />
           )}
-          <BoutonCompte base={base} aller={aller} />
+          <BoutonCompte actif={ecran === 'succes'} ouvrir={() => aller('succes')} />
         </header>
       )}
 
@@ -419,7 +419,7 @@ export default function App() {
           />
         )}
         {ecran === 'repertoire' && <Repertoire base={base} ouvrirCarte={setCarteOuverte} />}
-        {ecran === 'succes' && <PageSucces base={base} ouvrirCarte={setCarteOuverte} />}
+        {ecran === 'succes' && <PageSucces base={base} ouvrirCarte={setCarteOuverte} aller={aller} />}
         {ecran === 'duel' && <Duel base={base} aller={aller} ouvrirProfil={setProfilOuvert} />}
         {ecran === 'social' && (
           <Social

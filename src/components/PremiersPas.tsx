@@ -61,9 +61,9 @@ export function PremiersPas({ aller }: { aller: (e: Ecran) => void }) {
       <div className="premiers-pas-tete">
         <div>
           <p className="dossier-entete">Formation des nouvelles recrues</p>
-          <h3>
+          <h2>
             Premiers pas · {faites}/{etapes.length}
-          </h3>
+          </h2>
         </div>
         <button
           className="btn btn-discret"

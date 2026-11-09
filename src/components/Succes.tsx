@@ -10,12 +10,14 @@ import { Caviarde, Indisponible, Vide, useTampon } from './Anime'
 import { FAMILLES, useStatistiques } from '../state/statistiques'
 import { FicheAgent } from './Profil'
 import { Piste } from './Piste'
+import { ActionsCompte } from './Compte'
+import { Cosmetiques } from './Cosmetiques'
 
 /**
  * Le dossier de carrière : les succès (public.succes), et les collections à compléter (pages de l'album et Groupes
  * d'intérêt). Les succès rapportent au plus un titre ou un cadre ; l'album, des crédits ; les Groupes, un titre et un cadre.
  */
-type Onglet = 'profil' | 'succes' | 'collections' | 'performance'
+type Onglet = 'profil' | 'apparence' | 'succes' | 'collections' | 'performance' | 'compte'
 
 interface Succes {
   id: string
@@ -86,25 +88,37 @@ function Anneau({ valeur, total, couleur, taille = 64 }: { valeur: number; total
 }
 
 /**
- * Le dossier personnel : son profil (tel que les autres le voient), sa carrière et ses états de service, ses succès,
+ * Mon agent (le dossier personnel) : son profil (tel que les autres le voient), sa carrière et ses états de service, ses succès,
  * ses collections, sa performance. Tout ce qui le concerne, sur une seule page.
  */
-export function PageSucces({ base, ouvrirCarte, ongletInitial = 'profil' }: { base: Base; ouvrirCarte: (id: string) => void; ongletInitial?: Onglet }) {
+export function PageSucces({
+  base,
+  ouvrirCarte,
+  aller,
+  ongletInitial = 'profil',
+}: {
+  base: Base
+  ouvrirCarte: (id: string) => void
+  aller: (e: 'reglages' | 'reglement') => void
+  ongletInitial?: Onglet
+}) {
   const [onglet, setOnglet] = useState<Onglet>(ongletInitial)
   return (
     <section className="page-succes">
       <div className="marche-entete">
         <div>
           <p className="dossier-entete">Ressources humaines · Dossier de carrière</p>
-          <h1>Dossier personnel</h1>
+          <h1>Mon agent</h1>
         </div>
         <nav className="onglets-page" role="tablist">
           {(
             [
               ['profil', 'Profil'],
+              ['apparence', 'Apparence'],
               ['succes', 'Succès'],
-              ['collections', 'Collections'],
+              ['collections', 'Groupes d’intérêt'],
               ['performance', 'Performance'],
+              ['compte', 'Compte'],
             ] as const
           ).map(([id, nom]) => (
             <button key={id} role="tab" aria-selected={onglet === id} className={onglet === id ? 'actif' : ''} onClick={() => setOnglet(id)}>
@@ -117,6 +131,8 @@ export function PageSucces({ base, ouvrirCarte, ongletInitial = 'profil' }: { ba
       {onglet === 'succes' && <ListeSucces />}
       {onglet === 'collections' && <Collections base={base} ouvrirCarte={ouvrirCarte} />}
       {onglet === 'performance' && <Performance />}
+      {onglet === 'apparence' && <Cosmetiques />}
+      {onglet === 'compte' && <ActionsCompte base={base} aller={aller} />}
     </section>
   )
 }

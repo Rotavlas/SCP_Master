@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { ADVERSAIRES } from '../engine/duel'
 import { ACCREDITATIONS, accreditation, useSauvegarde } from '../state/sauvegarde'
 import { jouer } from '../state/sons'
 import { VIBRATIONS, vibrer } from '../state/vibrer'
 import { Logo } from './Logo'
+import { usePiegeFocus } from './feuille'
 
 const cle = (agent: string) => `scp-masters:accreditation-vue:${agent}`
 
@@ -17,6 +18,8 @@ export function CeremonieAccreditation() {
   const s = useSauvegarde()
   const niveau = accreditation(s.xp).niveau
   const [fete, setFete] = useState<number | null>(null)
+  const fenetre = useRef<HTMLDivElement>(null)
+  usePiegeFocus(fenetre, fete !== null)
 
   useEffect(() => {
     if (!s.agent) return
@@ -65,7 +68,7 @@ export function CeremonieAccreditation() {
   const adversaire = ADVERSAIRES.find((x) => x.accreditation === fete)
   return createPortal(
     <div className="ceremonie-fond" onClick={() => setFete(null)} role="dialog" aria-modal="true" aria-label={`Nouvelle accréditation : ${a.nom}`}>
-      <div className="ceremonie" onClick={(e) => e.stopPropagation()}>
+      <div className="ceremonie" ref={fenetre} onClick={(e) => e.stopPropagation()}>
         <p className="dossier-entete">Ressources humaines · Accréditation</p>
         <div className="carte-agent">
           <div className="carte-agent-tete">

@@ -98,6 +98,69 @@ export function ChoixCarteEquipe({ base, place, onFermer }: { base: Base; place:
   )
 }
 
+/** Choisir une de ses cartes (recherche, les plus rares d'abord) : par exemple pour la mettre en vente */
+export function ChoixCarte({
+  base,
+  titre,
+  entete,
+  onChoisir,
+  onFermer,
+}: {
+  base: Base
+  titre: string
+  entete: string
+  onChoisir: (carte: TCarte) => void
+  onFermer: () => void
+}) {
+  const feuille = useGlisserPourFermer(onFermer)
+  const s = useSauvegarde()
+  const { possedees } = useEquipe(base)
+  const [recherche, setRecherche] = useState('')
+  const liste = useMemo(() => {
+    const q = recherche.trim().toLowerCase()
+    return possedees
+      .filter((c) => !q || `${c.num ?? ''} ${c.nm}`.toLowerCase().includes(q))
+      .sort((a, b) => b.ra - a.ra || b.atk + b.def - (a.atk + a.def))
+      .slice(0, 60)
+  }, [possedees, recherche])
+  return createPortal(
+    <div className="modale-fond" onClick={onFermer}>
+      <div className="modale choix-equipe" ref={feuille} onClick={(e) => e.stopPropagation()} role="dialog" aria-label={titre}>
+        <button className="fermer" onClick={onFermer} aria-label="Fermer">
+          ✕
+        </button>
+        <p className="dossier-entete">{entete}</p>
+        <h2>{titre}</h2>
+        <div className="choix-equipe-filtres">
+          <input
+            type="search"
+            aria-label="Rechercher une carte"
+            placeholder="Désignation ou nom…"
+            value={recherche}
+            onChange={(e) => setRecherche(e.target.value)}
+            autoFocus
+          />
+        </div>
+        {liste.length === 0 ? (
+          <p className="discret">Aucune carte ne correspond.</p>
+        ) : (
+          <ul className="choix-equipe-liste">
+            {liste.map((carte) => (
+              <li key={carte.id}>
+                <button className="choix-equipe-carte" onClick={() => onChoisir(carte)}>
+                  <Carte carte={carte} base={base} taille="p" variante={varianteAffichee(s, carte.id)} inclinable={false} />
+                  {(s.collection[carte.id] ?? 0) > 1 && <span className="choix-equipe-gain">×{s.collection[carte.id]}</span>}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
+      </div>
+    </div>,
+    document.body,
+  )
+}
+
 /** « Il vous manque… » : les échanges d'une carte (parmi les vôtres) qui ajouteraient une synergie */
 export function SuggestionsEquipe({ base }: { base: Base }) {
   const { possedees, equipe } = useEquipe(base)

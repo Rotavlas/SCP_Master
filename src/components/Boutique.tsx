@@ -15,7 +15,7 @@ import { Contrats, EditionsMythiques } from './Contrats'
 
 type OngletIntendance = 'dossiers' | 'contrats' | 'cosmetiques' | 'economie'
 const ONGLETS_INTENDANCE: { id: OngletIntendance; nom: string }[] = [
-  { id: 'dossiers', nom: 'Dossiers' },
+  { id: 'dossiers', nom: 'Boutique' },
   { id: 'contrats', nom: 'Contrats et Mythiques' },
   { id: 'cosmetiques', nom: 'Cosmétiques' },
   { id: 'economie', nom: 'Crédits et compte' },

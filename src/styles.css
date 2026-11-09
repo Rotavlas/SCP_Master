@@ -15668,3 +15668,91 @@ button.emplacement-vide:hover {
   border-color: #5865f2;
   background: rgba(88, 101, 242, 0.18);
 }
+
+/* =====================================================================================================================
+   Accessibilité (étude du 9 novembre 2026) : fenêtres, tailles de texte et de cible, contrastes
+   ===================================================================================================================== */
+
+/* Une fenêtre qui prend le focus n'affiche pas de cadre autour d'elle-même */
+.modale:focus,
+.aide-bulle:focus,
+.ceremonie:focus {
+  outline: none;
+}
+
+/* Les « ? » : le rond reste petit, la zone de toucher fait 34 px */
+.aide-bouton {
+  position: relative;
+}
+
+.aide-bouton::after {
+  content: '';
+  position: absolute;
+  inset: -8px;
+}
+
+/* Des cibles d'au moins 32 px au doigt */
+.puce-variante,
+.pastille-filtre,
+.onglets-fiche .taille-texte button {
+  min-height: 32px;
+}
+
+.coeur {
+  min-width: 32px;
+  min-height: 32px;
+}
+
+.reglage-ligne input[type='checkbox'] {
+  width: 2.8rem;
+  height: 1.8rem;
+}
+
+/* A− et A+ : un contraste suffisant */
+.onglets-fiche .taille-texte button {
+  color: var(--texte);
+}
+
+/* Le Règlement est sur papier clair : les noms de rareté (souvent pâles) sont assombris pour rester lisibles */
+.reglement table [style*='color'] {
+  filter: brightness(0.5) saturate(1.6);
+}
+
+@media (max-width: 760px) {
+  /* Les libellés de la barre des cinq pôles : 11 px au lieu de 9,6 px */
+  .onglets button {
+    font-size: 0.69rem;
+    letter-spacing: 0;
+  }
+}
+
+/* ---------- Mon agent, onglet Compte ; la mise en vente depuis le Marché ---------- */
+.actions-compte {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.actions-compte-liste {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.actions-compte-liste > .btn,
+.actions-compte-liste > a.btn {
+  justify-content: center;
+  text-align: center;
+}
+
+.btn-compte.actif {
+  border-color: var(--ambre);
+}
+
+.vendre-entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1rem;
+  margin-bottom: 1rem;
+}

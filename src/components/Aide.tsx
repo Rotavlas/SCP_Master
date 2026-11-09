@@ -1,13 +1,16 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { AIDE, type SujetAide } from '../data/aide'
 import { useFermerAuRetour } from '../state/historique'
+import { usePiegeFocus } from './feuille'
 
 /** Un « ? » à côté d'une notion : un toucher ouvre son explication (src/data/aide.ts). */
 export function Aide({ sujet }: { sujet: SujetAide }) {
   const [ouverte, setOuverte] = useState(false)
   const e = AIDE[sujet]
   useFermerAuRetour(ouverte, () => setOuverte(false))
+  const bulle = useRef<HTMLDivElement>(null)
+  usePiegeFocus(bulle, ouverte)
   useEffect(() => {
     if (!ouverte) return
     const echap = (k: KeyboardEvent) => k.key === 'Escape' && setOuverte(false)
@@ -31,7 +34,7 @@ export function Aide({ sujet }: { sujet: SujetAide }) {
       {ouverte &&
         createPortal(
           <div className="aide-fond" onClick={() => setOuverte(false)}>
-            <div className="aide-bulle" role="dialog" aria-label={e.titre} onClick={(ev) => ev.stopPropagation()}>
+            <div className="aide-bulle" ref={bulle} role="dialog" aria-label={e.titre} onClick={(ev) => ev.stopPropagation()}>
               <p className="dossier-entete">Aide · Glossaire</p>
               <h3>{e.titre}</h3>
               <p>{e.texte}</p>
