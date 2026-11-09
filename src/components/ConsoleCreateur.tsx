@@ -5,6 +5,7 @@ import { notifier } from '../state/sauvegarde'
 import { Caviarde, Indisponible, Vide } from './Anime'
 import { BoutonConfirme } from './Confirmer'
 import { useGlisserPourFermer } from './feuille'
+import { publierVersion } from '../state/discord'
 
 /**
  * La console du créateur (réservée au créateur, contrôlée par le serveur) : les messages signalés à modérer,
@@ -61,6 +62,19 @@ export function ConsoleCreateur({ onFermer }: { onFermer: () => void }) {
         </button>
         <p className="dossier-entete">Conseil O5 · Accès créateur</p>
         <h2>Console du créateur</h2>
+        <p className="console-discord">
+          <button
+            className="btn btn-discord"
+            onClick={async () =>
+              notifier(
+                (await publierVersion()) ? 'Notes de version publiées sur le Discord' : 'Rien d’envoyé : déjà publiées, ou pas de webhook dans prive.discord',
+                'info',
+              )
+            }
+          >
+            Publier les notes de version sur le Discord
+          </button>
+        </p>
         <nav className="onglets-page" role="tablist">
           {(
             [

@@ -37,6 +37,8 @@ import { CeremonieAccreditation } from './components/Accreditation'
 import { changerFiche } from './state/transitions'
 import { demarrerHistorique, empilerEcran, useRetourEcran } from './state/historique'
 import { DISCORD } from './data/liens'
+import { estCreateur, useCreateurs } from './components/Createur'
+import { usePublierVersion } from './state/discord'
 
 /** Les onglets ; sur téléphone, les quatre principaux restent dans la barre du bas, les autres passent sous « Plus ». */
 /** Les écrans qu'une adresse (raccourci de l'application, notification) peut demander */
@@ -117,6 +119,9 @@ export default function App() {
   const [conversation, setConversation] = useState<Destinataire | null>(null)
   // Sur téléphone : le menu des onglets secondaires
   const connecte = compte.statut === 'connecte' && !!s.agent
+  // Le créateur charge une nouvelle version : ses notes partent sur le Discord de la communauté (une fois)
+  const createur = estCreateur(useCreateurs(), connecte ? s.agent : null)
+  usePublierVersion(createur)
   // Le réseau revient après un lancement hors ligne : on recharge, la session reprend d'elle-même
   const reseau = useEnLigneReseau()
   const avaitPerduLeReseau = useRef(!navigator.onLine)

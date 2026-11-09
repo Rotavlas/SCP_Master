@@ -14,6 +14,8 @@ import { Section } from './Section'
 import { Vide } from './Anime'
 import { Synergies } from './Synergies'
 import { useGlissementGrille } from './flip'
+import { composerEquipe } from '../engine/composition'
+import { SuggestionsEquipe } from './ChoixEquipe'
 
 const PAR_PAGE = 60
 
@@ -74,11 +76,13 @@ function lireFiltres(): Filtres {
 }
 
 /** Les 5 cartes possédées les plus fortes, pour composer l'équipe en un clic. */
+/** La composition automatique : les cartes les plus fortes, en cherchant aussi les synergies (src/engine/composition.ts) */
 export function meilleureEquipe(base: Base, collection: Record<string, number>): string[] {
-  return Object.keys(collection)
+  const possedees = Object.keys(collection)
+    .filter((id) => collection[id] > 0)
     .map((id) => base.parId.get(id))
     .filter((c): c is TCarte => !!c)
-    .sort((a, b) => b.atk + b.def - (a.atk + a.def))
+  return composerEquipe(possedees)
     .slice(0, TAILLE_DECK)
     .map((c) => c.id)
 }
@@ -285,6 +289,7 @@ export function Collection({
             )}
           </div>
           <Synergies equipe={equipe} />
+          <SuggestionsEquipe base={base} />
           <div className="actions">
             <button className="btn" onClick={() => modifier((x) => ({ ...x, deck: meilleureEquipe(base, x.collection) }))}>
               Composer automatiquement

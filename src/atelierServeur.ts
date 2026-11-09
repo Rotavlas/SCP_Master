@@ -227,6 +227,28 @@ const DEMO_HALL: Record<string, () => unknown> = {
         }
       : null,
   ajouter_statistiques: () => null,
+  mes_tirages: () =>
+    enHall
+      ? [
+          {
+            type: 'keter',
+            cartes: [
+              { id: 'scp-682', v: 'holo' },
+              { id: 'scp-173', v: 'std' },
+            ],
+            le: new Date(Date.now() - 3_600_000).toISOString(),
+          },
+          {
+            type: 'standard',
+            cartes: [
+              { id: 'scp-096', v: 'std' },
+              { id: 'scp-049', v: 'std' },
+            ],
+            le: new Date(Date.now() - 90_000_000).toISOString(),
+          },
+        ]
+      : null,
+  publier_version: () => false,
   mes_notifications_coupees: () => (enHall ? ['dossiers_prets'] : null),
   couper_notifications: () => null,
   reclamer_titre_thaumiel: () => true,

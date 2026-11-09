@@ -28,6 +28,7 @@ import { CLE_TUTO_BRECHE, TutoBreche, Tuto, tutoVu } from './TutoBreche'
 import { Caviarde, Vide } from './Anime'
 import { CLE_TUTO_ECLAIR, CLE_TUTO_RECO, ETAPES_ECLAIR, ETAPES_RECO } from './TutoModes'
 import { Synergies } from './Synergies'
+import { ChoixCarteEquipe, SuggestionsEquipe } from './ChoixEquipe'
 
 /** Confrontations récompensées par 24 heures contre l'IA (le serveur fait foi : public.duel_clore) */
 const DUELS_IA_RECOMPENSES = 5
@@ -107,6 +108,8 @@ export function Duel({ base, aller, ouvrirProfil }: { base: Base; aller: (e: Ecr
   }, [])
 
   const equipe = s.deck.map((id) => base.parId.get(id)).filter((c): c is TCarte => !!c && !!s.collection[c.id])
+  // L'emplacement de l'équipe qu'on est en train de changer
+  const [placeChoisie, setPlaceChoisie] = useState<number | null>(null)
   const niveau = accreditation(s.xp).niveau
 
   const modeChoisi = MODES.find((m) => m.id === mode)!
@@ -171,18 +174,29 @@ export function Duel({ base, aller, ouvrirProfil }: { base: Base; aller: (e: Ecr
           </h2>
           <p className="discret">Anomalies et soutiens, et une Mythique si vous en avez une.</p>
         </div>
+        {/* Un toucher sur une carte (ou un emplacement vide) : la changer sans quitter la page */}
         <div className="equipe-emplacements">
           {Array.from({ length: TAILLE_DECK }, (_, i) =>
             equipe[i] ? (
-              <Carte key={equipe[i].id} carte={equipe[i]} base={base} taille="p" variante={varianteAffichee(s, equipe[i].id)} inclinable={false} />
+              <Carte
+                key={equipe[i].id}
+                carte={equipe[i]}
+                base={base}
+                taille="p"
+                variante={varianteAffichee(s, equipe[i].id)}
+                inclinable={false}
+                onClick={() => setPlaceChoisie(i)}
+              />
             ) : (
-              <div key={i} className="emplacement-vide">
-                Vide
-              </div>
+              <button key={i} className="emplacement-vide" onClick={() => setPlaceChoisie(i)}>
+                + Ajouter
+              </button>
             ),
           )}
         </div>
         <Synergies equipe={equipe} />
+        <SuggestionsEquipe base={base} />
+        {placeChoisie !== null && <ChoixCarteEquipe base={base} place={placeChoisie} onFermer={() => setPlaceChoisie(null)} />}
         <div className="actions">
           <button
             className="btn"

@@ -12,6 +12,17 @@ export interface Entree {
 export const JOURNAL: Entree[] = [
   {
     date: '2026-11-09',
+    titre: 'Des équipes qui jouent leurs synergies',
+    points: [
+      'La composition automatique cherche maintenant les synergies, en plus des cartes les plus fortes.',
+      'Touchez une carte de votre équipe (ou un emplacement vide) en Confrontation pour la changer sur place : chaque carte proposée indique la synergie qu’elle ajouterait.',
+      'Sous l’équipe, des suggestions : « SCP-174 à la place de SCP-049 : + Voisins de cellule », à appliquer d’un toucher. Seulement avec vos cartes.',
+      'Page des dossiers : « Mes derniers dossiers », l’historique de vos ouvertures (90 jours) et ce qui en est sorti.',
+      'Le Discord reçoit les notes de chaque mise à jour, le podium de l’Épreuve chaque lundi et celui de la saison classée chaque mois.',
+    ],
+  },
+  {
+    date: '2026-11-09',
     titre: 'Un Discord, et une équipe lisible sur téléphone',
     points: [
       'La communauté a son Discord : lien dans le menu du compte, la page Social, le pied de page et l’accueil des visiteurs.',

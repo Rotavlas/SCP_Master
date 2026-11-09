@@ -1839,4 +1839,39 @@ await test('console du créateur : signalements, modération, tableau ; refusée
   assert.ok(Array.isArray(t.economie))
 })
 
+await test('mes derniers dossiers : les siens seulement, du plus récent au plus ancien', async () => {
+  const [T1, T2] = ['00000000-0000-0000-0000-0000000000fb', '00000000-0000-0000-0000-0000000000fc']
+  for (const j of [T1, T2]) await db.exec(`insert into auth.users (id) values ('${j}')`)
+  await admin(
+    `insert into prive.tirages (joueur, type_booster, cartes, le) values
+    ($1, 'standard', '[{"id": "scp-173", "v": "std"}]', now() - interval '2 days'),
+    ($1, 'keter', '[{"id": "scp-682", "v": "holo"}]', now()),
+    ($2, 'standard', '[]', now())`,
+    [T1, T2],
+  )
+  const l = await valeur(T1, 'select public.mes_tirages(10)')
+  assert.deepEqual(
+    l.map((t) => t.type),
+    ['keter', 'standard'],
+  )
+  assert.equal(l[0].cartes[0].v, 'holo')
+  await echoue(en(null, 'select public.mes_tirages(10)'), /permission denied/)
+})
+
+await test('Discord : notes de version réservées au créateur, rien ne part sans webhook, adresse de webhook vérifiée', async () => {
+  const C = '00000000-0000-0000-0000-0000000000f8'
+  const N = '00000000-0000-0000-0000-0000000000fa'
+  await echoue(en(N, "select public.publier_version('2026-11-09', 'Essai', array['un point'])"), /créateur/)
+  assert.equal(await valeur(C, "select public.publier_version('2026-11-09', 'Essai', array['un point'])"), false, 'pas de webhook : rien')
+  await echoue(admin("insert into prive.discord (cle, url) values ('annonces', 'https://exemple.org/hook')"), /check constraint/)
+  await admin("insert into prive.discord (cle, url) values ('annonces', 'https://discord.com/api/webhooks/1/abc')")
+  // Sans pg_net (base de test), rien ne part et rien n'est marqué publié
+  assert.equal(await valeur(C, "select public.publier_version('2026-11-09', 'Essai', array['un point'])"), false)
+  assert.equal((await admin('select count(*)::int as n from prive.discord_publie')).rows[0].n, 0)
+  assert.equal((await admin('select prive.annoncer_podium_epreuve() as ok')).rows[0].ok, false)
+  assert.equal((await admin('select prive.annoncer_podium_saison() as ok')).rows[0].ok, false)
+  await echoue(en(C, "select prive.publier_discord('annonces', 'x', '{}')"), /permission denied/)
+  await admin('delete from prive.discord')
+})
+
 console.log(`\n${reussis} tests réussis${process.exitCode ? ', des échecs' : ''}.`)

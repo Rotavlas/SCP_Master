@@ -16,6 +16,7 @@ import { AnimationMythique, animationPleinEcran, dureeAnimation, prechargerMythi
 import { partager } from '../state/pwa'
 import { useCosmetiques } from '../state/cosmetiques'
 import { imageDeCarte, partagerImage } from './imageCarte'
+import { MesTirages } from './MesTirages'
 
 export interface Tirage {
   id: number
@@ -172,6 +173,7 @@ export function Booster({ base, tirage, setTirage, aller, ouvrirCarte }: Props) 
         <button className="btn" onClick={() => aller('boutique')}>
           Dossiers spécialisés à l'intendance
         </button>
+        <MesTirages base={base} ouvrirCarte={ouvrirCarte} />
       </section>
     )
   }
