@@ -11,6 +11,14 @@ export interface Entree {
 
 export const JOURNAL: Entree[] = [
   {
+    date: '2026-11-09',
+    titre: 'Un Discord, et une équipe lisible sur téléphone',
+    points: [
+      'La communauté a son Discord : lien dans le menu du compte, la page Social, le pied de page et l’accueil des visiteurs.',
+      'Sur téléphone, les cinq cartes de l’équipe tiennent sur la largeur (la cinquième était coupée), et les synergies s’affichent en fiches nettes : le nom et l’effet, puis le détail.',
+    ],
+  },
+  {
     date: '2026-11-06',
     titre: 'Cinq pôles au lieu de dix onglets',
     points: [

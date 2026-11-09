@@ -40,6 +40,7 @@ import { BoutonConfirme, BoutonSaisie } from './Confirmer'
 import { Pseudo } from './Badges'
 import { Indisponible, Caviarde, Vide } from './Anime'
 import { GuerreClan } from './GuerreClan'
+import { DISCORD } from '../data/liens'
 
 export type OngletSocial = 'amis' | 'clan' | 'messages'
 
@@ -62,6 +63,9 @@ export function Social({ base, ouvrirProfil, onglet, setOnglet, conversation, se
         <div>
           <p className="dossier-entete">Réseau du personnel · communications internes</p>
           <h1>Social</h1>
+          <a className="btn btn-discord" href={DISCORD} target="_blank" rel="noreferrer">
+            Discord de la communauté ↗
+          </a>
         </div>
         <nav className="onglets-page" role="tablist">
           {(

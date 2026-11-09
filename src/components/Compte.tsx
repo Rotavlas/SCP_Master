@@ -21,6 +21,7 @@ import { GestionCodes, decrireRecompense, type Recompense } from './GestionCodes
 import type { Base } from '../data/catalogue'
 import { ConsoleCreateur } from './ConsoleCreateur'
 import { Carte } from './Carte'
+import { DISCORD } from '../data/liens'
 
 const NOMS_FOURNISSEURS = { discord: 'Discord', google: 'Google', github: 'GitHub' } as const
 
@@ -95,6 +96,9 @@ export function BoutonCompte({ base, aller }: { base: Base | null; aller: (e: 's
           >
             Aide et règlement
           </button>
+          <a className="btn" role="menuitem" href={DISCORD} target="_blank" rel="noreferrer" onClick={() => setMenu(false)}>
+            Discord de la communauté ↗
+          </a>
           {createur && (
             <button
               className="btn"
@@ -294,6 +298,9 @@ export function Portail({ nombreCartes, base }: { nombreCartes: number; base?: B
         >
           Ouvrir mon dossier
         </button>
+        <a className="btn btn-discord" href={DISCORD} target="_blank" rel="noreferrer">
+          <LogoDiscord taille={18} /> Rejoindre le Discord
+        </a>
       </p>
     </section>
   )

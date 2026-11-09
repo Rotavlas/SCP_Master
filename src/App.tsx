@@ -36,6 +36,7 @@ import { noterVisite } from './components/PremiersPas'
 import { CeremonieAccreditation } from './components/Accreditation'
 import { changerFiche } from './state/transitions'
 import { demarrerHistorique, empilerEcran, useRetourEcran } from './state/historique'
+import { DISCORD } from './data/liens'
 
 /** Les onglets ; sur téléphone, les quatre principaux restent dans la barre du bas, les autres passent sous « Plus ». */
 /** Les écrans qu'une adresse (raccourci de l'application, notification) peut demander */
@@ -467,7 +468,10 @@ function Pied({ genere }: { genere: string }) {
   return (
     <footer className="pied">
       <p className="credits">
-        Jeu créé par <strong>rotavlas</strong>
+        Jeu créé par <strong>rotavlas</strong> ·{' '}
+        <a className="lien-discord" href={DISCORD} target="_blank" rel="noreferrer">
+          Rejoindre le Discord
+        </a>
       </p>
       Contenu issu du{' '}
       <a href="https://scp-wiki.wikidot.com" target="_blank" rel="noreferrer">

@@ -15405,3 +15405,89 @@ html.vt-fiche .modale.detail {
     overflow: visible;
   }
 }
+
+/* ---------- L'équipe sur téléphone : les cinq cartes tiennent sur la largeur, les synergies en fiches nettes ---------- */
+/* Les cinq emplacements se partagent la largeur au lieu de déborder (la cinquième carte était coupée) */
+.equipe-compacte .equipe-emplacements,
+.archives-equipe .equipe-emplacements {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  overflow: visible;
+  padding: 10px 0 4px;
+}
+
+.equipe-compacte .equipe-emplacements .carte,
+.equipe-compacte .emplacement-vide,
+.archives-equipe .equipe-emplacements .carte,
+.archives-equipe .emplacement-vide {
+  --w: 100%;
+  width: 100%;
+  max-width: 128px;
+  justify-self: center;
+}
+
+/* Une synergie : son nom et son effet sur une ligne, le détail dessous ; plus de bulle ovale sur plusieurs lignes */
+.synergies li {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: baseline;
+  gap: 0.15rem 0.6rem;
+  padding: 0.45rem 0.7rem;
+  border-radius: 8px;
+  width: 100%;
+}
+
+.synergies li strong {
+  grid-column: 1;
+}
+
+.synergies li em {
+  grid-column: 2;
+  grid-row: 1;
+  text-align: right;
+  font-size: 0.78rem;
+}
+
+.synergies li span {
+  grid-column: 1 / -1;
+  color: var(--discret);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.synergies ul {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
+}
+
+/* L'effet long d'une synergie d'exception passe sous le détail, au lieu d'écraser le nom */
+.synergies li.exception em {
+  grid-column: 1 / -1;
+  grid-row: 3;
+  text-align: left;
+}
+
+/* ---------- Le Discord de la communauté ---------- */
+.btn-discord {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  border-color: #5865f2;
+  color: #c9cdfb;
+  text-decoration: none;
+}
+
+.btn-discord:hover {
+  background: rgba(88, 101, 242, 0.18);
+  border-color: #7983f5;
+  color: #fff;
+}
+
+.marche-entete .btn-discord {
+  margin-top: 0.5rem;
+  font-size: 0.8rem;
+}
+
+.lien-discord {
+  color: #9aa2f8;
+}
